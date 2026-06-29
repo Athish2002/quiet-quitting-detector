@@ -1,5 +1,17 @@
 # Quiet Quitting Detector - Manager Briefing Agent
 # Role: Generates supportive and HR-safe briefings for managers of flagged employees.
+#
+# STRIDE fixes applied (2026-06-29):
+#   - [Fix 1] Session ID no longer embeds the employee first name;
+#             uses a SHA-256 hash prefix instead.
+#   - [Fix 1] Error fallback string no longer includes the first name.
+#   - [Fix 4] Output validator added: briefings containing unsafe phrases,
+#             raw error markers, or API error patterns are replaced with a
+#             safe fallback before being returned.
+
+import hashlib
+import logging
+import re
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
@@ -8,6 +20,9 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 load_dotenv()
+
+# Module-level logger — never includes first names.
+logger = logging.getLogger(__name__)
 
 SYSTEM_INSTRUCTION = """
 You are a Supportive Manager Briefing Agent.
@@ -34,6 +49,63 @@ manager_briefing_agent = Agent(
     instruction=SYSTEM_INSTRUCTION,
 )
 
+# ---------------------------------------------------------------------------
+# [Fix 4] Output validator deny-list
+# ---------------------------------------------------------------------------
+# These patterns indicate unsafe, punitive, or erroneous content.
+# Matching is case-insensitive.
+_UNSAFE_PATTERNS: list[re.Pattern] = [
+    re.compile(r"performance improvement plan", re.IGNORECASE),
+    re.compile(r"\bdisciplinar(y|ied|ies)\b", re.IGNORECASE),
+    re.compile(r"\bmonitor(ed|ing|s)?\b.*\bactivity\b", re.IGNORECASE),
+    re.compile(r"\bsurveillance\b", re.IGNORECASE),
+    re.compile(r"\bterminate\b|\btermination\b", re.IGNORECASE),
+    re.compile(r"\bconsequence[s]?\b", re.IGNORECASE),
+    re.compile(r"\bwarning letter\b", re.IGNORECASE),
+    # Raw error markers — catches API/runtime errors leaking through
+    re.compile(r"^Error:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^Exception:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"Traceback \(most recent call last\)", re.IGNORECASE),
+    re.compile(r"google\.api_core\.exceptions\.", re.IGNORECASE),
+]
+
+_SAFE_FALLBACK_BRIEFING = (
+    "Manager Briefing:\n"
+    "A temporary issue prevented a detailed briefing from being generated. "
+    "Please conduct the next 1-on-1 using open, supportive questions — for example: "
+    "'How are you finding your current workload?' or 'Is there anything I can do to "
+    "better support you right now?' Focus on listening and removing obstacles rather "
+    "than drawing conclusions from metrics alone."
+)
+
+
+def _anon_session_id(first_name_lower: str, suffix: str) -> str:
+    """Return a privacy-safe session ID: session_employee_{hash12}_{suffix}.
+
+    The first name is hashed so it never appears in session stores,
+    telemetry traces, or API request metadata.  [STRIDE Fix 1]
+    """
+    hash12 = hashlib.sha256(first_name_lower.encode()).hexdigest()[:12]
+    return f"session_employee_{hash12}_{suffix}"
+
+
+def _validate_briefing(text: str) -> str:
+    """[Fix 4] Scan the generated briefing for unsafe or erroneous content.
+
+    If any deny-listed pattern is found, the text is replaced with
+    _SAFE_FALLBACK_BRIEFING and a warning is emitted to the logger
+    (without including the employee name).
+    """
+    for pattern in _UNSAFE_PATTERNS:
+        if pattern.search(text):
+            logger.warning(
+                "Briefing output validator blocked unsafe content "
+                "(pattern: %s). Returning safe fallback.",
+                pattern.pattern,
+            )
+            return _SAFE_FALLBACK_BRIEFING
+    return text
+
 
 def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) -> str:
     """Generates a warm, supportive briefing for the manager if classification is Watch, At Risk, or Silent Exit."""
@@ -58,7 +130,8 @@ def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) 
         events = list(
             runner.run(
                 user_id="orchestrator",
-                session_id=f"session_{first_name.lower()}_briefing",
+                # [Fix 1] Anonymised session ID — first name is hashed, never plain-text.
+                session_id=_anon_session_id(first_name.lower(), "briefing"),
                 new_message=types.Content(
                     role="user", parts=[types.Part.from_text(text=prompt)]
                 ),
@@ -72,12 +145,10 @@ def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) 
                     if part.text:
                         response_text += part.text
 
-        return response_text.strip()
+        # [Fix 4] Validate output before returning it.
+        return _validate_briefing(response_text.strip())
+
     except Exception:
-        # Respect Rule 5: Never expose raw Gemini API errors
-        return (
-            f"Manager Briefing for {first_name}:\n"
-            f"A temporary error occurred while generating the detailed briefing. "
-            f"Please conduct the next 1-on-1 using supportive and open-ended questions, "
-            f"checking if there are any obstacles preventing the employee from doing their best work."
-        )
+        # Rule 5: Never expose raw Gemini API errors.
+        # [Fix 1] Error fallback no longer embeds the first name.
+        return _SAFE_FALLBACK_BRIEFING
