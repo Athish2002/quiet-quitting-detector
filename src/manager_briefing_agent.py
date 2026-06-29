@@ -8,6 +8,8 @@
 #   - [Fix 4] Output validator added: briefings containing unsafe phrases,
 #             raw error markers, or API error patterns are replaced with a
 #             safe fallback before being returned.
+#   - [Session fix] Uses run_agent_sync() which pre-creates the session
+#             before calling runner.run(), avoiding SessionNotFoundError.
 
 import hashlib
 import logging
@@ -16,12 +18,12 @@ import re
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
-from google.adk.runners import InMemoryRunner
-from google.genai import types
 
-load_dotenv()
+from src.app_utils.runner_helper import run_agent_sync
 
-# Module-level logger — never includes first names.
+load_dotenv(override=True)
+
+# Module-level logger -- never includes first names.
 logger = logging.getLogger(__name__)
 
 SYSTEM_INSTRUCTION = """
@@ -36,11 +38,12 @@ Strict Guidelines you must enforce:
 5. Personal Information: Never mention or store personal opinions, health issues, or non-behavioral personal details.
 6. Error Safety: Never expose raw Gemini API errors in the final output.
 
-Your briefing output MUST contain:
+Your briefing output MUST contain ALL of the following clearly labelled sections:
 - "Signals Detected": A brief explanation of the behavioral patterns identified.
 - "Pre-Meeting Observation": Suggestions on what the manager can observe before the 1-on-1.
 - "3 Supportive Things to Say": Actionable, warm questions or statements to use.
 - "2 Things Never to Say": Accusatory or demotivating statements to avoid.
+- "Evidence-Based Actions": For At Risk and Silent Exit employees, include 2-3 concrete, supportive actions the manager can take this week (e.g. schedule a 1-on-1, offer workload adjustment, connect to wellbeing resources).
 """
 
 manager_briefing_agent = Agent(
@@ -62,7 +65,7 @@ _UNSAFE_PATTERNS: list[re.Pattern] = [
     re.compile(r"\bterminate\b|\btermination\b", re.IGNORECASE),
     re.compile(r"\bconsequence[s]?\b", re.IGNORECASE),
     re.compile(r"\bwarning letter\b", re.IGNORECASE),
-    # Raw error markers — catches API/runtime errors leaking through
+    # Raw error markers -- catches API/runtime errors leaking through
     re.compile(r"^Error:", re.IGNORECASE | re.MULTILINE),
     re.compile(r"^Exception:", re.IGNORECASE | re.MULTILINE),
     re.compile(r"Traceback \(most recent call last\)", re.IGNORECASE),
@@ -72,7 +75,7 @@ _UNSAFE_PATTERNS: list[re.Pattern] = [
 _SAFE_FALLBACK_BRIEFING = (
     "Manager Briefing:\n"
     "A temporary issue prevented a detailed briefing from being generated. "
-    "Please conduct the next 1-on-1 using open, supportive questions — for example: "
+    "Please conduct the next 1-on-1 using open, supportive questions -- for example: "
     "'How are you finding your current workload?' or 'Is there anything I can do to "
     "better support you right now?' Focus on listening and removing obstacles rather "
     "than drawing conclusions from metrics alone."
@@ -120,33 +123,19 @@ def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) 
     prompt += f"Risk Rationale: {risk_data.get('rationale')}\n"
     prompt += "Behavioral Signals Detected:\n"
     for s in signals:
-        prompt += (
-            f"- {s.get('signal')} (Severity: {s.get('severity')}): {s.get('details')}\n"
-        )
-
-    runner = InMemoryRunner(agent=manager_briefing_agent)
+        prompt += f"- {s.get('signal_name') or s.get('signal')} (Severity: {s.get('severity')}): {s.get('details', '')}\n"
 
     try:
-        events = list(
-            runner.run(
-                user_id="orchestrator",
-                # [Fix 1] Anonymised session ID — first name is hashed, never plain-text.
-                session_id=_anon_session_id(first_name.lower(), "briefing"),
-                new_message=types.Content(
-                    role="user", parts=[types.Part.from_text(text=prompt)]
-                ),
-            )
+        response_text = run_agent_sync(
+            manager_briefing_agent,
+            user_id="orchestrator",
+            # [Fix 1] Anonymised session ID -- first name is hashed, never plain-text.
+            session_id=_anon_session_id(first_name.lower(), "briefing"),
+            prompt=prompt,
         )
 
-        response_text = ""
-        for event in events:
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text:
-                        response_text += part.text
-
         # [Fix 4] Validate output before returning it.
-        return _validate_briefing(response_text.strip())
+        return _validate_briefing(response_text)
 
     except Exception:
         # Rule 5: Never expose raw Gemini API errors.

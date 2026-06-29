@@ -6,6 +6,8 @@
 # STRIDE fix applied (2026-06-29):
 #   - [Fix 1] Session ID no longer embeds the employee first name;
 #             uses a SHA-256 hash prefix instead.
+#   - [Session fix] Uses run_agent_sync() which pre-creates the session
+#             before calling runner.run(), avoiding SessionNotFoundError.
 
 import hashlib
 import json
@@ -13,10 +15,10 @@ import json
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
-from google.adk.runners import InMemoryRunner
-from google.genai import types
 
-load_dotenv()
+from src.app_utils.runner_helper import run_agent_sync
+
+load_dotenv(override=True)
 
 SYSTEM_INSTRUCTION = """
 You are a Quiet-Quitting Trend Detector Agent.
@@ -30,10 +32,10 @@ For each signal, produce a concise description of what was observed.
 
 Strict Rules:
 - Never use employee surnames or IDs in any output. Only first names are allowed.   [CONTEXT Rule 1]
-- Never recommend disciplinary action — only supportive manager responses.          [CONTEXT Rule 2]
-- If a week of data is missing for an employee, note the gap — do not assume disengagement. [CONTEXT Rule 4]
+- Never recommend disciplinary action -- only supportive manager responses.          [CONTEXT Rule 2]
+- If a week of data is missing for an employee, note the gap -- do not assume disengagement. [CONTEXT Rule 4]
 - Never expose raw Gemini API errors in the final output.                           [CONTEXT Rule 5]
-- Store only behavioral signals — never store personal opinions or health information. [CONTEXT Rule 6]
+- Store only behavioral signals -- never store personal opinions or health information. [CONTEXT Rule 6]
 
 Output format:
 Return a valid JSON array of objects, where each object contains:
@@ -52,17 +54,17 @@ trend_detector_agent = Agent(
 # ---------------------------------------------------------------------------
 # Thresholds used for programmatic signal detection
 # ---------------------------------------------------------------------------
-TASK_DROP_PCT_MEDIUM = 0.20  # >= 20% drop from baseline → medium severity
-TASK_DROP_PCT_HIGH = 0.40  # >= 40% drop from baseline → high severity
-RESPONSE_TIME_PCT = 0.50  # > 50% increase from baseline → signal
-AFTER_HOURS_THRESHOLD = 2  # > 2 after-hours logins in a week → signal
+TASK_DROP_PCT_MEDIUM = 0.20  # >= 20% drop from baseline -> medium severity
+TASK_DROP_PCT_HIGH = 0.40  # >= 40% drop from baseline -> high severity
+RESPONSE_TIME_PCT = 0.50  # > 50% increase from baseline -> signal
+AFTER_HOURS_THRESHOLD = 2  # > 2 after-hours logins in a week -> signal
 SICK_DAY_INCREASE = 1  # any increase above baseline in the last 2 weeks
 
 
 def _get_baseline(full_timeline: list[dict]) -> dict | None:
     """Return the week-1 record, or None if it is missing/null.
 
-    Rule 4: If week 1 data is missing we cannot baseline — handled by caller.
+    Rule 4: If week 1 data is missing we cannot baseline -- handled by caller.
     """
     for week in full_timeline:
         if week.get("week") == 1 and not week.get("data_missing"):
@@ -76,7 +78,7 @@ def _detect_raw_flags(
     """Return a mapping of {week_number: [signal_names_active_that_week]}.
 
     Comparisons are always against the employee's own week-1 baseline, not a
-    global average.  [CONTEXT Rule 3 — validate data exists before reading]
+    global average.  [CONTEXT Rule 3 -- validate data exists before reading]
     """
     week_flags: dict[int, list[str]] = {}
 
@@ -87,7 +89,7 @@ def _detect_raw_flags(
     for week in full_timeline:
         week_num = week.get("week")
         if week.get("data_missing") or week_num == 1:
-            # Rule 4: Missing data is a gap, not disengagement — skip silently
+            # Rule 4: Missing data is a gap, not disengagement -- skip silently
             week_flags[week_num] = []
             continue
 
@@ -240,7 +242,7 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
     # Establish the week-1 baseline for this specific employee
     baseline = _get_baseline(full_timeline)
     if baseline is None:
-        # Rule 4: Week-1 data is missing — note gap, do not assume disengagement
+        # Rule 4: Week-1 data is missing -- note gap, do not assume disengagement
         return [
             {
                 "signal_name": "Baseline Week Missing",
@@ -252,7 +254,7 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
     # Detect which signals fired each week
     week_flags = _detect_raw_flags(full_timeline, baseline)
 
-    # Keep only signals active for 2+ consecutive weeks — single bad week is not a pattern
+    # Keep only signals active for 2+ consecutive weeks -- single bad week is not a pattern
     confirmed = _require_consecutive(week_flags, all_weeks)
 
     if not confirmed:
@@ -281,29 +283,17 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
         "'details' field. Return the full JSON array."
     )
 
-    runner = InMemoryRunner(agent=trend_detector_agent)
-
-    # [Fix 1] Anonymised session ID — first name is hashed, never plain-text.
+    # [Fix 1] Anonymised session ID -- first name is hashed, never plain-text.
     _hash12 = hashlib.sha256(first_name.lower().encode()).hexdigest()[:12]
     _session_id = f"session_employee_{_hash12}_trends"
 
     try:
-        events = list(
-            runner.run(
-                user_id="orchestrator",
-                session_id=_session_id,
-                new_message=types.Content(
-                    role="user", parts=[types.Part.from_text(text=prompt)]
-                ),
-            )
+        response_text = run_agent_sync(
+            trend_detector_agent,
+            user_id="orchestrator",
+            session_id=_session_id,
+            prompt=prompt,
         )
-
-        response_text = ""
-        for event in events:
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text:
-                        response_text += part.text
 
         clean_text = response_text.strip()
         if clean_text.startswith("```json"):
@@ -326,5 +316,5 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
         return enriched
 
     except Exception:
-        # Rule 5: Never expose raw Gemini API errors — return raw programmatic signals
+        # Rule 5: Never expose raw Gemini API errors -- return raw programmatic signals
         return raw_signals

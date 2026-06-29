@@ -18,7 +18,7 @@ from src.risk_scorer_agent import score_risk
 # Import agent pipeline functions
 from src.trend_detector_agent import detect_trends
 
-load_dotenv()
+load_dotenv(override=True)
 
 SYSTEM_INSTRUCTION = """
 You are the Quiet-Quitting Orchestrator Agent.
@@ -83,17 +83,30 @@ def run_orchestrator() -> str:
                 reader = csv.DictReader(f)
                 for row in reader:
                     # Rule 1: First name only
-                    raw_name = row.get("name") or row.get("first_name") or "Unknown"
+                    raw_name = (
+                        row.get("employee_name")
+                        or row.get("name")
+                        or row.get("first_name")
+                        or "Unknown"
+                    )
                     first_name = raw_name.split()[0]
 
                     # Safely convert metrics
                     try:
-                        completed_tasks = int(row.get("completed_tasks") or 0)
+                        completed_tasks = int(
+                            row.get("tasks_completed")
+                            or row.get("completed_tasks")
+                            or 0
+                        )
                     except ValueError:
                         completed_tasks = 0
 
                     try:
-                        response_time = float(row.get("response_time") or 0.0)
+                        response_time = float(
+                            row.get("avg_response_time_hours")
+                            or row.get("response_time")
+                            or 0.0
+                        )
                     except ValueError:
                         response_time = 0.0
 

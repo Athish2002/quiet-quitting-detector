@@ -2,11 +2,13 @@
 # Role: Computes disengagement risk score based on trend signals and historical records.
 #
 # STRIDE fixes applied (2026-06-29):
-#   - [Fix 1] Session IDs now use a SHA-256 hash prefix — first names never appear in session identifiers.
+#   - [Fix 1] Session IDs now use a SHA-256 hash prefix -- first names never appear in session identifiers.
 #   - [Fix 2] _load_employee_history() enforces a MAX_HISTORY_WEEKS=12 lookback window (by file mtime)
 #             and validates required fields in each memory record before accepting it.
 #   - [Fix 3] Recurrence bonus decays after HEALTHY_DECAY_WEEKS=4 consecutive Healthy weeks.
 #             A `healthy_streak` counter is stored in each memory file so recovery is tracked.
+#   - [Session fix] Uses run_agent_sync() which pre-creates the session
+#             before calling runner.run(), avoiding SessionNotFoundError.
 
 import glob
 import hashlib
@@ -18,12 +20,12 @@ import time
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
-from google.adk.runners import InMemoryRunner
-from google.genai import types
 
-load_dotenv()
+from src.app_utils.runner_helper import run_agent_sync
 
-# Module-level logger — never includes first names in messages.
+load_dotenv(override=True)
+
+# Module-level logger -- never includes first names in messages.
 logger = logging.getLogger(__name__)
 
 SYSTEM_INSTRUCTION = """
@@ -40,7 +42,7 @@ Score Scale:
 Strict Rules:
 - Never use employee surnames or IDs in any output. Only first names are allowed.   [CONTEXT Rule 1]
 - Never recommend disciplinary action. Focus on supportive responses.               [CONTEXT Rule 2]
-- If a week of data is missing, note the gap — do not assume disengagement.         [CONTEXT Rule 4]
+- If a week of data is missing, note the gap -- do not assume disengagement.        [CONTEXT Rule 4]
 - Never expose raw Gemini API errors in the final output.                           [CONTEXT Rule 5]
 - Never store or process personal opinions or health information. Behavioral signals only. [CONTEXT Rule 6]
 
@@ -78,7 +80,7 @@ HEALTHY_DECAY_WEEKS = 4
 # Required fields every memory record must contain (integrity check).   [Fix 2]
 REQUIRED_MEMORY_FIELDS = {"score", "classification", "rationale"}
 
-# Memory directory — OS-agnostic join; backslash used only in write paths.
+# Memory directory -- OS-agnostic join; backslash used only in write paths.
 MEMORY_DIR = os.path.join("data", "memory")
 
 
@@ -140,7 +142,7 @@ def _load_employee_history(first_name_lower: str) -> list[dict]:
             continue
         if file_mtime < cutoff:
             logger.debug(
-                "Memory file outside %d-week lookback window — skipped.",
+                "Memory file outside %d-week lookback window -- skipped.",
                 MAX_HISTORY_WEEKS,
             )
             continue
@@ -149,9 +151,9 @@ def _load_employee_history(first_name_lower: str) -> list[dict]:
             with open(file_path, encoding="utf-8") as fh:
                 record = json.load(fh)
         except Exception:
-            # Rule 5: Never surface raw errors — silently skip corrupted files.
+            # Rule 5: Never surface raw errors -- silently skip corrupted files.
             logger.warning(
-                "Memory file could not be parsed — skipped. (path omitted for privacy)"
+                "Memory file could not be parsed -- skipped. (path omitted for privacy)"
             )
             continue
 
@@ -159,7 +161,7 @@ def _load_employee_history(first_name_lower: str) -> list[dict]:
         missing_fields = REQUIRED_MEMORY_FIELDS - set(record.keys())
         if missing_fields:
             logger.warning(
-                "Memory record missing required fields %s — skipped.",
+                "Memory record missing required fields %s -- skipped.",
                 missing_fields,
             )
             continue
@@ -187,7 +189,6 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
         return False, 0
 
     # Walk history from newest to oldest to count the current healthy streak.
-    # History is sorted by filename (chronological), so reverse it.
     sorted_history = list(
         history
     )  # already sorted by filename in _load_employee_history
@@ -195,7 +196,6 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
     for record in reversed(sorted_history):
         classification = record.get("classification", "").strip().upper()
         if classification == "HEALTHY":
-            # Also check the stored healthy_streak counter if present.
             stored_streak = record.get("healthy_streak", 0)
             current_healthy_streak = max(current_healthy_streak + 1, stored_streak)
         else:
@@ -224,13 +224,13 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
     """Calculates risk score and classification, loading history and saving current to data\\memory\\.
 
     Steps:
-    1. Load recent memory files (≤ MAX_HISTORY_WEEKS old).               [Fix 2]
+    1. Load recent memory files (<= MAX_HISTORY_WEEKS old).              [Fix 2]
     2. Compute recurrence bonus with healthy-streak decay.               [Fix 3]
     3. Ask the LLM to score the current signals.
     4. Apply the recurrence bonus on top of the LLM score (capped at 10).
     5. Save result (including healthy_streak) to data\\memory\\firstname_weekN.json.
     """
-    # Rule 1: First name only — never use full name, surname, or ID.
+    # Rule 1: First name only -- never use full name, surname, or ID.
     first_name = employee_name.split()[0]
     first_name_lower = first_name.lower()
 
@@ -240,7 +240,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
     # Step 2 ---------------------------------------------------------------
     apply_recurrence_bonus, current_healthy_streak = _compute_recurrence_bonus(history)
 
-    # Step 3: Build the LLM prompt — first name only, behavioral signals only.
+    # Step 3: Build the LLM prompt -- first name only, behavioral signals only.
     prompt = f"Employee First Name: {first_name}\n"  # Rule 1: first name only
     prompt += f"Current Week: {week_number}\n"
     prompt += f"Detected Signals:\n{json.dumps(signals, indent=2)}\n\n"
@@ -270,26 +270,14 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
 
     prompt += "\nEvaluate the risk of disengagement and return the JSON object."
 
-    runner = InMemoryRunner(agent=risk_scorer_agent)
-
     try:
-        events = list(
-            runner.run(
-                user_id="orchestrator",
-                # [Fix 1] Anonymised session ID — first name is hashed, never plain-text.
-                session_id=_anon_session_id(first_name_lower, "risk"),
-                new_message=types.Content(
-                    role="user", parts=[types.Part.from_text(text=prompt)]
-                ),
-            )
+        response_text = run_agent_sync(
+            risk_scorer_agent,
+            user_id="orchestrator",
+            # [Fix 1] Anonymised session ID -- first name is hashed, never plain-text.
+            session_id=_anon_session_id(first_name_lower, "risk"),
+            prompt=prompt,
         )
-
-        response_text = ""
-        for event in events:
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text:
-                        response_text += part.text
 
         clean_text = response_text.strip()
         if clean_text.startswith("```json"):
@@ -334,7 +322,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
         return save_result
 
     except Exception:
-        # Rule 5: Never expose raw Gemini API errors — return a safe fallback.
+        # Rule 5: Never expose raw Gemini API errors -- return a safe fallback.
         fallback = {
             "score": 4,
             "classification": "Watch",

@@ -15,11 +15,8 @@ import json
 import os
 import time
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
-# Fix 1 – Anonymised session IDs
+# Fix 1 - Anonymised session IDs
 # ---------------------------------------------------------------------------
 
 
@@ -84,7 +81,7 @@ def test_manager_briefing_fallback_no_first_name():
 
 
 # ---------------------------------------------------------------------------
-# Fix 2 – Memory lookback cap + integrity check
+# Fix 2 - Memory lookback cap + integrity check
 # ---------------------------------------------------------------------------
 
 
@@ -98,13 +95,27 @@ def test_load_history_respects_lookback_window(tmp_path, monkeypatch):
     # Write a "recent" file (mtime = now)
     recent_file = tmp_path / "alice_week10.json"
     recent_file.write_text(
-        json.dumps({"score": 3, "classification": "Healthy", "rationale": "ok", "healthy_streak": 1})
+        json.dumps(
+            {
+                "score": 3,
+                "classification": "Healthy",
+                "rationale": "ok",
+                "healthy_streak": 1,
+            }
+        )
     )
 
     # Write an "old" file (mtime = 2 weeks ago)
     old_file = tmp_path / "alice_week1.json"
     old_file.write_text(
-        json.dumps({"score": 7, "classification": "At Risk", "rationale": "old", "healthy_streak": 0})
+        json.dumps(
+            {
+                "score": 7,
+                "classification": "At Risk",
+                "rationale": "old",
+                "healthy_streak": 0,
+            }
+        )
     )
     old_mtime = time.time() - (14 * 24 * 3600)  # 14 days ago
     os.utime(str(old_file), (old_mtime, old_mtime))
@@ -130,7 +141,14 @@ def test_load_history_skips_records_missing_required_fields(tmp_path, monkeypatc
     # Write a valid file
     good_file = tmp_path / "alice_week6.json"
     good_file.write_text(
-        json.dumps({"score": 4, "classification": "Watch", "rationale": "mild signals", "healthy_streak": 0})
+        json.dumps(
+            {
+                "score": 4,
+                "classification": "Watch",
+                "rationale": "mild signals",
+                "healthy_streak": 0,
+            }
+        )
     )
 
     history = rsa._load_employee_history("alice")
@@ -140,7 +158,7 @@ def test_load_history_skips_records_missing_required_fields(tmp_path, monkeypatc
 
 
 def test_load_history_skips_unreadable_json(tmp_path, monkeypatch):
-    """Corrupted (unparseable) JSON files must be silently skipped."""
+    """Corrupted (unparsable) JSON files must be silently skipped."""
     import src.risk_scorer_agent as rsa
 
     monkeypatch.setattr(rsa, "MEMORY_DIR", str(tmp_path))
@@ -154,7 +172,7 @@ def test_load_history_skips_unreadable_json(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Fix 3 – Recurrence bonus decay
+# Fix 3 - Recurrence bonus decay
 # ---------------------------------------------------------------------------
 
 
@@ -163,8 +181,18 @@ def test_recurrence_bonus_applies_when_elevated_twice(tmp_path, monkeypatch):
     import src.risk_scorer_agent as rsa
 
     history = [
-        {"score": 6, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
-        {"score": 7, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
+        {
+            "score": 6,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
+        {
+            "score": 7,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
     ]
     apply_bonus, streak = rsa._compute_recurrence_bonus(history)
     assert apply_bonus is True
@@ -177,12 +205,42 @@ def test_recurrence_bonus_suppressed_after_decay(tmp_path, monkeypatch):
 
     # Simulate 4 consecutive Healthy weeks at the end of history.
     history = [
-        {"score": 6, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
-        {"score": 7, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
-        {"score": 2, "classification": "Healthy", "rationale": "r", "healthy_streak": 1},
-        {"score": 2, "classification": "Healthy", "rationale": "r", "healthy_streak": 2},
-        {"score": 2, "classification": "Healthy", "rationale": "r", "healthy_streak": 3},
-        {"score": 2, "classification": "Healthy", "rationale": "r", "healthy_streak": 4},
+        {
+            "score": 6,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
+        {
+            "score": 7,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
+        {
+            "score": 2,
+            "classification": "Healthy",
+            "rationale": "r",
+            "healthy_streak": 1,
+        },
+        {
+            "score": 2,
+            "classification": "Healthy",
+            "rationale": "r",
+            "healthy_streak": 2,
+        },
+        {
+            "score": 2,
+            "classification": "Healthy",
+            "rationale": "r",
+            "healthy_streak": 3,
+        },
+        {
+            "score": 2,
+            "classification": "Healthy",
+            "rationale": "r",
+            "healthy_streak": 4,
+        },
     ]
     apply_bonus, streak = rsa._compute_recurrence_bonus(history)
     assert apply_bonus is False, "Bonus should be cleared after 4 Healthy weeks"
@@ -194,7 +252,12 @@ def test_recurrence_bonus_not_applied_on_single_elevated_week():
     import src.risk_scorer_agent as rsa
 
     history = [
-        {"score": 6, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
+        {
+            "score": 6,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
     ]
     apply_bonus, _ = rsa._compute_recurrence_bonus(history)
     assert apply_bonus is False
@@ -214,20 +277,30 @@ def test_healthy_streak_resets_on_elevated_week():
     import src.risk_scorer_agent as rsa
 
     history = [
-        {"score": 2, "classification": "Healthy", "rationale": "r", "healthy_streak": 3},
-        {"score": 6, "classification": "At Risk", "rationale": "r", "healthy_streak": 0},
+        {
+            "score": 2,
+            "classification": "Healthy",
+            "rationale": "r",
+            "healthy_streak": 3,
+        },
+        {
+            "score": 6,
+            "classification": "At Risk",
+            "rationale": "r",
+            "healthy_streak": 0,
+        },
     ]
     _, streak = rsa._compute_recurrence_bonus(history)
     assert streak == 0, "Streak should reset when most recent week is elevated"
 
 
 # ---------------------------------------------------------------------------
-# Fix 4 – Output validator
+# Fix 4 - Output validator
 # ---------------------------------------------------------------------------
 
 
 def test_validator_blocks_performance_improvement_plan():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "You should consider a Performance Improvement Plan for this person."
     result = _validate_briefing(unsafe)
@@ -235,7 +308,7 @@ def test_validator_blocks_performance_improvement_plan():
 
 
 def test_validator_blocks_disciplinary():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "A disciplinary meeting should be scheduled immediately."
     result = _validate_briefing(unsafe)
@@ -243,7 +316,7 @@ def test_validator_blocks_disciplinary():
 
 
 def test_validator_blocks_raw_error_prefix():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "Error: API quota exceeded.\nPlease try again later."
     result = _validate_briefing(unsafe)
@@ -251,7 +324,7 @@ def test_validator_blocks_raw_error_prefix():
 
 
 def test_validator_blocks_exception_prefix():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "Exception: Connection timeout after 30s."
     result = _validate_briefing(unsafe)
@@ -259,7 +332,7 @@ def test_validator_blocks_exception_prefix():
 
 
 def test_validator_blocks_termination():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "You may need to consider termination of employment."
     result = _validate_briefing(unsafe)
@@ -267,7 +340,7 @@ def test_validator_blocks_termination():
 
 
 def test_validator_blocks_surveillance():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     unsafe = "Consider enabling surveillance on the employee's workstation."
     result = _validate_briefing(unsafe)
@@ -293,7 +366,7 @@ def test_validator_passes_safe_content():
 
 
 def test_validator_is_case_insensitive():
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     # Mixed case — should still be caught
     unsafe = "DISCIPLINARY action is recommended."
@@ -303,7 +376,7 @@ def test_validator_is_case_insensitive():
 
 def test_validator_safe_fallback_itself_passes():
     """The safe fallback string must itself pass the validator (no circular replacement)."""
-    from src.manager_briefing_agent import _validate_briefing, _SAFE_FALLBACK_BRIEFING
+    from src.manager_briefing_agent import _SAFE_FALLBACK_BRIEFING, _validate_briefing
 
     result = _validate_briefing(_SAFE_FALLBACK_BRIEFING)
     assert result == _SAFE_FALLBACK_BRIEFING
