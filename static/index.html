@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiet-Quitting Detector Dashboard</title>
+    <!-- Modern Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Sleek Obsidian Palette */
+            --bg-color: #0d1117;
+            --surface-color: rgba(22, 27, 34, 0.75);
+            --card-color: rgba(33, 38, 45, 0.85);
+            --border-color: rgba(48, 54, 61, 0.6);
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            
+            /* Curated Brand Accent */
+            --primary: #58a6ff;
+            --primary-glow: rgba(88, 166, 255, 0.15);
+            
+            /* Curated HR Risk Colors */
+            --healthy: #3fb950;
+            --watch: #d29922;
+            --at-risk: #f78166;
+            --silent-exit: #f85149;
+            
+            /* Font families */
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 20%, rgba(26, 32, 44, 0.7) 0%, rgba(13, 17, 23, 0.9) 90%);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* -------------------------------------------------------------------
+           Typography & Layout Components
+           ------------------------------------------------------------------- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2.5rem;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: -0.03em;
+            background: linear-gradient(90deg, #58a6ff, #bc8cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #0d1117;
+            font-family: var(--font-display);
+            font-weight: 600;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(88, 166, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 166, 255, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Spinner for Pipeline Loading */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(13, 17, 23, 0.3);
+            border-radius: 50%;
+            border-top-color: #0d1117;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* -------------------------------------------------------------------
+           Main Grid Layout
+           ------------------------------------------------------------------- */
+        main {
+            display: grid;
+            grid-template-columns: 320px 1fr 450px;
+            flex-grow: 1;
+            padding: 1.5rem 2.5rem;
+            gap: 1.5rem;
+            max-width: 1800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Glassmorphism Panel Styling */
+        .panel {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: calc(100vh - 120px);
+        }
+
+        .panel-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* -------------------------------------------------------------------
+           Employee List Layout (Sidebar)
+           ------------------------------------------------------------------- */
+        .employee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .employee-item {
+            background: rgba(33, 38, 45, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .employee-item:hover {
+            border-color: var(--primary);
+            background: rgba(88, 166, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .employee-item.active {
+            border-color: var(--primary);
+            background: rgba(88, 166, 255, 0.1);
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+
+        .employee-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .employee-name {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        /* Colored Badges */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .badge-healthy { background: rgba(63, 185, 80, 0.15); color: var(--healthy); border: 1px solid rgba(63, 185, 80, 0.3); }
+        .badge-watch { background: rgba(210, 153, 34, 0.15); color: var(--watch); border: 1px solid rgba(210, 153, 34, 0.3); }
+        .badge-at-risk { background: rgba(247, 129, 102, 0.15); color: var(--at-risk); border: 1px solid rgba(247, 129, 102, 0.3); }
+        .badge-silent-exit { background: rgba(248, 81, 73, 0.15); color: var(--silent-exit); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+        .employee-mini-stats {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* -------------------------------------------------------------------
+           Deep Dive Details (Middle Column)
+           ------------------------------------------------------------------- */
+        .detail-hero {
+            display: flex;
+            gap: 2rem;
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+
+        /* Circular Score Ring */
+        .score-circle-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .score-circle-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-circle-bg {
+            fill: none;
+            stroke: rgba(48, 54, 61, 0.5);
+            stroke-width: 8;
+        }
+
+        .score-circle-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.6rem;
+            color: var(--text-primary);
+        }
+
+        .detail-hero-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex-grow: 1;
+        }
+
+        .detail-hero-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.6rem;
+            letter-spacing: -0.02em;
+        }
+
+        .detail-rationale {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            background: rgba(13, 17, 23, 0.4);
+            border-left: 3px solid var(--primary);
+            padding: 0.8rem 1rem;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Timeline Metric Table */
+        .timeline-container h3 {
+            font-family: var(--font-display);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(33, 38, 45, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(22, 27, 34, 0.9);
+            padding: 0.8rem 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* -------------------------------------------------------------------
+           Manager Briefing Panel (Right Column)
+           ------------------------------------------------------------------- */
+        .briefing-card-content {
+            line-height: 1.6;
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .briefing-section {
+            background: rgba(33, 38, 45, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.2rem;
+        }
+
+        .briefing-section-title {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--primary);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .briefing-section ul {
+            list-style-type: none;
+            padding-left: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .briefing-section li {
+            position: relative;
+            padding-left: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .briefing-section li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .briefing-section listrong {
+            color: var(--text-primary);
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            height: 100%;
+            text-align: center;
+            gap: 1rem;
+            padding: 2rem;
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-secondary);
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Quiet-Quitting Detector</h1>
+        <div class="header-actions">
+            <span id="pipeline-status" style="font-size: 0.9rem; color: var(--text-secondary);"></span>
+            <button class="btn" id="run-pipeline-btn">
+                <span class="spinner" id="run-spinner"></span>
+                <span>Run Ingestion Pipeline</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Employee Sidebar -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Employee Registry</span>
+            </div>
+            <div class="panel-body" id="employee-list-container">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /></svg>
+                    <p>No processed metrics. Click 'Run Ingestion Pipeline' above to parse CSV data.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deep Dive View -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Employee Diagnostic</span>
+            </div>
+            <div class="panel-body" id="diagnostic-container">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                    <p>Select an employee from the registry list to see historical timelines.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supportive Briefing View -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>Supportive Action Plan</span>
+            </div>
+            <div class="panel-body" id="briefing-container">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    <p>Empathetic manager briefing talk tracks and observation checklist will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/api";
+        let employees = [];
+        let selectedEmployee = null;
+
+        // UI Element References
+        const runBtn = document.getElementById("run-pipeline-btn");
+        const spinner = document.getElementById("run-spinner");
+        const statusSpan = document.getElementById("pipeline-status");
+        const listContainer = document.getElementById("employee-list-container");
+        const diagContainer = document.getElementById("diagnostic-container");
+        const briefingContainer = document.getElementById("briefing-container");
+
+        // Initialization
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchEmployees();
+            
+            runBtn.addEventListener("click", async () => {
+                runBtn.disabled = true;
+                spinner.style.display = "inline-block";
+                statusSpan.textContent = "Pipeline executing model runs...";
+                
+                try {
+                    const response = await fetch(`${API_URL}/run`, { method: "POST" });
+                    const result = await response.json();
+                    if (result.success) {
+                        statusSpan.textContent = "Ingested successfully.";
+                        await fetchEmployees();
+                    } else {
+                        statusSpan.textContent = "Ingestion error.";
+                    }
+                } catch (e) {
+                    statusSpan.textContent = "API error.";
+                } finally {
+                    runBtn.disabled = false;
+                    spinner.style.display = "none";
+                }
+            });
+        });
+
+        async function fetchEmployees() {
+            try {
+                const response = await fetch(`${API_URL}/employees`);
+                employees = await response.json();
+                renderEmployeeList();
+                if (employees.length > 0) {
+                    // Preselect first employee
+                    selectEmployee(employees[0].name);
+                }
+            } catch (e) {
+                console.error("Failed to load employee list:", e);
+            }
+        }
+
+        function renderEmployeeList() {
+            if (employees.length === 0) return;
+
+            listContainer.innerHTML = '<div class="employee-list"></div>';
+            const listDiv = listContainer.querySelector(".employee-list");
+
+            employees.forEach(emp => {
+                const item = document.createElement("div");
+                item.className = `employee-item ${selectedEmployee && selectedEmployee.name === emp.name ? 'active' : ''}`;
+                
+                const classClass = emp.classification.toLowerCase().replace(" ", "-");
+                
+                item.innerHTML = `
+                    <div class="employee-item-header">
+                        <span class="employee-name">${emp.name}</span>
+                        <span class="badge badge-${classClass}">${emp.classification}</span>
+                    </div>
+                    <div class="employee-mini-stats">
+                        <span>Risk Index: ${emp.score}/10</span>
+                        <span>Latest Week: ${emp.latest_week}</span>
+                    </div>
+                `;
+
+                item.addEventListener("click", () => selectEmployee(emp.name));
+                listDiv.appendChild(item);
+            });
+        }
+
+        async function selectEmployee(name) {
+            selectedEmployee = employees.find(e => e.name === name);
+            renderEmployeeList(); // Refresh active state
+            renderDiagnostics();
+            fetchBriefing(name);
+        }
+
+        function renderDiagnostics() {
+            if (!selectedEmployee) return;
+
+            const score = selectedEmployee.score;
+            const classification = selectedEmployee.classification;
+            const classClass = classification.toLowerCase().replace(" ", "-");
+            
+            // Calculate SVG dashoffset (stroke-dasharray = 251.2 for r=40)
+            const radius = 40;
+            const circumference = 2 * Math.PI * radius;
+            const fillValue = (score / 10) * circumference;
+            const dashoffset = circumference - fillValue;
+            
+            // Determine gauge color
+            let strokeColor = "var(--healthy)";
+            if (classification === "Watch") strokeColor = "var(--watch)";
+            else if (classification === "At Risk") strokeColor = "var(--at-risk)";
+            else if (classification === "Silent Exit") strokeColor = "var(--silent-exit)";
+
+            diagContainer.innerHTML = `
+                <div class="detail-hero">
+                    <div class="score-circle-container">
+                        <svg class="score-circle-svg">
+                            <circle class="score-circle-bg" cx="50" cy="50" r="40" />
+                            <circle class="score-circle-fill" cx="50" cy="50" r="40" 
+                                    stroke="${strokeColor}" 
+                                    stroke-dasharray="${circumference}" 
+                                    stroke-dashoffset="${dashoffset}" />
+                        </svg>
+                        <div class="score-text">${score}</div>
+                    </div>
+                    <div class="detail-hero-content">
+                        <span class="detail-hero-name">${selectedEmployee.name}</span>
+                        <div><span class="badge badge-${classClass}">${classification}</span></div>
+                    </div>
+                </div>
+                
+                <div class="detail-rationale">
+                    <strong>Model Diagnosis:</strong> ${selectedEmployee.rationale}
+                </div>
+                
+                <div class="timeline-container">
+                    <h3>Engagement Diagnostic History</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Simulation Week</th>
+                                    <th>Engagement Index</th>
+                                    <th>Status Classification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${selectedEmployee.history.map(h => `
+                                    <tr>
+                                        <td>Week ${h.week}</td>
+                                        <td>${h.score}/10</td>
+                                        <td><span class="badge badge-${h.classification.toLowerCase().replace(" ", "-")}">${h.classification}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function fetchBriefing(name) {
+            briefingContainer.innerHTML = `
+                <div class="empty-state">
+                    <span class="spinner" style="display:inline-block; border-top-color:var(--primary);"></span>
+                    <p>Loading supportive card...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`${API_URL}/employee/${name}/briefing`);
+                const data = await response.json();
+                
+                if (data.found) {
+                    renderBriefingCard(data.raw_card);
+                } else {
+                    briefingContainer.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                            <p>Healthy employee. No manager supportive briefing required this week.</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                briefingContainer.innerHTML = `<div class="empty-state"><p>Error fetching briefing.</p></div>`;
+            }
+        }
+
+        function renderBriefingCard(rawCard) {
+            // Helper to clean markdown headers and lines for raw visual rendering
+            const cleanText = (text) => {
+                return text
+                    .replace(/###\s+(.*)/g, '<div class="briefing-section-title">$1</div>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*\s+(.*)/g, '<li>$1</li>')
+                    .replace(/\n/g, '<br>');
+            };
+
+            // Parse individual sections based on headers
+            const lines = rawCard.split('\n');
+            let currentSection = "";
+            let sections = [];
+            
+            lines.forEach(line => {
+                if (line.startsWith("###") || line.startsWith("**") && line.endsWith("**")) {
+                    if (currentSection) {
+                        sections.push(currentSection);
+                    }
+                    currentSection = line + "\n";
+                } else if (line.trim()) {
+                    currentSection += line + "\n";
+                }
+            });
+            if (currentSection) {
+                sections.push(currentSection);
+            }
+
+            briefingContainer.innerHTML = `
+                <div class="briefing-card-content">
+                    ${sections.map(sec => `
+                        <div class="briefing-section">
+                            ${cleanText(sec)}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

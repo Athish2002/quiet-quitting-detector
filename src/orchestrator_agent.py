@@ -1,8 +1,3 @@
-# Quiet Quitting Detector - Orchestrator Agent
-# Role: Reads weekly metrics, groups by employee, coordinates execution of other agents, and outputs a master summary.
-
-import csv
-import glob
 import json
 import os
 
@@ -12,10 +7,10 @@ from google.adk.models import Gemini
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from src.data_layer.ingestion import ingest_weekly_csvs
+from src.data_layer.preprocessing import preprocess_employee_records
 from src.manager_briefing_agent import generate_briefing
 from src.risk_scorer_agent import score_risk
-
-# Import agent pipeline functions
 from src.trend_detector_agent import detect_trends
 
 load_dotenv(override=True)
@@ -39,35 +34,6 @@ orchestrator_agent = Agent(
 )
 
 
-def _get_flexible_value(row: dict, aliases: list[str], default: str = "") -> str:
-    """Finds a column in the row matching any of the alias patterns (fuzzy match) and returns its value."""
-    headers = list(row.keys())
-
-    # 1. Exact match (case-insensitive, ignores spaces/underscores/dashes)
-    for h in headers:
-        if not h:
-            continue
-        h_clean = h.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
-        for alias in aliases:
-            alias_clean = (
-                alias.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
-            )
-            if h_clean == alias_clean:
-                return row.get(h) or default
-
-    # 2. Substring match
-    for h in headers:
-        if not h:
-            continue
-        h_clean = h.strip().lower()
-        for alias in aliases:
-            alias_clean = alias.strip().lower()
-            if alias_clean in h_clean or h_clean in alias_clean:
-                return row.get(h) or default
-
-    return default
-
-
 def run_orchestrator() -> str:
     """Orchestrates the entire quiet quitting detection pipeline."""
     weekly_folder = "data/weekly"
@@ -78,147 +44,15 @@ def run_orchestrator() -> str:
         print(error_msg)
         return error_msg
 
-    csv_files = glob.glob(os.path.join(weekly_folder, "*.csv"))
-    if not csv_files:
+    # Flexible modular ingestion layer
+    raw_rows = ingest_weekly_csvs(weekly_folder)
+    if not raw_rows:
         error_msg = "No CSV files found in data/weekly/. Pipeline execution aborted."
         print(error_msg)
         return error_msg
 
-    employee_records = {}
-    max_week = 0
-
-    # Sort files chronologically (e.g. week_1.csv, week_2.csv)
-    csv_files.sort()
-
-    # Process files
-    for file_path in csv_files:
-        if not os.path.exists(file_path):  # Rule 3 check
-            continue
-
-        filename = os.path.basename(file_path)
-
-        # Parse week number
-        week_num = 1
-        try:
-            name_part = os.path.splitext(filename)[0]
-            week_num = int("".join(filter(str.isdigit, name_part)))
-        except ValueError:
-            pass
-
-        max_week = max(max_week, week_num)
-
-        try:
-            with open(file_path, encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    # Rule 1: First name only
-                    raw_name = _get_flexible_value(
-                        row,
-                        [
-                            "employee_name",
-                            "name",
-                            "first_name",
-                            "employee",
-                            "username",
-                            "user",
-                            "first name",
-                            "employee name",
-                        ],
-                        "Unknown",
-                    )
-                    first_name = raw_name.split()[0]
-
-                    # Safely convert metrics dynamically using aliases
-                    try:
-                        completed_tasks = int(
-                            _get_flexible_value(
-                                row,
-                                [
-                                    "tasks_completed",
-                                    "completed_tasks",
-                                    "tasks",
-                                    "completed",
-                                    "task_count",
-                                    "tasks completed",
-                                    "completed tasks",
-                                ],
-                                "0",
-                            )
-                        )
-                    except ValueError:
-                        completed_tasks = 0
-
-                    try:
-                        response_time = float(
-                            _get_flexible_value(
-                                row,
-                                [
-                                    "avg_response_time_hours",
-                                    "response_time",
-                                    "avg_response_time",
-                                    "response_time_hours",
-                                    "latency",
-                                    "average response time",
-                                    "response time",
-                                ],
-                                "0.0",
-                            )
-                        )
-                    except ValueError:
-                        response_time = 0.0
-
-                    try:
-                        after_hours_logins = int(
-                            _get_flexible_value(
-                                row,
-                                [
-                                    "after_hours_logins",
-                                    "after_hours",
-                                    "logins",
-                                    "after hours logins",
-                                    "night_logins",
-                                    "after-hours",
-                                    "afterhours",
-                                ],
-                                "0",
-                            )
-                        )
-                    except ValueError:
-                        after_hours_logins = 0
-
-                    try:
-                        sick_days = int(
-                            _get_flexible_value(
-                                row,
-                                [
-                                    "sick_days",
-                                    "sick_leaves",
-                                    "sick",
-                                    "absences",
-                                    "sick days",
-                                    "leaves",
-                                    "absent",
-                                ],
-                                "0",
-                            )
-                        )
-                    except ValueError:
-                        sick_days = 0
-
-                    metrics = {
-                        "week": week_num,
-                        "completed_tasks": completed_tasks,
-                        "response_time": response_time,
-                        "after_hours_logins": after_hours_logins,
-                        "sick_days": sick_days,
-                    }
-
-                    if first_name not in employee_records:
-                        employee_records[first_name] = []
-                    employee_records[first_name].append(metrics)
-        except Exception as e:
-            print(f"Error reading CSV file {file_path}: {e}")
-
+    # Modular preprocessing layer
+    employee_records, max_week = preprocess_employee_records(raw_rows)
     if not employee_records:
         error_msg = "No valid employee data found in CSV files."
         print(error_msg)
