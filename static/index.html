@@ -11,10 +11,10 @@
     <style>
         :root {
             /* Sleek Obsidian Space Theme */
-            --bg-color: #080c14;
-            --surface-color: rgba(13, 19, 33, 0.7);
-            --card-color: rgba(22, 31, 54, 0.85);
-            --border-color: rgba(41, 57, 94, 0.5);
+            --bg-color: #060913;
+            --surface-color: rgba(11, 17, 33, 0.75);
+            --card-color: rgba(20, 27, 48, 0.85);
+            --border-color: rgba(38, 52, 87, 0.55);
             --text-primary: #f0f6fc;
             --text-secondary: #94a3b8;
             
@@ -62,11 +62,11 @@
             align-items: center;
             justify-content: center;
             flex-grow: 1;
-            padding: 3rem 2rem;
+            padding: 2.5rem 2rem;
             max-width: 1200px;
             margin: 0 auto;
             text-align: center;
-            gap: 2.5rem;
+            gap: 2rem;
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
@@ -78,7 +78,7 @@
         .welcome-hero {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.8rem;
         }
 
         .welcome-badge {
@@ -97,7 +97,7 @@
 
         .welcome-title {
             font-family: var(--font-display);
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             font-weight: 800;
             letter-spacing: -0.03em;
             line-height: 1.1;
@@ -107,18 +107,37 @@
         }
 
         .welcome-subtitle {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-secondary);
             max-width: 700px;
             margin: 0 auto;
             line-height: 1.6;
         }
 
+        /* Homepage Tech Background Image Banner */
+        .welcome-image-container {
+            width: 100%;
+            max-width: 750px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.15);
+            margin: 0.5rem 0;
+            background-color: var(--surface-color);
+        }
+
+        .welcome-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            opacity: 0.9;
+        }
+
         /* Features Cards Grid */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 1.2rem;
             width: 100%;
         }
 
@@ -126,24 +145,24 @@
             background: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 1.2rem;
             text-align: left;
             backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 0.6rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
             border-color: var(--primary);
-            box-shadow: 0 8px 30px rgba(56, 189, 248, 0.1);
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.1);
         }
 
         .feature-icon-container {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             background: rgba(56, 189, 248, 0.1);
             color: var(--primary);
@@ -153,44 +172,44 @@
         }
 
         .feature-icon-container svg {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
         }
 
         .feature-title {
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--text-primary);
         }
 
         .feature-desc {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             line-height: 1.5;
             color: var(--text-secondary);
         }
 
         /* Quotes Banner */
         .quote-banner {
-            background: rgba(22, 31, 54, 0.4);
+            background: rgba(20, 27, 48, 0.4);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 1rem 1.5rem;
+            padding: 0.8rem 1.2rem;
             max-width: 800px;
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.3rem;
             font-style: italic;
         }
 
         .quote-text {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: var(--primary);
         }
 
         .quote-author {
-            font-size: 0.8rem;
+            font-size: 0.76rem;
             color: var(--text-secondary);
             font-style: normal;
             font-family: var(--font-display);
@@ -199,11 +218,11 @@
 
         /* Enter Button */
         .enter-btn {
-            font-size: 1rem;
-            padding: 0.8rem 2.2rem;
+            font-size: 0.95rem;
+            padding: 0.75rem 2rem;
             border-radius: 30px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: #080c14;
+            color: #060913;
             box-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
         }
 
@@ -221,7 +240,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem 2rem;
-            background: rgba(8, 12, 20, 0.85);
+            background: rgba(6, 9, 19, 0.85);
             border-bottom: 1px solid var(--border-color);
             backdrop-filter: blur(16px);
             position: sticky;
@@ -232,7 +251,7 @@
         header h1 {
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             letter-spacing: -0.02em;
             background: linear-gradient(90deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
@@ -244,31 +263,31 @@
         }
 
         header h1 svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             flex-shrink: 0;
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.7rem;
         }
 
         .btn {
             background-color: var(--primary);
-            color: #080c14;
+            color: #060913;
             font-family: var(--font-display);
             font-weight: 600;
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 0.45rem 0.9rem;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 0.4rem;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
 
         .btn:hover {
@@ -309,11 +328,11 @@
         }
 
         .spinner {
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(8, 12, 20, 0.3);
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(6, 9, 19, 0.3);
             border-radius: 50%;
-            border-top-color: #080c14;
+            border-top-color: #060913;
             animation: spin 0.8s linear infinite;
             display: none;
         }
@@ -333,14 +352,13 @@
             display: grid;
             grid-template-columns: 360px 1fr 480px;
             flex-grow: 1;
-            padding: 1.2rem 2rem;
-            gap: 1.2rem;
+            padding: 1rem 2rem;
+            gap: 1.1rem;
             max-width: 1800px;
             width: 100%;
             margin: 0 auto;
         }
 
-        /* Glassmorphism Panel Styling */
         .panel {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -354,22 +372,22 @@
         }
 
         .panel-header {
-            padding: 0.8rem 1rem;
+            padding: 0.75rem 1rem;
             border-bottom: 1px solid var(--border-color);
             font-family: var(--font-display);
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(13, 19, 33, 0.45);
+            background: rgba(11, 17, 33, 0.45);
         }
 
         /* Tab Menu */
         .tab-menu {
             display: flex;
             gap: 0.3rem;
-            background: rgba(8, 12, 20, 0.6);
+            background: rgba(6, 9, 19, 0.6);
             padding: 0.2rem;
             border-radius: 6px;
             border: 1px solid var(--border-color);
@@ -381,7 +399,7 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-family: var(--font-display);
             font-weight: 600;
             padding: 0.4rem;
@@ -398,7 +416,7 @@
         }
 
         .panel-body {
-            padding: 1.1rem;
+            padding: 1rem;
             overflow-y: auto;
             flex-grow: 1;
         }
@@ -422,10 +440,10 @@
         }
 
         .employee-item {
-            background: rgba(22, 31, 54, 0.3);
+            background: rgba(20, 27, 48, 0.3);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 0.8rem 1rem;
+            padding: 0.75rem 1rem;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
@@ -454,11 +472,11 @@
         .employee-name {
             font-family: var(--font-display);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .badge {
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 700;
             padding: 0.15rem 0.35rem;
             border-radius: 4px;
@@ -472,52 +490,34 @@
         .badge-silent-exit { background: rgba(248, 113, 113, 0.1); color: var(--silent-exit); border: 1px solid rgba(248, 113, 113, 0.25); }
 
         .employee-mini-stats {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: var(--text-secondary);
             display: flex;
             justify-content: space-between;
         }
 
         /* -------------------------------------------------------------------
-           Data Ingestion Tab Components
+           Cloud & DB Ingestion Tab Components
            ------------------------------------------------------------------- */
         .ingest-header {
             font-family: var(--font-display);
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
             color: var(--text-secondary);
             margin: 0.8rem 0 0.4rem 0;
             text-transform: uppercase;
             letter-spacing: 0.03em;
         }
 
-        .sync-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .sync-btn {
-            background: rgba(22, 31, 54, 0.5);
+        .ingest-box {
+            background: rgba(20, 27, 48, 0.4);
             border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.3rem;
-            font-family: var(--font-display);
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .sync-btn:hover {
-            background: rgba(56, 189, 248, 0.1);
-            border-color: var(--primary);
+            flex-direction: column;
+            gap: 0.6rem;
         }
 
         /* -------------------------------------------------------------------
@@ -526,24 +526,24 @@
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 0.3rem;
-            margin-bottom: 0.8rem;
+            gap: 0.25rem;
+            margin-bottom: 0.6rem;
         }
 
         .form-group label {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-family: var(--font-display);
             font-weight: 600;
             color: var(--text-secondary);
         }
 
         .form-control {
-            background-color: rgba(8, 12, 20, 0.5);
+            background-color: rgba(6, 9, 19, 0.5);
             border: 1px solid var(--border-color);
             border-radius: 6px;
             color: var(--text-primary);
-            padding: 0.45rem 0.7rem;
-            font-size: 0.85rem;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.82rem;
             font-family: var(--font-sans);
             transition: border-color 0.2s ease;
             width: 100%;
@@ -556,7 +556,17 @@
 
         textarea.form-control {
             resize: vertical;
-            min-height: 80px;
+            min-height: 70px;
+        }
+
+        .form-range {
+            width: 100%;
+            height: 6px;
+            background: rgba(6, 9, 19, 0.5);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            accent-color: var(--primary);
         }
 
         /* -------------------------------------------------------------------
@@ -567,9 +577,9 @@
             gap: 1.2rem;
             background: var(--card-color);
             border: 1px solid var(--border-color);
-            padding: 1rem;
+            padding: 0.9rem 1.1rem;
             border-radius: 8px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             align-items: center;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
@@ -578,6 +588,7 @@
             position: relative;
             width: 70px;
             height: 70px;
+            flex-shrink: 0;
         }
 
         .score-circle-svg {
@@ -607,6 +618,7 @@
             font-family: var(--font-display);
             font-weight: 800;
             font-size: 1.25rem;
+            line-height: 1;
         }
 
         .detail-hero-content {
@@ -619,25 +631,25 @@
         .detail-hero-name {
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             letter-spacing: -0.02em;
         }
 
         .detail-rationale {
-            font-size: 0.88rem;
+            font-size: 0.84rem;
             line-height: 1.45;
             color: var(--text-secondary);
-            background: rgba(8, 12, 20, 0.4);
+            background: rgba(6, 9, 19, 0.4);
             border-left: 3px solid var(--primary);
-            padding: 0.7rem 0.9rem;
+            padding: 0.6rem 0.8rem;
             border-radius: 0 6px 6px 0;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
         }
 
         .timeline-container h3 {
             font-family: var(--font-display);
-            margin-bottom: 0.6rem;
-            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
@@ -649,26 +661,26 @@
             overflow-x: auto;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            background: rgba(22, 31, 54, 0.2);
+            background: rgba(20, 27, 48, 0.2);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             text-align: left;
         }
 
         th {
-            background: rgba(13, 19, 33, 0.85);
-            padding: 0.6rem 0.8rem;
+            background: rgba(11, 17, 33, 0.85);
+            padding: 0.55rem 0.75rem;
             font-weight: 600;
             color: var(--text-secondary);
             border-bottom: 1px solid var(--border-color);
         }
 
         td {
-            padding: 0.7rem 0.8rem;
+            padding: 0.6rem 0.75rem;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -686,7 +698,7 @@
         }
 
         .briefing-card {
-            background: rgba(22, 31, 54, 0.4);
+            background: rgba(20, 27, 48, 0.4);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 0.9rem 1.1rem;
@@ -702,7 +714,7 @@
         .briefing-header {
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.95rem;
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
@@ -711,14 +723,14 @@
         }
 
         .briefing-header svg {
-            width: 16px;
-            height: 16px;
+            width: 15px;
+            height: 15px;
             flex-shrink: 0;
         }
 
         .briefing-body {
-            font-size: 0.84rem;
-            line-height: 1.5;
+            font-size: 0.82rem;
+            line-height: 1.45;
             color: var(--text-secondary);
         }
 
@@ -727,13 +739,13 @@
             padding-left: 0;
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            margin-top: 0.4rem;
+            gap: 0.35rem;
+            margin-top: 0.35rem;
         }
 
         .briefing-body li {
             position: relative;
-            padding-left: 1rem;
+            padding-left: 0.9rem;
         }
 
         .briefing-body li::before {
@@ -762,12 +774,12 @@
             position: absolute;
             top: 0.8rem;
             right: 0.8rem;
-            background: rgba(8, 12, 20, 0.6);
+            background: rgba(6, 9, 19, 0.6);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 0.45rem;
             border-radius: 4px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             cursor: pointer;
             font-family: var(--font-display);
             font-weight: 600;
@@ -793,8 +805,8 @@
         }
 
         .empty-state svg {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             stroke: var(--text-secondary);
             opacity: 0.4;
         }
@@ -808,7 +820,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(8, 12, 20, 0.85);
+            background: rgba(6, 9, 19, 0.85);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
@@ -828,9 +840,9 @@
             background: var(--card-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            width: 800px;
-            max-width: 90%;
-            height: 600px;
+            width: 850px;
+            max-width: 92%;
+            height: 650px;
             max-height: 85%;
             display: flex;
             flex-direction: column;
@@ -849,7 +861,7 @@
             border-bottom: 1px solid var(--border-color);
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -873,12 +885,37 @@
             padding: 1.5rem;
             overflow-y: auto;
             flex-grow: 1;
-            font-family: monospace;
-            font-size: 0.82rem;
-            line-height: 1.5;
-            background: rgba(8, 12, 20, 0.6);
-            white-space: pre-wrap;
+            background: rgba(6, 9, 19, 0.55);
             color: var(--text-primary);
+        }
+
+        .modal-body h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 0.6rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+            margin-top: 1rem;
+        }
+
+        .modal-body p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .modal-body pre {
+            background: rgba(8, 12, 20, 0.7);
+            border: 1px solid var(--border-color);
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            margin-bottom: 1rem;
+            color: #d1d5db;
         }
 
         /* Toast notifications */
@@ -914,6 +951,10 @@
             <p class="welcome-subtitle">
                 An advanced multi-agent system designed to evaluate chronological behavioral engagement signals, identify disengagement vectors, and synthesize supportive management briefs.
             </p>
+        </div>
+
+        <div class="welcome-image-container">
+            <img src="/static/hero_bg.jpg" alt="Diagnostics Dashboard Overview" class="welcome-image">
         </div>
 
         <button class="btn enter-btn" id="enter-console-btn">Launch Diagnostics Console</button>
@@ -984,53 +1025,83 @@
                         <div class="employee-list" id="employee-list-container">
                             <div class="empty-state">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /></svg>
-                                <p>No registry logs found. Click 'Random Data' or 'Evaluate Registry' to start.</p>
+                                <p style="font-size:0.85rem;">Registry empty. Choose an Ingestion option to import employee records.</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tab 2: Multiple Ingestion Sources (Cloud, DB, Text Prompt, CSV) -->
+                    <!-- Tab 2: Multiple Ingestion Sources -->
                     <div class="panel-tab-content" id="paste-tab">
                         
-                        <div class="ingest-header">Database & Cloud Sync</div>
-                        <div class="sync-grid">
-                            <button class="sync-btn" id="db-sync-btn">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
-                                Postgres SQL
+                        <div class="ingest-header">Database Ingestion</div>
+                        <div class="ingest-box">
+                            <div class="form-group">
+                                <label for="db-url">Connection URL</label>
+                                <input type="text" id="db-url" class="form-control" value="postgresql://production-hr-db:5432/engagement">
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem;">
+                                <div class="form-group">
+                                    <label for="db-table">Table Name</label>
+                                    <input type="text" id="db-table" class="form-control" value="weekly_metrics">
+                                </div>
+                                <div class="form-group">
+                                    <label for="db-week">Target Week</label>
+                                    <input type="number" id="db-week" class="form-control" value="4" min="1">
+                                </div>
+                            </div>
+                            <button class="sync-btn" style="width:100%;" id="db-sync-btn">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+                                Pull Database Metrics
                             </button>
-                            <button class="sync-btn" id="s3-sync-btn">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42-3.32-3.13-6-6.5-6C6.07 5 3 8.07 3 12c0 2.21 2.24 4.5 4.5 4.5h10z"/></svg>
-                                Amazon S3
+                        </div>
+
+                        <div class="ingest-header">Cloud Bucket Ingestion</div>
+                        <div class="ingest-box">
+                            <div class="form-group">
+                                <label for="s3-uri">S3 Storage Path (URI)</label>
+                                <input type="text" id="s3-uri" class="form-control" value="s3://corporate-talent-logs/2026/Q3/week4.csv">
+                            </div>
+                            <div class="form-group">
+                                <label for="s3-week">Ingest Week Target</label>
+                                <input type="number" id="s3-week" class="form-control" value="4" min="1">
+                            </div>
+                            <button class="sync-btn" style="width:100%;" id="s3-sync-btn">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42-3.32-3.13-6-6.5-6C6.07 5 3 8.07 3 12c0 2.21 2.24 4.5 4.5 4.5h10z"/></svg>
+                                Sync Cloud Bucket
                             </button>
                         </div>
 
                         <div class="ingest-header">Extract Metrics via Prompt (LLM)</div>
-                        <div class="form-group">
-                            <label for="prompt-week">Target Week</label>
-                            <input type="number" id="prompt-week" class="form-control" value="4" min="1">
+                        <div class="ingest-box">
+                            <div class="form-group">
+                                <label for="prompt-week">Target Week Number</label>
+                                <input type="number" id="prompt-week" class="form-control" value="4" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="prompt-text">Human-Written Observations</label>
+                                <textarea id="prompt-text" class="form-control" placeholder="E.g., Arjun completed 5 tasks, latency was 3.2 hours on response communication, had 1 sick days, and 0 night logins."></textarea>
+                            </div>
+                            <button class="btn btn-secondary" style="width:100%; justify-content:center;" id="submit-prompt-btn">
+                                <span class="spinner spinner-white" id="prompt-spinner"></span>
+                                <span>Parse Text Observations</span>
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label for="prompt-text">Natural Language Description</label>
-                            <textarea id="prompt-text" class="form-control" placeholder="E.g., Arjun completed 5 tasks, latency was 3.2 hours on response communication, had 1 sick days, and 0 night logins."></textarea>
-                        </div>
-                        <button class="btn btn-secondary" style="width:100%; justify-content:center; margin-bottom:1rem;" id="submit-prompt-btn">
-                            <span class="spinner spinner-white" id="prompt-spinner"></span>
-                            <span>Extract & Save Metrics</span>
-                        </button>
 
                         <div class="ingest-header">Raw CSV Upload</div>
-                        <div class="form-group">
-                            <label for="paste-week">CSV Target Week</label>
-                            <input type="number" id="paste-week" class="form-control" value="1" min="1">
+                        <div class="ingest-box">
+                            <div class="form-group">
+                                <label for="paste-week">CSV Target Week</label>
+                                <input type="number" id="paste-week" class="form-control" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="paste-csv">Raw CSV Rows</label>
+                                <textarea id="paste-csv" class="form-control" placeholder="employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,sick_days&#10;Arjun,9,0.75,0,0&#10;Priya,8,1.0,0,0"></textarea>
+                            </div>
+                            <button class="btn" style="width:100%; justify-content:center;" id="submit-csv-btn">
+                                <span class="spinner spinner-white" id="csv-spinner"></span>
+                                <span>Ingest Raw CSV</span>
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label for="paste-csv">Raw CSV Rows</label>
-                            <textarea id="paste-csv" class="form-control" placeholder="employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,sick_days&#10;Arjun,9,0.75,0,0&#10;Priya,8,1.0,0,0"></textarea>
-                        </div>
-                        <button class="btn" style="width:100%; justify-content:center;" id="submit-csv-btn">
-                            <span class="spinner spinner-white" id="csv-spinner"></span>
-                            <span>Ingest Raw CSV</span>
-                        </button>
                     </div>
 
                     <!-- Tab 3: Custom Simulator -->
@@ -1065,6 +1136,25 @@
                                 <input type="number" id="sim-sick" class="form-control" value="0" min="0" placeholder="E.g. 1">
                             </div>
                         </div>
+
+                        <!-- Extended Simulator Sliders -->
+                        <div class="form-group">
+                            <label for="sim-hours">Weekly Working Hours Scheduled: <span id="hours-val">40</span>h</label>
+                            <input type="range" id="sim-hours" class="form-range" min="10" max="60" value="40" oninput="document.getElementById('hours-val').textContent = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label for="sim-accuracy">Task Delivery Quality Accuracy: <span id="accuracy-val">95</span>%</label>
+                            <input type="range" id="sim-accuracy" class="form-range" min="50" max="100" value="95" oninput="document.getElementById('accuracy-val').textContent = this.value">
+                        </div>
+                        <div class="form-group">
+                            <label for="sim-sentiment">Response Thread Tone</label>
+                            <select id="sim-sentiment" class="form-control">
+                                <option value="Neutral">Neutral / Functional</option>
+                                <option value="Constructive">Constructive / Collaborative</option>
+                                <option value="Withdrawn">Withdrawn / Short Replies</option>
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label for="sim-prev">Previous Status</label>
                             <select id="sim-prev" class="form-control">
@@ -1132,7 +1222,7 @@
         // Quotes for homepage rotation
         const quotes = [
             { text: "Employee engagement is the art of alignment, not the science of control.", author: "HR Leadership Insights" },
-            { text: "A supportive check-in beat a performance improvement plan every single time.", author: "Empathy-First Management Guide" },
+            { text: "A supportive check-in beats a performance improvement plan every single time.", author: "Empathy-First Management Guide" },
             { text: "Communication latency is often a reflection of systemic bottlenecks, not individual capacity.", author: "Operations Research" },
             { text: "Burnout is not a personal failure; it is an organizational indicator of resource deficits.", author: "Wellness at Work Initiative" },
             { text: "To prevent disengagement, listen to the behaviors that are silent in metrics logs.", author: "Google DeepMind Capstone Team" }
@@ -1190,14 +1280,15 @@
             enterBtn.addEventListener("click", () => {
                 welcomeView.style.display = "none";
                 consoleView.style.display = "flex";
-                fetchEmployees();
+                // Start with a clean/empty dashboard registry
+                employees = [];
+                renderEmployeeList();
             });
 
             // Back to home logo click
             logoTitle.addEventListener("click", () => {
                 consoleView.style.display = "none";
                 welcomeView.style.display = "flex";
-                // Reload quote
                 const nextQ = quotes[Math.floor(Math.random() * quotes.length)];
                 quoteText.textContent = `"${nextQ.text}"`;
                 quoteAuthor.textContent = `— ${nextQ.author}`;
@@ -1229,7 +1320,7 @@
                     const res = await fetch(`${API_URL}/mock-data`, { method: "POST" });
                     const result = await res.json();
                     if (result.success) {
-                        showToast("Generated mock weekly files week1.csv - week4.csv");
+                        showToast("Mock CSV registry generated week1.csv - week4.csv");
                         statusSpan.textContent = "Data ready. Run pipeline.";
                     }
                 } catch (e) {
@@ -1259,13 +1350,23 @@
 
             // SQL DB Sync
             dbSyncBtn.addEventListener("click", async () => {
-                statusSpan.textContent = "Connecting to PostgreSQL...";
+                statusSpan.textContent = "Connecting to Database...";
+                const payload = {
+                    db_url: document.getElementById("db-url").value,
+                    table_name: document.getElementById("db-table").value,
+                    target_week: parseInt(document.getElementById("db-week").value)
+                };
                 try {
-                    const res = await fetch(`${API_URL}/ingest/db`, { method: "POST" });
+                    const res = await fetch(`${API_URL}/ingest/db`, { 
+                        method: "POST", 
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
                     const data = await res.json();
                     if (data.success) {
                         showToast(data.message);
                         statusSpan.textContent = "DB sync completed.";
+                        switchTab("registry-tab");
                     }
                 } catch (e) {
                     showToast("DB sync error.", true);
@@ -1274,13 +1375,22 @@
 
             // S3 Bucket Sync
             s3SyncBtn.addEventListener("click", async () => {
-                statusSpan.textContent = "Connecting S3 buckets...";
+                statusSpan.textContent = "Syncing S3 buckets...";
+                const payload = {
+                    s3_uri: document.getElementById("s3-uri").value,
+                    target_week: parseInt(document.getElementById("s3-week").value)
+                };
                 try {
-                    const res = await fetch(`${API_URL}/ingest/s3`, { method: "POST" });
+                    const res = await fetch(`${API_URL}/ingest/s3`, { 
+                        method: "POST", 
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
                     const data = await res.json();
                     if (data.success) {
                         showToast(data.message);
                         statusSpan.textContent = "S3 download completed.";
+                        switchTab("registry-tab");
                     }
                 } catch (e) {
                     showToast("S3 sync error.", true);
@@ -1362,7 +1472,10 @@
                     avg_response_time: parseFloat(document.getElementById("sim-latency").value),
                     after_hours_logins: parseInt(document.getElementById("sim-logins").value),
                     sick_days: parseInt(document.getElementById("sim-sick").value),
-                    previous_classification: document.getElementById("sim-prev").value
+                    previous_classification: document.getElementById("sim-prev").value,
+                    weekly_hours: parseInt(document.getElementById("sim-hours").value),
+                    task_accuracy: parseInt(document.getElementById("sim-accuracy").value),
+                    sentiment: document.getElementById("sim-sentiment").value
                 };
                 
                 submitSimBtn.disabled = true;
@@ -1398,20 +1511,20 @@
                 }
             });
 
-            // Modal controller
+            // Modal controller (with professional parsed layout)
             historyBtn.addEventListener("click", async () => {
                 historyModal.classList.add("open");
-                modalBody.textContent = "Loading executive summary report...";
+                modalBody.innerHTML = "<p>Loading executive summary report...</p>";
                 try {
                     const res = await fetch(`${API_URL}/report/raw`);
                     if (res.status === 200) {
                         const txt = await res.text();
-                        modalBody.textContent = txt;
+                        renderProfessionalReport(txt);
                     } else {
-                        modalBody.textContent = "Report file not generated yet. Please evaluate the registry first.";
+                        modalBody.innerHTML = "<p>Report file not generated yet. Please evaluate the registry first.</p>";
                     }
                 } catch (e) {
-                    modalBody.textContent = "Failed to load report from server.";
+                    modalBody.innerHTML = "<p>Failed to load report from server.</p>";
                 }
             });
 
@@ -1466,7 +1579,7 @@
                 listContainer.innerHTML = `
                     <div class="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /></svg>
-                        <p>No registry logs found. Click 'Random Data' or 'Evaluate Registry' to start.</p>
+                        <p style="font-size:0.82rem;">Registry is empty. Import metrics from Database, Cloud, Prompt, or CSV first, then click 'Evaluate Registry'.</p>
                     </div>
                 `;
                 return;
@@ -1524,7 +1637,7 @@
             diagContainer.innerHTML = `
                 <div class="detail-hero">
                     <div class="score-circle-container">
-                        <svg class="score-circle-svg">
+                        <svg class="score-circle-svg" viewBox="0 0 70 70">
                             <circle class="score-circle-bg" cx="35" cy="35" r="30" />
                             <circle class="score-circle-fill" cx="35" cy="35" r="30" 
                                     stroke="${strokeColor}" 
@@ -1587,7 +1700,7 @@
             diagContainer.innerHTML = `
                 <div class="detail-hero">
                     <div class="score-circle-container">
-                        <svg class="score-circle-svg">
+                        <svg class="score-circle-svg" viewBox="0 0 70 70">
                             <circle class="score-circle-bg" cx="35" cy="35" r="30" />
                             <circle class="score-circle-fill" cx="35" cy="35" r="30" 
                                     stroke="${strokeColor}" 
@@ -1621,6 +1734,9 @@
                                 <tr><td>Response Time</td><td>${inputMetrics.avg_response_time} h</td></tr>
                                 <tr><td>Off-hours Logins</td><td>${inputMetrics.after_hours_logins}</td></tr>
                                 <tr><td>Sick Days</td><td>${inputMetrics.sick_days}</td></tr>
+                                <tr><td>Scheduled Hours</td><td>${inputMetrics.weekly_hours}h</td></tr>
+                                <tr><td>Accuracy</td><td>${inputMetrics.task_accuracy}%</td></tr>
+                                <tr><td>Tone</td><td>${inputMetrics.sentiment}</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1658,9 +1774,7 @@
         function renderBriefingCard(rawCard, classification = "Watch") {
             const glowClass = classification === "Silent Exit" ? "briefing-card-glow-exit" : (classification === "At Risk" ? "briefing-card-glow-risk" : "briefing-card-glow-watch");
             
-            // Extract the core briefing lines
             const lines = rawCard.split('\n');
-            let briefingText = "";
             let signals = "";
             let dialogue = [];
             let warnings = [];
@@ -1692,10 +1806,8 @@
                 }
             });
 
-            // Build beautiful styled card html blocks
             let html = '<div class="briefing-card-content">';
 
-            // 1. Observation Check
             if (observations || signals) {
                 html += `
                     <div class="briefing-card ${glowClass}">
@@ -1711,7 +1823,6 @@
                 `;
             }
 
-            // 2. Empirical Dialogue (EMPATHETIC TALK TRACK)
             if (dialogue.length > 0) {
                 html += `
                     <div class="briefing-card ${glowClass}">
@@ -1729,7 +1840,6 @@
                 `;
             }
 
-            // 3. Dialogue Warnings (Avoid)
             if (warnings.length > 0) {
                 html += `
                     <div class="briefing-card ${glowClass}">
@@ -1746,7 +1856,6 @@
                 `;
             }
 
-            // 4. Evidence-based support checklist
             if (actions.length > 0) {
                 html += `
                     <div class="briefing-card ${glowClass}">
@@ -1767,7 +1876,34 @@
             briefingContainer.innerHTML = html;
         }
 
-        // Copy Text to Clipboard Utility
+        // Professional layout parser for compiled executive report
+        function renderProfessionalReport(rawText) {
+            const sections = rawText.split("========================================================================");
+            let parsedHtml = "";
+
+            sections.forEach(sec => {
+                const lines = sec.trim().split("\n");
+                const header = lines[0].trim();
+                const rest = lines.slice(1).join("\n").trim();
+
+                if (!header) return;
+
+                if (header.includes("TEAM SUMMARY")) {
+                    parsedHtml += `<h2>Team Summary cohort list</h2><pre>${rest}</pre>`;
+                } else if (header.includes("INDIVIDUAL RISK CARDS")) {
+                    parsedHtml += `<h2>Individual Risk Cards</h2><pre>${rest}</pre>`;
+                } else if (header.includes("ARJUN BRIEFING")) {
+                    parsedHtml += `<h2>Arjun Empathetic Briefing</h2><pre>${rest}</pre>`;
+                } else if (header.includes("MEMORY FILE CONFIRMATION")) {
+                    parsedHtml += `<h2>Stored Memory Logs</h2><pre>${rest}</pre>`;
+                } else {
+                    parsedHtml += `<h2>${header}</h2><pre>${rest}</pre>`;
+                }
+            });
+
+            modalBody.innerHTML = parsedHtml;
+        }
+
         window.copyText = function(elementId) {
             const list = document.getElementById(elementId);
             if (!list) return;
@@ -1776,19 +1912,6 @@
                 showToast("Dialogue copied to clipboard!");
             });
         };
-
-        function switchTab(tabId) {
-            document.querySelectorAll(".tab-btn").forEach(btn => {
-                btn.classList.remove("active");
-                if (btn.getAttribute("onclick").includes(tabId)) {
-                    btn.classList.add("active");
-                }
-            });
-            document.querySelectorAll(".panel-tab-content").forEach(content => {
-                content.classList.remove("active");
-            });
-            document.getElementById(tabId).classList.add("active");
-        }
 
         function setLoading(btn, spinner, statusText, isLoading) {
             btn.disabled = isLoading;

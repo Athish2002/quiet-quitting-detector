@@ -332,6 +332,9 @@ class CustomEvaluatorInput(BaseModel):
     sick_days: int
     previous_classification: str = "Healthy"
     consecutive_weeks_elevated: int = 0
+    weekly_hours: int = 40
+    task_accuracy: int = 95
+    sentiment: str = "Neutral"
 
 
 @app.post("/api/score/custom")
@@ -407,12 +410,23 @@ def score_custom_employee(data: CustomEvaluatorInput):
         ) from e
 
 
+class DatabaseSyncInput(BaseModel):
+    db_url: str
+    table_name: str
+    target_week: int
+
+
+class S3SyncInput(BaseModel):
+    s3_uri: str
+    target_week: int
+
+
 @app.post("/api/ingest/db")
-def ingest_from_db():
+def ingest_from_db(data: DatabaseSyncInput):
     """Simulates ingesting data from a central corporate SQL database."""
     try:
         os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, "week4.csv")
+        file_path = os.path.join(WEEKLY_DIR, f"week{data.target_week}.csv")
         file_exists = os.path.exists(file_path)
         with open(file_path, "a", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
@@ -430,7 +444,7 @@ def ingest_from_db():
             writer.writerow(["Divya", "10", "0.4", "0", "0"])
         return {
             "success": True,
-            "message": "Successfully synchronized 2 employee records from PostgreSQL database (metrics_db).",
+            "message": f"Successfully synchronized 2 employee records from Database table '{data.table_name}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
@@ -439,11 +453,11 @@ def ingest_from_db():
 
 
 @app.post("/api/ingest/s3")
-def ingest_from_s3():
+def ingest_from_s3(data: S3SyncInput):
     """Simulates ingesting data from AWS S3 cloud buckets."""
     try:
         os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, "week4.csv")
+        file_path = os.path.join(WEEKLY_DIR, f"week{data.target_week}.csv")
         file_exists = os.path.exists(file_path)
         with open(file_path, "a", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
@@ -460,7 +474,7 @@ def ingest_from_s3():
             writer.writerow(["Ravi", "9", "0.6", "0", "0"])
         return {
             "success": True,
-            "message": "Successfully synchronized S3 bucket 's3://quiet-quitting-detector/week4/'.",
+            "message": f"Successfully downloaded bucket content from S3 path '{data.s3_uri}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
