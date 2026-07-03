@@ -1,55 +1,34 @@
 ========================================================================
 QUIET-QUITTING DETECTOR -- ENGAGEMENT REPORT
-Generated: 2026-06-29  14:56:30
+Generated: 2026-07-03  07:42:17
 ========================================================================
 
 TEAM SUMMARY
 ------------------------------------------------------------------------
 Employee     Score  Classification  Signals
 ------------ -----  --------------  ----------------------------------------
-Arjun            6  At Risk         Response Time Spike, Declining Task Completion
-Divya            6  At Risk         None
-Karthik          9  Silent Exit     Response Time Spike, Declining Task Completion
-Meena            4  Watch           Response Time Spike, Declining Task Completion, Increasing Sick Days
-Priya            4  Watch           Response Time Spike, Declining Task Completion
-Ravi             4  Watch           None
+Arjun            4  Watch           Declining Task Completion, Response Time Spike
+Divya            1  Healthy         None
+Karthik          4  Watch           Declining Task Completion, Response Time Spike
+Meena            4  Watch           Increasing Sick Days, Declining Task Completion, Response Time Spike
+Priya            4  Watch           Declining Task Completion, Response Time Spike
+Ravi             1  Healthy         None
 
 ------------------------------------------------------------------------
 INDIVIDUAL RISK CARDS (Flagged Employees)
 ------------------------------------------------------------------------
 
 Employee      : Arjun
-Score         : 6/10
-Classification: At Risk
-Rationale     : Arjun's response times have significantly increased and task completion has declined for three consecutive weeks. This pattern, combined with a history of sustained elevated risk without a recovery streak, indicates a need for proactive support. [Recurrence adjustment applied: score increased from 5 to 6.]
+Score         : 4/10
+Classification: Watch
+Rationale     : Evaluation could not be fully completed due to a temporary service error. Defaulted to Watch classification for safety.
 Signals:
-  [high] Response Time Spike
   [high] Declining Task Completion
+  [high] Response Time Spike
 
 Manager Briefing:
-Here is a supportive manager briefing for Arjun:
-
-### Manager Briefing: Arjun
-
-**Signals Detected**
-Over the past three weeks, we've observed a consistent increase in Arjun's average response times and a steady decline in his task completion rate. This pattern suggests Arjun might be facing challenges with his current workload or encountering difficulties with recent assignments. His sustained elevated risk without a recovery streak highlights the importance of proactive support.
-
-**Pre-Meeting Observation**
-Before your 1-on-1, consider observing Arjun's participation in team meetings, his interactions with colleagues, and his general demeanor. Pay attention to how he seems to be managing his daily tasks and if there are any visible signs of stress or being overwhelmed.
-
-**3 Supportive Things to Say**
-1.  "Arjun, I've noticed a recent shift in your response times and task completion, and I wanted to check in to see how things are going for you. Is there anything I can do to support you?"
-2.  "My priority is your well-being and success. If you're feeling overwhelmed or encountering any roadblocks, please know my door is open, and we can brainstorm solutions together."
-3.  "Is there anything specific that's been challenging recently, or perhaps a task where you feel you could use some extra support or resources?"
-
-**2 Things Never to Say**
-1.  "Why have your response times and task completion dropped so much? We need you to pick up the pace."
-2.  "Are you struggling with your work? This can't continue."
-
-**Evidence-Based Actions**
-1.  **Schedule a Supportive 1-on-1:** Arrange a private and supportive 1-on-1 meeting with Arjun this week to discuss his current workload and any potential challenges he might be facing. Approach this conversation with empathy and a focus on understanding his perspective.
-2.  **Review Workload & Priorities:** Collaboratively review Arjun's current tasks and priorities. Explore if any adjustments to his workload, deadlines, or resources could provide immediate relief and support.
-3.  **Offer Resources:** Remind Arjun about available company resources, such as learning and development opportunities or well-being programs, if appropriate and relevant to the conversation.
+Manager Briefing:
+A temporary issue prevented a detailed briefing from being generated. Please conduct the next 1-on-1 using open, supportive questions -- for example: 'How are you finding your current workload?' or 'Is there anything I can do to better support you right now?' Focus on listening and removing obstacles rather than drawing conclusions from metrics alone.
 ------------------------------------------------------------------------
 
 Employee      : Priya
@@ -57,23 +36,25 @@ Score         : 4/10
 Classification: Watch
 Rationale     : Evaluation could not be fully completed due to a temporary service error. Defaulted to Watch classification for safety.
 Signals:
-  [high] Response Time Spike
   [high] Declining Task Completion
+  [high] Response Time Spike
 
 Manager Briefing:
-No briefing required (Healthy status).
+Manager Briefing:
+A temporary issue prevented a detailed briefing from being generated. Please conduct the next 1-on-1 using open, supportive questions -- for example: 'How are you finding your current workload?' or 'Is there anything I can do to better support you right now?' Focus on listening and removing obstacles rather than drawing conclusions from metrics alone.
 ------------------------------------------------------------------------
 
 Employee      : Karthik
-Score         : 9/10
-Classification: Silent Exit
-Rationale     : Karthik's recent patterns in week 4, including a notable increase in response times and a decline in task completion, indicate a significant level of disengagement. The recurrence of these high and medium severity signals over two consecutive weeks, combined with a history of elevated risk, points to a concerning trend that requires attention and support. [Recurrence adjustment applied: score increased from 8 to 9.]
+Score         : 4/10
+Classification: Watch
+Rationale     : Evaluation could not be fully completed due to a temporary service error. Defaulted to Watch classification for safety.
 Signals:
-  [high] Response Time Spike
   [medium] Declining Task Completion
+  [high] Response Time Spike
 
 Manager Briefing:
-No briefing required (Healthy status).
+Manager Briefing:
+A temporary issue prevented a detailed briefing from being generated. Please conduct the next 1-on-1 using open, supportive questions -- for example: 'How are you finding your current workload?' or 'Is there anything I can do to better support you right now?' Focus on listening and removing obstacles rather than drawing conclusions from metrics alone.
 ------------------------------------------------------------------------
 
 Employee      : Meena
@@ -81,37 +62,38 @@ Score         : 4/10
 Classification: Watch
 Rationale     : Evaluation could not be fully completed due to a temporary service error. Defaulted to Watch classification for safety.
 Signals:
-  [high] Response Time Spike
-  [medium] Declining Task Completion
   [medium] Increasing Sick Days
+  [medium] Declining Task Completion
+  [high] Response Time Spike
 
 Manager Briefing:
-No briefing required (Healthy status).
+Manager Briefing:
+A temporary issue prevented a detailed briefing from being generated. Please conduct the next 1-on-1 using open, supportive questions -- for example: 'How are you finding your current workload?' or 'Is there anything I can do to better support you right now?' Focus on listening and removing obstacles rather than drawing conclusions from metrics alone.
 ------------------------------------------------------------------------
 
 MEMORY FILES SAVED
 ------------------------------------------------------------------------
-arjun_week1.json                     score=6  class=At Risk
-arjun_week2.json                     score=5  class=Watch
-arjun_week3.json                     score=9  class=Silent Exit
-arjun_week4.json                     score=6  class=At Risk
-divya_week1.json                     score=6  class=At Risk
-divya_week2.json                     score=6  class=At Risk
-divya_week3.json                     score=3  class=Healthy
-divya_week4.json                     score=6  class=At Risk
-karthik_week1.json                   score=6  class=At Risk
-karthik_week2.json                   score=6  class=At Risk
-karthik_week3.json                   score=3  class=Healthy
-karthik_week4.json                   score=9  class=Silent Exit
-meena_week1.json                     score=4  class=Watch
-meena_week2.json                     score=4  class=Watch
-meena_week3.json                     score=4  class=Watch
+arjun_week1.json                     score=1  class=Healthy
+arjun_week2.json                     score=1  class=Healthy
+arjun_week3.json                     score=4  class=Watch
+arjun_week4.json                     score=4  class=Watch
+divya_week1.json                     score=1  class=Healthy
+divya_week2.json                     score=1  class=Healthy
+divya_week3.json                     score=1  class=Healthy
+divya_week4.json                     score=1  class=Healthy
+karthik_week1.json                   score=1  class=Healthy
+karthik_week2.json                   score=1  class=Healthy
+karthik_week3.json                   score=1  class=Healthy
+karthik_week4.json                   score=4  class=Watch
+meena_week1.json                     score=1  class=Healthy
+meena_week2.json                     score=1  class=Healthy
+meena_week3.json                     score=1  class=Healthy
 meena_week4.json                     score=4  class=Watch
-priya_week1.json                     score=4  class=Watch
-priya_week2.json                     score=4  class=Watch
+priya_week1.json                     score=1  class=Healthy
+priya_week2.json                     score=1  class=Healthy
 priya_week3.json                     score=4  class=Watch
 priya_week4.json                     score=4  class=Watch
-ravi_week1.json                      score=4  class=Watch
-ravi_week2.json                      score=4  class=Watch
-ravi_week3.json                      score=4  class=Watch
-ravi_week4.json                      score=4  class=Watch
+ravi_week1.json                      score=1  class=Healthy
+ravi_week2.json                      score=1  class=Healthy
+ravi_week3.json                      score=1  class=Healthy
+ravi_week4.json                      score=1  class=Healthy

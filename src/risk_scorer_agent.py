@@ -240,6 +240,22 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
     # Step 2 ---------------------------------------------------------------
     apply_recurrence_bonus, current_healthy_streak = _compute_recurrence_bonus(history)
 
+    # Short-circuit: If there are no disengagement signals, employee is Healthy.
+    # Saves substantial API quota.
+    if not signals:
+        result = {
+            "score": 1,
+            "classification": "Healthy",
+            "rationale": f"{first_name} shows no detected disengagement signals this week.",
+            "healthy_streak": current_healthy_streak + 1,
+        }
+        os.makedirs(MEMORY_DIR, exist_ok=True)
+        memory_file_name = f"{first_name_lower}_week{week_number}.json"
+        current_file_path = MEMORY_DIR + "\\" + memory_file_name
+        with open(current_file_path, "w", encoding="utf-8") as fh:
+            json.dump(result, fh, indent=2)
+        return result
+
     # Step 3: Build the LLM prompt -- first name only, behavioral signals only.
     prompt = f"Employee First Name: {first_name}\n"  # Rule 1: first name only
     prompt += f"Current Week: {week_number}\n"

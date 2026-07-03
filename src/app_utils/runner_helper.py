@@ -92,6 +92,8 @@ def run_agent_sync(
     agent's model to a fallback candidate model and retries, ensuring robustness
     under heavy quota usage.
     """
+    import asyncio
+
     # 1. Determine model fallback sequence.
     current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
     fallback_models = [
@@ -109,41 +111,40 @@ def run_agent_sync(
 
     last_exception = None
 
+    async def _async_run(model_name: str) -> str:
+        # Set the model on the agent for this attempt.
+        agent.model = Gemini(model=model_name)
+
+        # Re-create runner so the new model configuration is fully initialized.
+        runner = InMemoryRunner(agent=agent, app_name=app_name)
+
+        # Pre-create the session before runner.run_async().
+        await runner.session_service.create_session(
+            app_name=runner.app_name,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+        response_text = ""
+        # run_async yields events and propagates exceptions directly
+        async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=prompt)],
+            ),
+        ):
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        response_text += part.text
+
+        return response_text.strip()
+
     for i, model_name in enumerate(candidates):
         try:
-            # Set the model on the agent for this attempt.
-            agent.model = Gemini(model=model_name)
-
-            # Re-create runner so the new model configuration is fully initialized.
-            runner = InMemoryRunner(agent=agent, app_name=app_name)
-
-            # Pre-create the session before runner.run().
-            runner.session_service.create_session_sync(
-                app_name=runner.app_name,
-                user_id=user_id,
-                session_id=session_id,
-            )
-
-            events = list(
-                runner.run(
-                    user_id=user_id,
-                    session_id=session_id,
-                    new_message=types.Content(
-                        role="user",
-                        parts=[types.Part.from_text(text=prompt)],
-                    ),
-                )
-            )
-
-            response_text = ""
-            for event in events:
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.text:
-                            response_text += part.text
-
-            # Success!
-            return response_text.strip()
+            return asyncio.run(_async_run(model_name))
 
         except Exception as e:
             last_exception = e
