@@ -4,9 +4,8 @@ import os
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
-from google.adk.runners import InMemoryRunner
-from google.genai import types
 
+from src.app_utils.runner_helper import run_agent_sync
 from src.data_layer.ingestion import ingest_weekly_csvs
 from src.data_layer.preprocessing import preprocess_employee_records
 from src.manager_briefing_agent import generate_briefing
@@ -121,25 +120,13 @@ def run_orchestrator() -> str:
     prompt += "Provide an executive summary of the cohort, followed by details for flagged employees and their briefings.\n"
     prompt += json.dumps(pipeline_results, indent=2)
 
-    runner = InMemoryRunner(agent=orchestrator_agent)
-
     try:
-        events = list(
-            runner.run(
-                user_id="admin",
-                session_id="session_orchestrator_summary",
-                new_message=types.Content(
-                    role="user", parts=[types.Part.from_text(text=prompt)]
-                ),
-            )
+        report_text = run_agent_sync(
+            orchestrator_agent,
+            user_id="admin",
+            session_id="session_orchestrator_summary",
+            prompt=prompt,
         )
-
-        report_text = ""
-        for event in events:
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text:
-                        report_text += part.text
 
         print("\n=== SYSTEM EXECUTION COMPLETED ===")
         return report_text.strip()
