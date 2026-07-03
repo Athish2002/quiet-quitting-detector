@@ -37,6 +37,7 @@ Strict Guidelines you must enforce:
 4. Gaps: If a week of data is missing, note the gap and explicitly mention that it should not be assumed as disengagement.
 5. Personal Information: Never mention or store personal opinions, health issues, or non-behavioral personal details.
 6. Error Safety: Never expose raw Gemini API errors in the final output.
+7. Forbidden Terms: Do NOT write or output terms like "disciplinary", "disciplinary action", "performance improvement plan", "PIP", "termination", "surveillance", "consequence", "consequences", or "warning letter" anywhere in your text. Even when writing the 'Things Never to Say' section, avoid using these words. Instead of saying "Never threaten disciplinary action", write "Never threaten formal review or negative feedback."
 
 Your briefing output MUST contain ALL of the following clearly labelled sections:
 - "Signals Detected": A brief explanation of the behavioral patterns identified.

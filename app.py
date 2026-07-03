@@ -220,45 +220,13 @@ def generate_mock_data():
         os.makedirs(WEEKLY_DIR, exist_ok=True)
         employees = ["Arjun", "Priya", "Karthik", "Divya", "Ravi", "Meena"]
 
-        # Define baseline trajectories for variance
-        trajectories = {
-            "Arjun": {
-                1: {"tasks": 9, "response": 0.8, "after_hours": 0, "sick": 0},
-                2: {"tasks": 7, "response": 1.4, "after_hours": 1, "sick": 0},
-                3: {"tasks": 5, "response": 3.0, "after_hours": 2, "sick": 1},
-                4: {"tasks": 3, "response": 5.0, "after_hours": 3, "sick": 2},
-            },
-            "Priya": {
-                1: {"tasks": 8, "response": 1.0, "after_hours": 0, "sick": 0},
-                2: {"tasks": 7, "response": 1.8, "after_hours": 1, "sick": 0},
-                3: {"tasks": 5, "response": 2.8, "after_hours": 1, "sick": 1},
-                4: {"tasks": 4, "response": 3.6, "after_hours": 2, "sick": 1},
-            },
-            "Karthik": {
-                1: {"tasks": 9, "response": 0.9, "after_hours": 0, "sick": 0},
-                2: {"tasks": 7, "response": 1.5, "after_hours": 1, "sick": 0},
-                3: {"tasks": 6, "response": 2.5, "after_hours": 2, "sick": 1},
-                4: {"tasks": 8, "response": 1.2, "after_hours": 1, "sick": 0},
-            },
-            "Divya": {
-                1: {"tasks": 10, "response": 0.5, "after_hours": 0, "sick": 0},
-                2: {"tasks": 9, "response": 0.6, "after_hours": 0, "sick": 0},
-                3: {"tasks": 10, "response": 0.5, "after_hours": 0, "sick": 0},
-                4: {"tasks": 9, "response": 0.6, "after_hours": 0, "sick": 0},
-            },
-            "Ravi": {
-                1: {"tasks": 9, "response": 0.6, "after_hours": 0, "sick": 0},
-                2: {"tasks": 8, "response": 0.7, "after_hours": 1, "sick": 0},
-                3: {"tasks": 9, "response": 0.6, "after_hours": 0, "sick": 0},
-                4: {"tasks": 9, "response": 0.7, "after_hours": 0, "sick": 0},
-            },
-            "Meena": {
-                1: {"tasks": 8, "response": 0.8, "after_hours": 0, "sick": 0},
-                2: {"tasks": 6, "response": 1.5, "after_hours": 1, "sick": 0},
-                3: {"tasks": 5, "response": 2.2, "after_hours": 2, "sick": 1},
-                4: {"tasks": 5, "response": 2.0, "after_hours": 1, "sick": 1},
-            },
-        }
+        # Dynamically shuffle and assign disengagement profiles for random demo variance
+        shuffled = list(employees)
+        random.shuffle(shuffled)
+
+        silent_exits = shuffled[:2]
+        at_risks = [shuffled[2]]
+        watches = [shuffled[3]]
 
         # Write 4 CSV files
         for w in range(1, 5):
@@ -275,25 +243,52 @@ def generate_mock_data():
                     ]
                 )
                 for emp in employees:
-                    base = trajectories[emp][w]
-                    # Add small random fluctuation
-                    tasks = max(0, base["tasks"] + random.choice([-1, 0, 1]))
-                    resp = round(
-                        max(0.1, base["response"] + random.uniform(-0.2, 0.2)), 2
-                    )
-                    after = (
-                        max(0, base["after_hours"] + random.choice([0, 1]))
-                        if base["after_hours"] > 0
-                        else 0
-                    )
-                    sick = (
-                        max(0, base["sick"] + random.choice([0, 1]))
-                        if base["sick"] > 0
-                        else 0
-                    )
-                    writer.writerow([emp, tasks, resp, after, sick])
+                    if emp in silent_exits:
+                        # Gradual disengagement collapse
+                        tasks = max(1, 9 - w * 2 + random.choice([-1, 0, 1]))
+                        resp = round(
+                            max(0.5, 0.6 + w * 1.15 + random.uniform(-0.3, 0.3)), 2
+                        )
+                        after = random.randint(1, w)
+                        sick = random.randint(0, w // 2)
+                    elif emp in at_risks:
+                        # Moderate disengagement trend
+                        tasks = max(2, 9 - w * 1.5 + random.choice([-1, 0, 1]))
+                        resp = round(
+                            max(0.4, 0.7 + w * 0.75 + random.uniform(-0.2, 0.2)), 2
+                        )
+                        after = random.randint(0, w // 2)
+                        sick = random.randint(0, 1)
+                    elif emp in watches:
+                        # Short decline with week 4 recovery
+                        if w == 3:
+                            tasks = 5
+                            resp = 2.9
+                            after = 2
+                            sick = 1
+                        elif w == 4:
+                            tasks = 8  # Recovery
+                            resp = 1.1
+                            after = 1
+                            sick = 0
+                        else:
+                            tasks = 9 - w
+                            resp = round(0.7 + w * 0.2, 2)
+                            after = 0
+                            sick = 0
+                    else:
+                        # Healthy stable baseline
+                        tasks = random.randint(8, 10)
+                        resp = round(max(0.3, 0.5 + random.uniform(-0.15, 0.15)), 2)
+                        after = random.choice([0, 1])
+                        sick = 0
 
-        return {"success": True, "message": "Mock data synthesized successfully."}
+                    writer.writerow([emp, int(tasks), resp, after, sick])
+
+        return {
+            "success": True,
+            "message": "Successfully generated new randomized weekly metric logs.",
+        }
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to generate mock data: {e!s}"
