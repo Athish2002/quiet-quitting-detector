@@ -954,7 +954,7 @@
         </div>
 
         <div class="welcome-image-container">
-            <img src="/static/hero_bg.jpg" alt="Diagnostics Dashboard Overview" class="welcome-image">
+            <img src="hero_bg.jpg" alt="Diagnostics Dashboard Overview" class="welcome-image">
         </div>
 
         <button class="btn enter-btn" id="enter-console-btn">Launch Diagnostics Console</button>
@@ -1271,22 +1271,36 @@
 
         // Initialization
         window.addEventListener("DOMContentLoaded", () => {
-            // Load a random quote on startup
-            const randQ = quotes[Math.floor(Math.random() * quotes.length)];
-            quoteText.textContent = `"${randQ.text}"`;
-            quoteAuthor.textContent = `— ${randQ.author}`;
+            // Restore session state
+            const savedView = localStorage.getItem("view");
+            if (savedView === "console") {
+                welcomeView.style.display = "none";
+                consoleView.style.display = "flex";
+                fetchEmployees().then(() => {
+                    const savedEmp = localStorage.getItem("selectedEmployee");
+                    if (savedEmp) {
+                        selectEmployee(savedEmp);
+                    }
+                });
+            } else {
+                welcomeView.style.display = "flex";
+                consoleView.style.display = "none";
+                const randQ = quotes[Math.floor(Math.random() * quotes.length)];
+                quoteText.textContent = `"${randQ.text}"`;
+                quoteAuthor.textContent = `— ${randQ.author}`;
+            }
 
             // Switch to console view
             enterBtn.addEventListener("click", () => {
+                localStorage.setItem("view", "console");
                 welcomeView.style.display = "none";
                 consoleView.style.display = "flex";
-                // Start with a clean/empty dashboard registry
-                employees = [];
-                renderEmployeeList();
+                fetchEmployees();
             });
 
             // Back to home logo click
             logoTitle.addEventListener("click", () => {
+                localStorage.setItem("view", "welcome");
                 consoleView.style.display = "none";
                 welcomeView.style.display = "flex";
                 const nextQ = quotes[Math.floor(Math.random() * quotes.length)];
@@ -1612,6 +1626,11 @@
 
         async function selectEmployee(name) {
             selectedEmployee = employees.find(e => e.name === name);
+            if (selectedEmployee) {
+                localStorage.setItem("selectedEmployee", name);
+            } else {
+                localStorage.removeItem("selectedEmployee");
+            }
             renderEmployeeList();
             renderDiagnostics();
             fetchBriefing(name);
