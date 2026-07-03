@@ -97,17 +97,15 @@ def run_agent_sync(
     # 1. Determine model fallback sequence.
     current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
     fallback_models = [
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash",
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-2.5-pro",
-        "gemini-1.5-pro",
     ]
 
-    candidates = [current_model_name]
-    for m in fallback_models:
-        if m not in candidates:
-            candidates.append(m)
+    candidates = fallback_models.copy()
+    if current_model_name not in candidates:
+        candidates.insert(0, current_model_name)
 
     last_exception = None
 
