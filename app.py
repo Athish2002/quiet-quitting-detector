@@ -8,9 +8,30 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from google.adk.agents import Agent
+from google.adk.models import Gemini
 from pydantic import BaseModel
 
+from src.app_utils.runner_helper import run_agent_sync
 from src.orchestrator_agent import run_orchestrator
+
+# Initialize the natural language metric extraction agent
+extractor_agent = Agent(
+    name="extractor_agent",
+    model=Gemini(model="gemini-3.1-flash-lite"),
+    instruction="""
+    You are an expert data extraction assistant.
+    Your task is to parse a text description of employee metrics and output a JSON block matching this schema:
+    {
+      "employee_name": "Name",
+      "tasks_completed": 10,
+      "avg_response_time_hours": 1.5,
+      "after_hours_logins": 2,
+      "sick_days": 1
+    }
+    Only output valid JSON. Do not write explanations or conversational text.
+    """,
+)
 
 app = FastAPI(
     title="Quiet-Quitting Detector UI",
@@ -383,6 +404,132 @@ def score_custom_employee(data: CustomEvaluatorInput):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Custom evaluation failed: {e!s}"
+        ) from e
+
+
+@app.post("/api/ingest/db")
+def ingest_from_db():
+    """Simulates ingesting data from a central corporate SQL database."""
+    try:
+        os.makedirs(WEEKLY_DIR, exist_ok=True)
+        file_path = os.path.join(WEEKLY_DIR, "week4.csv")
+        file_exists = os.path.exists(file_path)
+        with open(file_path, "a", encoding="utf-8", newline="") as fh:
+            writer = csv.writer(fh)
+            if not file_exists:
+                writer.writerow(
+                    [
+                        "employee_name",
+                        "tasks_completed",
+                        "avg_response_time_hours",
+                        "after_hours_logins",
+                        "sick_days",
+                    ]
+                )
+            writer.writerow(["Karthik", "7", "1.1", "0", "0"])
+            writer.writerow(["Divya", "10", "0.4", "0", "0"])
+        return {
+            "success": True,
+            "message": "Successfully synchronized 2 employee records from PostgreSQL database (metrics_db).",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Database synchronization failed: {e!s}"
+        ) from e
+
+
+@app.post("/api/ingest/s3")
+def ingest_from_s3():
+    """Simulates ingesting data from AWS S3 cloud buckets."""
+    try:
+        os.makedirs(WEEKLY_DIR, exist_ok=True)
+        file_path = os.path.join(WEEKLY_DIR, "week4.csv")
+        file_exists = os.path.exists(file_path)
+        with open(file_path, "a", encoding="utf-8", newline="") as fh:
+            writer = csv.writer(fh)
+            if not file_exists:
+                writer.writerow(
+                    [
+                        "employee_name",
+                        "tasks_completed",
+                        "avg_response_time_hours",
+                        "after_hours_logins",
+                        "sick_days",
+                    ]
+                )
+            writer.writerow(["Ravi", "9", "0.6", "0", "0"])
+        return {
+            "success": True,
+            "message": "Successfully synchronized S3 bucket 's3://quiet-quitting-detector/week4/'.",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Cloud download failed: {e!s}"
+        ) from e
+
+
+class NaturalLanguageInput(BaseModel):
+    week_number: int
+    text_prompt: str
+
+
+@app.post("/api/ingest/natural-language")
+def ingest_natural_language(data: NaturalLanguageInput):
+    """Parses a natural language prompt to extract metrics using LLM and saves it as a CSV record."""
+    try:
+        raw_json_str = run_agent_sync(
+            extractor_agent,
+            user_id="admin",
+            session_id=f"session_extract_{random.randint(1000, 9999)}",
+            prompt=data.text_prompt,
+        )
+
+        clean_str = raw_json_str.strip()
+        if clean_str.startswith("```"):
+            lines = clean_str.split("\n")
+            clean_str = "\n".join(
+                [line for line in lines if not line.startswith("```")]
+            )
+
+        extracted = json.loads(clean_str.strip())
+
+        name = extracted.get("employee_name", "Unknown").strip().capitalize()
+        tasks = int(extracted.get("tasks_completed", 0))
+        resp = float(extracted.get("avg_response_time_hours", 0.0))
+        after = int(extracted.get("after_hours_logins", 0))
+        sick = int(extracted.get("sick_days", 0))
+
+        os.makedirs(WEEKLY_DIR, exist_ok=True)
+        file_path = os.path.join(WEEKLY_DIR, f"week{data.week_number}.csv")
+
+        file_exists = os.path.exists(file_path)
+        with open(file_path, "a", encoding="utf-8", newline="") as fh:
+            writer = csv.writer(fh)
+            if not file_exists:
+                writer.writerow(
+                    [
+                        "employee_name",
+                        "tasks_completed",
+                        "avg_response_time_hours",
+                        "after_hours_logins",
+                        "sick_days",
+                    ]
+                )
+            writer.writerow([name, tasks, resp, after, sick])
+
+        return {
+            "success": True,
+            "extracted": {
+                "name": name,
+                "tasks_completed": tasks,
+                "avg_response_time": resp,
+                "after_hours_logins": after,
+                "sick_days": sick,
+            },
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to extract metrics: {e!s}"
         ) from e
 
 
