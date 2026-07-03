@@ -1,17 +1,17 @@
 ========================================================================
 QUIET-QUITTING DETECTOR -- ENGAGEMENT REPORT
-Generated: 2026-07-03  07:50:58
+Generated: 2026-07-03  08:00:31
 ========================================================================
 
 TEAM SUMMARY
 ------------------------------------------------------------------------
 Employee     Score  Classification  Signals
 ------------ -----  --------------  ----------------------------------------
-Arjun            8  Silent Exit     Declining Task Completion, Response Time Spike
+Arjun            8  Silent Exit     Response Time Spike, Declining Task Completion
 Divya            1  Healthy         None
-Karthik          6  At Risk         Declining Task Completion, Response Time Spike
-Meena            6  At Risk         Declining Task Completion, Increasing Sick Days, Response Time Spike
-Priya            7  At Risk         Declining Task Completion, Response Time Spike
+Karthik          6  At Risk         Response Time Spike, Declining Task Completion
+Meena            6  At Risk         Response Time Spike, Declining Task Completion, Increasing Sick Days
+Priya            7  At Risk         Response Time Spike, Declining Task Completion
 Ravi             1  Healthy         None
 
 ------------------------------------------------------------------------
@@ -21,138 +21,140 @@ INDIVIDUAL RISK CARDS (Flagged Employees)
 Employee      : Arjun
 Score         : 8/10
 Classification: Silent Exit
-Rationale     : Arjun has exhibited a consistent pattern of declining task completion and increased response times over the last three weeks. The escalation from previous weeks suggests he may be facing significant blockers or burnout. It is recommended to schedule a supportive one-on-one meeting to discuss his current workload and identify any professional obstacles that require management intervention or additional support.
+Rationale     : Arjun has demonstrated a sustained three-week pattern of high-severity behavioral signals, specifically regarding increased response times and declining task completion. The upward trend from previous weeks suggests he is experiencing significant friction, and a supportive, open-ended conversation is recommended to identify potential roadblocks or misalignment in his current role.
 Signals:
-  [high] Declining Task Completion
   [high] Response Time Spike
+  [high] Declining Task Completion
 
 Manager Briefing:
-### Manager Briefing: Supporting Arjun
+### Manager Briefing: Arjun
 
 **Signals Detected:**
-*   **Declining Task Completion:** There has been a noticeable decrease in task output over the last three weeks compared to your initial baseline. This may indicate that Arjun is encountering unexpected roadblocks, shifting priorities, or an unsustainable workload.
-*   **Response Time Spike:** Digital communication response times have lengthened significantly during this same period. This could suggest a need for process adjustments or that he is struggling to balance competing demands.
+Arjun has shown a sustained three-week pattern of increased response times to internal communications and a consistent decline in task completion rates. These signals suggest he may be encountering significant friction, workflow bottlenecks, or resource constraints that are impacting his ability to maintain his usual output.
 
 **Pre-Meeting Observation:**
-Before your 1-on-1, take a moment to review recent project timelines and team communication channels to see if there are common patterns—such as specific types of tasks or times of day—where these delays seem most prominent. This will help you provide concrete, non-judgmental support during your conversation.
+Before your 1-on-1, take a moment to review recent project documentation to see if there have been any shifts in project complexity or team dependencies that may have impacted Arjun’s workflow. Observe the team’s current communication flow to identify if there are any specific tools or channels where he appears to be struggling more than others. 
 
 **3 Supportive Things to Say:**
-1. "I’ve noticed things have been a bit challenging lately, and I wanted to check in to see how you’re feeling about your current workload."
-2. "My goal is to make sure you have what you need to succeed. Are there any specific obstacles or blockers I can help remove for you right now?"
-3. "I value your contributions to the team and want to make sure we’re setting you up for success. How can I best support you in your work this week?"
+1. "I’ve noticed you’ve been navigating a high volume of work lately, and I wanted to check in to see how you’re feeling about your current priorities."
+2. "I’m here to support you in removing any roadblocks that might be hindering your progress—is there anything currently making your day-to-day tasks more challenging than usual?"
+3. "I value your contributions to the team and want to make sure we’re setting you up for success. Is there anything you need from me to help balance your workload or clear your path?"
 
 **2 Things Never to Say:**
-1. "Why have your response times been so slow lately?" (This places blame and can make the employee feel defensive.)
-2. "I’m disappointed with the decline in your output compared to when you started." (This is discouraging and fails to address the potential underlying causes of the struggle.)
+1. "Why have you been so slow to respond to messages lately?" (Avoids accusatory framing.)
+2. "Your performance has dropped significantly over the last three weeks; what is going on?" (Avoids punitive or confrontational language.)
 
 **Evidence-Based Actions:**
-*   **Schedule a dedicated 1-on-1:** Prioritize a supportive, private meeting early this week. Focus the agenda entirely on his well-being and identifying "friction points" in his current workflow.
-*   **Offer Workload Review:** Together, review his current task list to see if any projects can be de-prioritized, delegated, or re-scoped to help him regain momentum and reduce potential feelings of being overwhelmed.
-*   **Reiterate Support Resources:** Gently remind Arjun of available internal resources, such as professional development opportunities or wellness programs, framing them as a way to invest in his long-term success and balance.
+* **Schedule a Dedicated 1-on-1:** Prioritize a supportive, informal conversation focused entirely on Arjun’s experience rather than his output. Create a safe space for him to share challenges without fear of judgment.
+* **Workload Audit:** Collaboratively review his current project list to identify "bottleneck" tasks. Offer to help reprioritize, delegate, or adjust deadlines to ensure his workload is manageable and aligned with current team capacity.
+* **Resource and Well-being Signposting:** Gently remind Arjun of available internal resources, such as professional development support or well-being tools, emphasizing that your goal is to ensure he feels supported and energized in his role.
 ------------------------------------------------------------------------
 
 Employee      : Priya
 Score         : 7/10
 Classification: At Risk
-Rationale     : Priya has shown a recurring pattern of declining task completion and increasing response times over the last three weeks. The escalation from a 'Healthy' status to 'At Risk' suggests she may be encountering significant challenges with her current workload or organizational support. It is recommended to initiate a supportive, open-ended check-in to identify potential blockers or capacity concerns.
+Rationale     : Priya has shown a recent, consistent trend of increased response times and declining task output over the past two weeks. While she maintained a healthy baseline previously, the current persistence of these signals suggests she may be encountering significant workflow obstacles or resource constraints that warrant a supportive 1:1 conversation to offer assistance and clarity.
 Signals:
-  [high] Declining Task Completion
   [high] Response Time Spike
+  [high] Declining Task Completion
 
 Manager Briefing:
-### Manager Briefing: Priya
+### Manager Briefing: Supportive Check-in for Priya
 
-**Signals Detected:**
-Priya has shown a recent trend of declining task completion and increased response times over the past three weeks. These shifts suggest she may be facing obstacles, feeling overwhelmed, or experiencing a misalignment in her current workflow. The focus of this interaction should be to identify any potential blockers and provide the necessary support to help her feel balanced and effective again.
+This document is designed to help you approach your upcoming conversation with Priya from a place of support, curiosity, and partnership. The goal is to identify and remove any barriers she may be facing.
 
-**Pre-Meeting Observation:**
-*   **Workflow Patterns:** Observe if there are specific projects or types of tasks that seem to be the primary friction points for Priya.
-*   **Communication Environment:** Note whether her response times vary based on the platform (e.g., email vs. instant messaging) or the complexity of the request, which may indicate a need for a change in how you collaborate.
-*   **Capacity Indicators:** Look for signs of "workload bloat," such as back-to-back meetings that might be preventing her from having the deep-focus time she needs to complete her tasks.
+***
 
-**3 Supportive Things to Say:**
-1. "I’ve noticed you’ve had a lot on your plate recently, and I want to make sure I’m supporting you in the best way possible. How are you feeling about your current workload?"
-2. "I value your input and want to ensure you have the space to do your best work. Are there any current projects or tasks that feel like they have unnecessary blockers right now?"
-3. "I’ve noticed it’s been a bit harder to connect lately, and I’d love to check in to see if there is anything I can adjust to help you manage your time more effectively."
+#### Signals Detected
+Priya has shown a consistent trend over the last two weeks regarding an increase in response times and a decrease in task output volume. Previously, her performance was steady and aligned with expectations. These signals are being treated as potential indicators that she is encountering workflow obstacles, competing priorities, or resource constraints rather than a decline in commitment.
 
-**2 Things Never to Say:**
-1. "Why have you been so slow to respond to messages lately?" (This sounds accusatory and shifts the focus to the behavior rather than the underlying cause.)
-2. "Your performance has been slipping, and you need to get back to your baseline." (This is demotivating and fails to acknowledge that there may be legitimate external challenges or blockers.)
+#### Pre-Meeting Observation
+Before your 1-on-1, take a moment to look at the following:
+*   **Workflow Patterns:** Are there specific project areas or types of tasks where the output has slowed most noticeably?
+*   **Recent Contributions:** Look for any "wins" or specific tasks Priya has completed recently to acknowledge her efforts during the meeting.
+*   **External Factors:** Consider if there have been any recent changes in team processes, tooling, or project scopes that might have inadvertently increased her administrative burden.
 
-**Evidence-Based Actions:**
-*   **Schedule a Dedicated 1-on-1:** Set aside an informal, non-urgent meeting specifically to listen to her perspective. Ensure this space feels safe and focused entirely on her well-being and professional success.
-*   **Conduct a Workload Review:** Review her current project list together to identify what can be prioritized, deprioritized, or delegated. Offer to help her set boundaries on "non-essential" tasks to clear her schedule for higher-impact work.
-*   **Connect to Resources:** Remind Priya of available organizational resources, such as workload management tools, time-management coaching, or mental health support, framing them as proactive steps for maintaining sustainable work habits.
+#### 3 Supportive Things to Say
+1. "I’ve noticed things have been a bit slower than usual lately, and I wanted to check in to see how you’re doing and if there is anything I can do to help clear the path for you."
+2. "My priority is to ensure you have what you need to feel successful and supported in your role. Are there any current roadblocks or shifting priorities I can help you navigate?"
+3. "I value your contributions to the team. Is there anything about our current workflow or your workload that feels particularly challenging right now?"
+
+#### 2 Things Never to Say
+1. "Why have you been so slow to respond to messages lately?" (This sounds accusatory and shifts the focus to performance rather than support.)
+2. "Your output has dropped significantly over the last two weeks—what is going on?" (This frames the conversation around a deficit and may put the employee on the defensive.)
+
+#### Evidence-Based Actions
+*   **Prioritize a Dedicated 1-on-1:** Schedule a space specifically for this conversation where you are both free from urgent deadlines. Lead with the goal of identifying "bottlenecks" rather than "performance gaps."
+*   **Collaborative Workload Audit:** During the meeting, review her current task list together. Offer to help her reprioritize, delegate, or postpone non-critical items if she feels overwhelmed by current volume.
+*   **Resource/Support Re-alignment:** Ask explicitly: "What tool, piece of information, or adjustment in process would make your day-to-day work easier right now?" Use her answers to provide actionable, concrete support following the meeting.
 ------------------------------------------------------------------------
 
 Employee      : Karthik
 Score         : 6/10
 Classification: At Risk
-Rationale     : Karthik has demonstrated a recent shift in engagement, specifically regarding declining task completion and increased response times over the past two weeks. While his historical record reflects sustained high engagement, these emerging behavioral signals suggest he may be encountering unforeseen obstacles or challenges. A supportive, open-ended conversation is recommended to identify potential blockers and offer necessary assistance.
+Rationale     : Karthik has shown a notable shift in behavioral patterns over the last two weeks, specifically regarding increased communication response times and a decline in task completion rates. While his historical records demonstrate consistent engagement, the emergence of these signals for two consecutive weeks suggests he may be facing blockers or feeling overwhelmed. A supportive, collaborative 1:1 check-in is recommended to identify potential resource needs or workload adjustments.
 Signals:
-  [medium] Declining Task Completion
   [high] Response Time Spike
+  [medium] Declining Task Completion
 
 Manager Briefing:
 ### Manager Briefing: Supporting Karthik
 
-This briefing is designed to help you initiate a constructive and empathetic conversation with Karthik. Given his strong track record, these signals are likely indicators that he is encountering hurdles rather than a lack of motivation.
+**Signals Detected**
+Karthik has demonstrated a shift in behavior over the past two weeks, characterized by an increase in communication response times and a decline in task completion rates. Given his historically consistent engagement, these signals suggest he may be encountering new challenges, facing unclear priorities, or feeling overwhelmed. The goal of this outreach is to provide support and remove any potential friction points.
 
-***
+**Pre-Meeting Observation**
+Before your 1-on-1, take a moment to review recent project documentation or team workflows. Observe if there are any patterns of technical bottlenecks, cross-departmental dependencies, or shifts in team priorities that might be inadvertently causing these delays for Karthik. Focus on identifying external factors rather than performance shortcomings.
 
-#### Signals Detected
-*   **Declining Task Completion:** There has been a noticeable decrease in completed outputs over the last two weeks. This is likely a sign of potential blockers, shifting priorities, or a need for clarity on current project scope.
-*   **Response Time Spike:** We have observed an increase in response times to communications. This can often be an indicator of a heavy workload, potential burnout, or simply that the communication channels being used are not currently the most effective for him.
+**3 Supportive Things to Say**
+1. "I’ve noticed things have been a bit slower lately, and I wanted to check in to see how you’re feeling about your current workload and if there’s anything I can do to help clear your path."
+2. "You’ve always been such a consistent contributor, so I wanted to make sure I’m providing the right level of support you need right now. How are you finding the balance of your current projects?"
+3. "I’d love to hear your perspective on the processes we’re currently using. Are there any specific blockers or areas where you feel like you're spinning your wheels that we could tackle together?"
 
-#### Pre-Meeting Observation
-Before your 1-on-1, take a moment to review his current project board. Observe if there are any complex or high-pressure tasks that align with the timeline of these signals. Additionally, check for any recent team shifts or process changes that might have unintentionally created friction in his daily workflow.
+**2 Things Never to Say**
+1. "Why have your response times and completion rates dropped so significantly lately?" (This is accusatory and puts the employee on the defensive.)
+2. "I need you to get your performance back to where it was immediately." (This focuses on output rather than well-being and is demotivating.)
 
-#### 3 Supportive Things to Say
-1. "I’ve noticed you’ve been navigating a lot of work lately, and I wanted to check in to see how you’re feeling about your current capacity."
-2. "I value the consistent contributions you’ve made to the team. Is there anything currently standing in your way that I can help remove or simplify for you?"
-3. "I want to ensure you have the support you need to be successful—are there any tools or resources I can provide to make your day-to-day workflow feel more manageable?"
-
-#### 2 Things Never to Say
-1. "Why have you been so slow to respond to your messages lately?" (This sounds accusatory and shifts the focus to blame rather than support.)
-2. "Your performance has dropped significantly over the last two weeks; what is going on?" (This phrasing creates defensiveness and pressure rather than a safe space for dialogue.)
-
-#### Evidence-Based Actions
-*   **Prioritize a 1-on-1 Connection:** Schedule a dedicated, non-rushed check-in this week. Focus the conversation entirely on his well-being and identifying any "hidden" bottlenecks in his current tasks.
-*   **Collaborative Workload Review:** Review his current task list together. Offer to help him reprioritize, delegate, or adjust deadlines for non-essential items to alleviate immediate pressure.
-*   **Clarify Communication Preferences:** Ask if his current method of communication is working for him or if he would prefer a different cadence/channel to ensure he feels supported rather than monitored.
+**Evidence-Based Actions**
+*   **Schedule a Dedicated 1-on-1:** Prioritize a time this week for a low-pressure conversation. Frame the meeting as an opportunity to review his current capacity rather than an audit of his tasks.
+*   **Review and Prioritize:** During your meeting, walk through his current list of responsibilities together. Ask him to identify his "top three" priorities and explicitly offer to help pause, delegate, or defer lower-priority tasks that may be contributing to his feeling of being overwhelmed.
+*   **Connect to Resources:** If Karthik mentions stress or difficulty managing the current volume of work, gently remind him of available company support systems or wellness programs that he can utilize to help manage his well-being.
 ------------------------------------------------------------------------
 
 Employee      : Meena
 Score         : 6/10
 Classification: At Risk
-Rationale     : Meena has transitioned from a stable baseline to demonstrating consistent disengagement signals over the last two weeks, specifically regarding declining task completion, increased absences, and slower communication response times. The shift from her previous 6-week streak of healthy engagement suggests a need for an empathetic, supportive check-in to identify potential roadblocks or capacity concerns.
+Rationale     : Meena has shown a consistent trend over the last two weeks regarding increased response times, a decline in task completion volume, and an increase in absences. While her prior performance was consistently healthy, these emerging behavioral signals suggest she may be facing challenges or burnout that would benefit from a supportive, open dialogue regarding her current workload and professional needs.
 Signals:
+  [high] Response Time Spike
   [medium] Declining Task Completion
   [medium] Increasing Sick Days
-  [high] Response Time Spike
 
 Manager Briefing:
 ### Manager Briefing: Supporting Meena
 
 **Signals Detected**
-Meena has recently shifted from a period of strong, consistent engagement to showing a few indicators that she may be struggling. Specifically, we have observed a decline in completed deliverables, a rise in reported absences, and an increase in response times for internal communications. These signals suggest that Meena may be encountering unforeseen challenges, and a proactive, supportive outreach is recommended to help her regain her footing.
+Over the past two weeks, Meena’s behavioral patterns have shifted, showing a higher response time for communications, a slight decline in task completion volume, and an increase in absences. It is important to note that Meena has historically maintained a healthy, consistent performance baseline. These signals are being interpreted as potential indicators of burnout or external stressors rather than a lack of motivation, and they represent an opportunity to provide support.
 
 **Pre-Meeting Observation**
-Before your 1-on-1, take a moment to review the current status of her projects to identify any specific bottlenecks where she might be feeling stuck. Observe if there are recurring patterns in the tasks she is finding difficult or if there are particular times of the day/week when her communication slows down. This will help you frame the conversation around problem-solving rather than tracking output.
+Before your 1-on-1, take a moment to review:
+*   **Workflow Bottlenecks:** Look for any recent changes in project requirements or team processes that might be creating friction for Meena.
+*   **Team Dynamics:** Observe if there have been any shifts in team collaboration or communication channels that might be inadvertently impacting her workflow.
+*   **Note on Data:** If there are any gaps in reporting from previous weeks, please treat those as neutral data points; do not assume those gaps correlate with performance or engagement.
 
 **3 Supportive Things to Say**
-1. "Meena, I’ve noticed you’ve been navigating a lot lately, and I wanted to check in and see how you’re feeling about your current workload."
-2. "I value your contribution to the team, and I want to ensure you have the support or resources you need to feel successful and energized in your role."
-3. "Is there anything I can help clear off your plate or any processes we can adjust to make your day-to-day workflow smoother?"
+1. "I’ve noticed things have been a bit challenging lately, and I wanted to check in to see how you’re feeling about your current workload."
+2. "Your contributions are highly valued here. Is there anything I can do to better support you or help clear any obstacles in your way right now?"
+3. "I want to make sure you have the balance you need to stay healthy and productive. Are there any projects where you feel we could adjust priorities or expectations?"
 
 **2 Things Never to Say**
-1. "I’ve noticed your performance has dropped off significantly over the last two weeks—what is going on?" (This is accusatory and induces defensiveness).
-2. "Your recent absences and slow responses are making it hard for the rest of the team to keep up." (This focuses on blame rather than collaborative support).
+1. "Why have your response times been so slow lately?" (This is accusatory and puts the employee on the defensive.)
+2. "I noticed you’ve been taking more sick days; you need to make sure you're present for the team." (This undermines trust and shows a lack of empathy regarding health and well-being.)
 
 **Evidence-Based Actions**
-*   **Prioritization Audit:** Schedule a dedicated 1-on-1 to review her task list. Offer to help her re-prioritize or deprioritize non-essential items to reduce immediate pressure and clarify what is most critical this week.
-*   **Communication Review:** Discuss if her current communication channels (e.g., Slack, email, meetings) are working for her. Ask if she would prefer a more focused communication style or specific "focus time" blocks where she is not expected to respond immediately.
-*   **Well-being Resource Connection:** Gently remind her of the company’s well-being resources or EAP (Employee Assistance Program) available to her, framing it as a standard support tool for any employee navigating busy or challenging periods.
+*   **Schedule a Dedicated Wellbeing Check-in:** Set aside a time specifically focused on Meena’s experience rather than project status. Approach this as a listening session where the goal is to understand how she is feeling about her role and current capacity.
+*   **Review and Adjust Workload:** Based on your conversation, identify one or two tasks that could be re-prioritized, delegated, or deferred to alleviate immediate pressure and prevent further burnout.
+*   **Reiterate Support Resources:** Gently remind Meena of available company support systems, such as employee assistance programs or flexible working policies, to ensure she knows that her well-being is a priority for the team.
 ------------------------------------------------------------------------
 
 MEMORY FILES SAVED

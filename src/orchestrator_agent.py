@@ -39,6 +39,35 @@ orchestrator_agent = Agent(
 )
 
 
+def _get_flexible_value(row: dict, aliases: list[str], default: str = "") -> str:
+    """Finds a column in the row matching any of the alias patterns (fuzzy match) and returns its value."""
+    headers = list(row.keys())
+
+    # 1. Exact match (case-insensitive, ignores spaces/underscores/dashes)
+    for h in headers:
+        if not h:
+            continue
+        h_clean = h.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
+        for alias in aliases:
+            alias_clean = (
+                alias.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
+            )
+            if h_clean == alias_clean:
+                return row.get(h) or default
+
+    # 2. Substring match
+    for h in headers:
+        if not h:
+            continue
+        h_clean = h.strip().lower()
+        for alias in aliases:
+            alias_clean = alias.strip().lower()
+            if alias_clean in h_clean or h_clean in alias_clean:
+                return row.get(h) or default
+
+    return default
+
+
 def run_orchestrator() -> str:
     """Orchestrates the entire quiet quitting detection pipeline."""
     weekly_folder = "data/weekly"
@@ -83,40 +112,96 @@ def run_orchestrator() -> str:
                 reader = csv.DictReader(f)
                 for row in reader:
                     # Rule 1: First name only
-                    raw_name = (
-                        row.get("employee_name")
-                        or row.get("name")
-                        or row.get("first_name")
-                        or "Unknown"
+                    raw_name = _get_flexible_value(
+                        row,
+                        [
+                            "employee_name",
+                            "name",
+                            "first_name",
+                            "employee",
+                            "username",
+                            "user",
+                            "first name",
+                            "employee name",
+                        ],
+                        "Unknown",
                     )
                     first_name = raw_name.split()[0]
 
-                    # Safely convert metrics
+                    # Safely convert metrics dynamically using aliases
                     try:
                         completed_tasks = int(
-                            row.get("tasks_completed")
-                            or row.get("completed_tasks")
-                            or 0
+                            _get_flexible_value(
+                                row,
+                                [
+                                    "tasks_completed",
+                                    "completed_tasks",
+                                    "tasks",
+                                    "completed",
+                                    "task_count",
+                                    "tasks completed",
+                                    "completed tasks",
+                                ],
+                                "0",
+                            )
                         )
                     except ValueError:
                         completed_tasks = 0
 
                     try:
                         response_time = float(
-                            row.get("avg_response_time_hours")
-                            or row.get("response_time")
-                            or 0.0
+                            _get_flexible_value(
+                                row,
+                                [
+                                    "avg_response_time_hours",
+                                    "response_time",
+                                    "avg_response_time",
+                                    "response_time_hours",
+                                    "latency",
+                                    "average response time",
+                                    "response time",
+                                ],
+                                "0.0",
+                            )
                         )
                     except ValueError:
                         response_time = 0.0
 
                     try:
-                        after_hours_logins = int(row.get("after_hours_logins") or 0)
+                        after_hours_logins = int(
+                            _get_flexible_value(
+                                row,
+                                [
+                                    "after_hours_logins",
+                                    "after_hours",
+                                    "logins",
+                                    "after hours logins",
+                                    "night_logins",
+                                    "after-hours",
+                                    "afterhours",
+                                ],
+                                "0",
+                            )
+                        )
                     except ValueError:
                         after_hours_logins = 0
 
                     try:
-                        sick_days = int(row.get("sick_days") or 0)
+                        sick_days = int(
+                            _get_flexible_value(
+                                row,
+                                [
+                                    "sick_days",
+                                    "sick_leaves",
+                                    "sick",
+                                    "absences",
+                                    "sick days",
+                                    "leaves",
+                                    "absent",
+                                ],
+                                "0",
+                            )
+                        )
                     except ValueError:
                         sick_days = 0
 
