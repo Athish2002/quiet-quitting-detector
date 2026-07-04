@@ -120,6 +120,24 @@ def _detect_raw_flags(
             if sick > baseline_sick + SICK_DAY_INCREASE:  # risen above own baseline
                 flags.append("Increasing Sick Days")
 
+        # --- Signal 5: Quality Degradation ---
+        accuracy = week.get("task_accuracy")
+        if accuracy is not None and accuracy < 85:
+            flags.append("Quality Degradation")
+
+        # --- Signal 6: Low Activity / Burnout Risk ---
+        hours = week.get("weekly_hours")
+        if hours is not None:
+            if hours < 30:
+                flags.append("Low Activity")
+            elif hours > 50:
+                flags.append("Burnout Risk")
+
+        # --- Signal 7: Withdrawn Communication ---
+        sentiment = week.get("sentiment")
+        if sentiment is not None and sentiment.strip().lower() == "withdrawn":
+            flags.append("Withdrawn Communication")
+
         week_flags[week_num] = flags
 
     return week_flags
@@ -218,6 +236,33 @@ def _assign_severity(
         )
         diff = worst - baseline_sick
         return "high" if diff >= 3 else "medium" if diff >= 2 else "low"
+
+    if signal_name == "Quality Degradation":
+        worst_acc = min(
+            (w.get("task_accuracy") or 100)
+            for w in full_timeline
+            if w.get("week") in weeks_detected
+        )
+        return "high" if worst_acc < 70 else "medium" if worst_acc < 80 else "low"
+
+    if signal_name == "Low Activity":
+        worst_hours = min(
+            (w.get("weekly_hours") or 40)
+            for w in full_timeline
+            if w.get("week") in weeks_detected
+        )
+        return "high" if worst_hours < 20 else "medium" if worst_hours < 25 else "low"
+
+    if signal_name == "Burnout Risk":
+        worst_hours = max(
+            (w.get("weekly_hours") or 40)
+            for w in full_timeline
+            if w.get("week") in weeks_detected
+        )
+        return "high" if worst_hours > 60 else "medium" if worst_hours > 55 else "low"
+
+    if signal_name == "Withdrawn Communication":
+        return "medium"
 
     return "medium"  # fallback
 

@@ -137,48 +137,39 @@ def get_employees_status():
 
 @app.get("/api/employee/{name}/briefing")
 def get_employee_briefing(name: str):
-    """Loads the manager briefing card contents from the final report file for the specified employee."""
-    report_path = "engagement_report.txt"
-    if not os.path.exists(report_path):
-        raise HTTPException(
-            status_code=404, detail="Engagement report not generated yet."
-        )
-
-    name.strip().lower()
-    try:
-        with open(report_path, encoding="utf-8") as fh:
-            content = fh.read()
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Could not read report file: {e!s}"
-        ) from e
-
-    # Find the employee card block in the report
-    marker = f"Employee      : {name.capitalize()}"
-    if marker not in content:
-        # Check if the name exists inside the raw file
+    """Loads the manager briefing card contents from the employee's latest memory file."""
+    name_lower = name.strip().lower()
+    pattern = os.path.join(MEMORY_DIR, f"{name_lower}_week*.json")
+    memory_files = glob.glob(pattern)
+    
+    if not memory_files:
         return {
             "found": False,
             "briefing": "No individual briefing card found for this employee.",
         }
-
-    # Extract block between this card and the next line separator
+        
+    # Get the latest week file
+    latest_file = max(memory_files, key=lambda x: int(os.path.basename(x).replace(f"{name_lower}_week", "").replace(".json", "")))
+    
     try:
-        start_idx = content.find(marker)
-        # End of the block is either the next "-----" or the end of the report
-        next_sep = content.find(
-            "------------------------------------------------------------------------",
-            start_idx + len(marker),
-        )
-        if next_sep == -1:
-            block = content[start_idx:]
+        with open(latest_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        if "briefing" in data and data["briefing"]:
+            return {
+                "found": True,
+                "briefing": data["briefing"],
+                "raw_card": data["briefing"]
+            }
         else:
-            block = content[start_idx:next_sep]
-
-        return {"found": True, "raw_card": block.strip()}
+            return {
+                "found": False,
+                "briefing": "No individual briefing card found for this employee.",
+                "raw_card": ""
+            }
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Failed to parse briefing block: {e!s}"
+            status_code=500, detail=f"Could not read memory file: {e!s}"
         ) from e
 
 
@@ -218,15 +209,28 @@ def generate_mock_data():
     """Generates 4 weekly CSV files with randomized employee trajectories."""
     try:
         os.makedirs(WEEKLY_DIR, exist_ok=True)
+        os.makedirs(MEMORY_DIR, exist_ok=True)
+        
+        # Clear existing CSV and Memory files for a fresh start
+        for f in glob.glob(os.path.join(WEEKLY_DIR, "*.csv")):
+            os.remove(f)
+        for f in glob.glob(os.path.join(MEMORY_DIR, "*.json")):
+            os.remove(f)
+
         employees = ["Arjun", "Priya", "Karthik", "Divya", "Ravi", "Meena"]
 
-        # Dynamically shuffle and assign disengagement profiles for random demo variance
-        shuffled = list(employees)
-        random.shuffle(shuffled)
-
-        silent_exits = shuffled[:2]
-        at_risks = [shuffled[2]]
-        watches = [shuffled[3]]
+        # Assign roles probabilistically for true randomization
+        emp_profiles = {}
+        for emp in employees:
+            r = random.random()
+            if r < 0.15:
+                emp_profiles[emp] = "Silent Exit"
+            elif r < 0.30:
+                emp_profiles[emp] = "At Risk"
+            elif r < 0.45:
+                emp_profiles[emp] = "Watch"
+            else:
+                emp_profiles[emp] = "Healthy"
 
         # Write 4 CSV files
         for w in range(1, 5):
@@ -240,50 +244,91 @@ def generate_mock_data():
                         "avg_response_time_hours",
                         "after_hours_logins",
                         "sick_days",
+                        "weekly_hours",
+                        "task_accuracy",
+                        "sentiment"
                     ]
                 )
                 for emp in employees:
-                    if emp in silent_exits:
-                        # Gradual disengagement collapse
-                        tasks = max(1, 9 - w * 2 + random.choice([-1, 0, 1]))
-                        resp = round(
-                            max(0.5, 0.6 + w * 1.15 + random.uniform(-0.3, 0.3)), 2
-                        )
-                        after = random.randint(1, w)
-                        sick = random.randint(0, w // 2)
-                    elif emp in at_risks:
+                    profile = emp_profiles[emp]
+                    if profile == "Silent Exit":
+                        # Gradual disengagement collapse with random variance
+                        tasks = max(1, 10 - int(w * 2.5) + random.randint(-1, 1))
+                        resp = round(max(0.5, 0.4 + w * 1.2 + random.uniform(-0.4, 0.6)), 2)
+                        after = random.randint(1, max(1, w))
+                        sick = random.randint(0, max(0, w - 2))
+                        hours = max(35, 45 - (w * 2) + random.randint(-2, 2))
+                        acc = max(70, 98 - (w * 5) + random.randint(-5, 5))
+                        sent = random.choice(["Negative", "Neutral"]) if w > 2 else "Neutral"
+                    elif profile == "At Risk":
                         # Moderate disengagement trend
-                        tasks = max(2, 9 - w * 1.5 + random.choice([-1, 0, 1]))
-                        resp = round(
-                            max(0.4, 0.7 + w * 0.75 + random.uniform(-0.2, 0.2)), 2
-                        )
-                        after = random.randint(0, w // 2)
+                        tasks = max(2, 10 - int(w * 1.5) + random.randint(-2, 1))
+                        resp = round(max(0.4, 0.5 + w * 0.6 + random.uniform(-0.2, 0.4)), 2)
+                        after = random.randint(0, max(1, w - 1))
                         sick = random.randint(0, 1)
-                    elif emp in watches:
+                        hours = max(38, 48 - (w * 1.5) + random.randint(-3, 3))
+                        acc = max(75, 95 - (w * 3) + random.randint(-3, 3))
+                        sent = random.choice(["Neutral", "Negative"])
+                    elif profile == "Watch":
                         # Short decline with week 4 recovery
                         if w == 3:
-                            tasks = 5
-                            resp = 2.9
-                            after = 2
-                            sick = 1
+                            tasks = random.randint(4, 6)
+                            resp = round(random.uniform(1.5, 2.5), 2)
+                            after = random.randint(1, 2)
+                            sick = random.randint(0, 1)
+                            hours = random.randint(50, 60)
+                            acc = random.randint(80, 85)
+                            sent = "Negative"
                         elif w == 4:
-                            tasks = 8  # Recovery
-                            resp = 1.1
-                            after = 1
-                            sick = 0
-                        else:
-                            tasks = 9 - w
-                            resp = round(0.7 + w * 0.2, 2)
+                            tasks = random.randint(8, 10)  # Recovery
+                            resp = round(random.uniform(0.5, 1.2), 2)
                             after = 0
                             sick = 0
+                            hours = random.randint(40, 42)
+                            acc = random.randint(92, 98)
+                            sent = "Positive"
+                        else:
+                            tasks = max(5, 10 - w + random.randint(-1, 0))
+                            resp = round(0.5 + w * 0.3 + random.uniform(-0.1, 0.2), 2)
+                            after = 0
+                            sick = 0
+                            hours = random.randint(42, 48)
+                            acc = random.randint(88, 95)
+                            sent = "Neutral"
                     else:
                         # Healthy stable baseline
-                        tasks = random.randint(8, 10)
-                        resp = round(max(0.3, 0.5 + random.uniform(-0.15, 0.15)), 2)
-                        after = random.choice([0, 1])
+                        tasks = random.randint(8, 11)
+                        resp = round(max(0.2, 0.4 + random.uniform(-0.15, 0.2)), 2)
+                        after = random.choice([0, 0, 1])
                         sick = 0
+                        hours = random.randint(38, 42)
+                        acc = random.randint(94, 100)
+                        sent = random.choice(["Positive", "Neutral"])
 
-                    writer.writerow([emp, int(tasks), resp, after, sick])
+                    writer.writerow([emp, int(tasks), resp, after, sick, int(hours), int(acc), sent])
+
+                    # Write mock memory files for weeks 1-3 so history renders in the UI
+                    if w < 4:
+                        if profile == "Silent Exit":
+                            sc = 4 if w == 1 else (6 if w == 2 else 8)
+                        elif profile == "At Risk":
+                            sc = 2 if w == 1 else (4 if w == 2 else 6)
+                        elif profile == "Watch":
+                            sc = 2 if w < 3 else 4
+                        else:
+                            sc = random.randint(1, 2)
+                        
+                        cls_map = {1: "Healthy", 2: "Healthy", 4: "Watch", 6: "At Risk", 8: "Silent Exit"}
+                        
+                        mock_memory = {
+                            "score": sc,
+                            "classification": cls_map.get(sc, "Healthy"),
+                            "rationale": "Historical data point.",
+                            "healthy_streak": w if sc <= 2 else 0
+                        }
+                        mem_path = os.path.join(MEMORY_DIR, f"{emp.lower()}_week{w}.json")
+                        with open(mem_path, "w", encoding="utf-8") as mf:
+                            json.dump(mock_memory, mf, indent=2)
 
         return {
             "success": True,
@@ -346,24 +391,26 @@ def score_custom_employee(data: CustomEvaluatorInput):
         # 1. Synthesize mock history file for memory load if provided
         if data.previous_classification != "Healthy":
             os.makedirs(MEMORY_DIR, exist_ok=True)
-            # Write a mock history file for the preceding week
-            prev_week = data.week_number - 1
-            if prev_week > 0:
-                mock_hist = {
-                    "score": (
-                        6
-                        if data.previous_classification == "At Risk"
-                        else (8 if data.previous_classification == "Silent Exit" else 4)
-                    ),
-                    "classification": data.previous_classification,
-                    "rationale": "Mocked historical classification.",
-                    "healthy_streak": 0,
-                }
-                hist_path = os.path.join(
-                    MEMORY_DIR, f"{name_lower}_week{prev_week}.json"
-                )
-                with open(hist_path, "w", encoding="utf-8") as fh:
-                    json.dump(mock_hist, fh, indent=2)
+            # Write mock history files for the preceding weeks based on consecutive_weeks_elevated
+            weeks_to_mock = max(1, data.consecutive_weeks_elevated)
+            for i in range(weeks_to_mock):
+                prev_week = data.week_number - 1 - i
+                if prev_week > 0:
+                    mock_hist = {
+                        "score": (
+                            6
+                            if data.previous_classification == "At Risk"
+                            else (8 if data.previous_classification == "Silent Exit" else 4)
+                        ),
+                        "classification": data.previous_classification,
+                        "rationale": "Mocked historical classification.",
+                        "healthy_streak": 0,
+                    }
+                    hist_path = os.path.join(
+                        MEMORY_DIR, f"{name_lower}_week{prev_week}.json"
+                    )
+                    with open(hist_path, "w", encoding="utf-8") as fh:
+                        json.dump(mock_hist, fh, indent=2)
 
         # 2. Build full timeline of week 1 (baseline) and current week
         baseline = {
@@ -372,6 +419,9 @@ def score_custom_employee(data: CustomEvaluatorInput):
             "response_time": 0.5,
             "after_hours_logins": 0,
             "sick_days": 0,
+            "weekly_hours": 40,
+            "task_accuracy": 95,
+            "sentiment": "Neutral",
         }
         current = {
             "week": data.week_number,
@@ -379,6 +429,9 @@ def score_custom_employee(data: CustomEvaluatorInput):
             "response_time": data.avg_response_time,
             "after_hours_logins": data.after_hours_logins,
             "sick_days": data.sick_days,
+            "weekly_hours": data.weekly_hours,
+            "task_accuracy": data.task_accuracy,
+            "sentiment": data.sentiment,
         }
 
         # Run Trend Detector

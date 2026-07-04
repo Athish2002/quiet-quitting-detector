@@ -56,6 +56,30 @@ COLUMN_ALIASES = {
         "leaves",
         "absent",
     ],
+    "weekly_hours": [
+        "weekly_hours",
+        "hours_worked",
+        "hours",
+        "weekly hours",
+        "work hours",
+        "logged_hours"
+    ],
+    "task_accuracy": [
+        "task_accuracy",
+        "accuracy",
+        "quality",
+        "accuracy_score",
+        "task accuracy",
+        "quality_score"
+    ],
+    "sentiment": [
+        "sentiment",
+        "tone",
+        "response_tone",
+        "attitude",
+        "communication_sentiment",
+        "morale"
+    ]
 }
 
 
