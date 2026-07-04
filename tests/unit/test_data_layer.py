@@ -62,3 +62,6 @@ def test_preprocess_employee_records():
     assert first_week["response_time"] == 1.5
     assert first_week["after_hours_logins"] == 2
     assert first_week["sick_days"] == 0
+    assert first_week["weekly_hours"] is None
+    assert first_week["task_accuracy"] is None
+    assert first_week["sentiment"] is None

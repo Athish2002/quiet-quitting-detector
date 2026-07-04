@@ -104,6 +104,11 @@ def resolve_header_value(row: dict, aliases: list[str], default: str = "") -> st
         if not h:
             continue
         h_clean = h.strip().lower()
+        
+        # Targeted exclusion: prevent after_hours columns from matching weekly_hours
+        if "after" in h_clean and ("hours" in aliases or "weekly_hours" in aliases):
+            continue
+
         for alias in aliases:
             alias_clean = alias.strip().lower()
             if alias_clean in h_clean or h_clean in alias_clean:
