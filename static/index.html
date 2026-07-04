@@ -2112,6 +2112,64 @@
             if (statusText) statusSpan.textContent = statusText;
         }
 
+        // Homepage Feature Cards Details
+        const featureDetails = [
+            {
+                title: "Multi-Source Ingestion Engine",
+                body: `
+                    <p style="margin-bottom:0.8rem; color:var(--text-primary); font-size:0.92rem;">The system is equipped with a highly adaptive ingestion layer capable of pulling employee metrics from multiple enterprise-grade data sources:</p>
+                    <ul style="margin: 0.8rem 0 0.8rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; color:var(--text-secondary); font-size:0.86rem;">
+                        <li><strong>Manual CSV Pasting:</strong> Directly input raw comma-separated telemetry files containing weekly metrics.</li>
+                        <li><strong>Postgres SQL Database Connection:</strong> Pull rows dynamically from custom tables using a mock connection string.</li>
+                        <li><strong>AWS S3 Cloud Buckets:</strong> Fetch remote files stored inside secure corporate buckets.</li>
+                        <li><strong>Natural Language observations:</strong> Input simple statements like <em>"Arjun completed 30 tasks, had 3 sick days, and 45 hours in week 4"</em>. The LLM extracts correct parameters automatically.</li>
+                    </ul>
+                    <p style="margin-top:0.8rem; color:var(--text-secondary); font-size:0.86rem;">All inputs are run through a robust preprocessing layer which uses fuzzy alias mapping to standardize diverse column headers and resolves missing data points using a probabilistic fallback model.</p>
+                `
+            },
+            {
+                title: "Trend Diagnostic History Timeline",
+                body: `
+                    <p style="margin-bottom:0.8rem; color:var(--text-primary); font-size:0.92rem;">Instead of relying on isolated metrics, the system models employee trajectories chronologically:</p>
+                    <ul style="margin: 0.8rem 0 0.8rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; color:var(--text-secondary); font-size:0.86rem;">
+                        <li><strong>Baseline Normalization:</strong> Every employee is evaluated against their own Week-1 baseline rather than a static cohort average, avoiding bias against naturally lower-output employees.</li>
+                        <li><strong>Multi-week Confirmation:</strong> Behavioral shifts must persist for 2+ consecutive weeks before a warning signal is flagged. Single-week spikes (e.g. one bad week) are filtered out.</li>
+                        <li><strong>Consecutive Penalty & Decay:</strong> The system increases risk classification scores if warnings persist, but quickly decays and recovers scores when metrics return to healthy levels.</li>
+                    </ul>
+                `
+            },
+            {
+                title: "Empathetic Action & Briefing Plans",
+                body: `
+                    <p style="margin-bottom:0.8rem; color:var(--text-primary); font-size:0.92rem;">The final layer synthesizes actionable briefs for management to assist employee recovery:</p>
+                    <ul style="margin: 0.8rem 0 0.8rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; color:var(--text-secondary); font-size:0.86rem;">
+                        <li><strong>HR Policy Compliance:</strong> The output is scanned programmatically for a forbidden-vocabulary deny-list. Punitive phrases (e.g. "PIP", "disciplinary", "termination") trigger automatic HR-safe fallbacks.</li>
+                        <li><strong>Supportive Focus:</strong> Recommends empathetic workload restructurings, wellness checks, and constructive 1-on-1 dialogue scripts.</li>
+                    </ul>
+                `
+            }
+        ];
+
+        document.querySelectorAll(".features-grid .feature-card").forEach((card, idx) => {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                const modal = document.getElementById("feature-detail-modal");
+                document.getElementById("feature-modal-title").textContent = featureDetails[idx].title;
+                document.getElementById("feature-modal-body").innerHTML = featureDetails[idx].body;
+                modal.classList.add("open");
+            });
+        });
+
+        document.getElementById("close-feature-modal").addEventListener("click", () => {
+            document.getElementById("feature-detail-modal").classList.remove("open");
+        });
+
+        document.getElementById("feature-detail-modal").addEventListener("click", (e) => {
+            if (e.target === document.getElementById("feature-detail-modal")) {
+                document.getElementById("feature-detail-modal").classList.remove("open");
+            }
+        });
+
         // Interactive Guided Tour Script
         const tourSteps = [
             {
@@ -2157,6 +2215,18 @@
                 position: "right"
             },
             {
+                elementId: "paste-tab",
+                title: "Explaining Ingestion Sources",
+                description: "Prior to seeing the options, know that we support 4 ingestion paths: Postgres DB sync, S3 bucket sync, raw CSV copy, or NL Prompt parsing. Click Next to switch tabs and view them!",
+                position: "right"
+            },
+            {
+                elementId: "evaluator-tab",
+                title: "Interactive Simulator Mode",
+                description: "Allows you to dynamically adjust working hours, task accuracy, and communication sentiment to simulate and evaluate hypothetical disengagement trajectories.",
+                position: "right"
+            },
+            {
                 elementId: "registry-tab",
                 title: "Employee Registry Status",
                 description: "Shows all active employees, their current risk score (1-10), and their latest week of diagnostic calculations. Click any card to select them.",
@@ -2193,6 +2263,15 @@
             
             document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
             
+            // Auto switch tabs during tour steps to follow user requests
+            if (index === 7) {
+                switchTab('paste-tab');
+            } else if (index === 8) {
+                switchTab('evaluator-tab');
+            } else if (index === 9) {
+                switchTab('registry-tab');
+            }
+
             const step = tourSteps[index];
             const element = document.getElementById(step.elementId);
             
@@ -2279,6 +2358,19 @@
             <div class="tour-btn-group">
                 <button class="btn btn-secondary" id="tour-exit-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">Exit</button>
                 <button class="btn" id="tour-next-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #060913;">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Homepage Feature Details -->
+    <div class="modal" id="feature-detail-modal">
+        <div class="modal-content" style="height: auto; max-height: 85%; max-width: 600px; margin: auto;">
+            <div class="modal-header">
+                <span id="feature-modal-title" style="font-family: var(--font-display); font-weight:700; font-size:1.15rem; color:var(--primary);">Feature Details</span>
+                <button class="modal-close" id="close-feature-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="feature-modal-body" style="padding: 1.5rem; line-height: 1.6; font-size: 0.9rem;">
+                <!-- content injected dynamically -->
             </div>
         </div>
     </div>
