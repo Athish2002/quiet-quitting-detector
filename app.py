@@ -63,6 +63,8 @@ app.add_middleware(
 
 MEMORY_DIR = "data/memory"
 WEEKLY_DIR = "data/weekly"
+REALTIME_DIR = "data/realtime"
+REALTIME_MEMORY_DIR = "data/realtime_memory"
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -83,6 +85,29 @@ def execute_pipeline():
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Pipeline execution failed: {e!s}"
+        ) from e
+
+
+@app.post("/api/run/realtime")
+def execute_realtime_pipeline():
+    """Triggers the pipeline for real-time data, saves the report to realtime_engagement_report.txt, and returns the summary."""
+    try:
+        os.makedirs(REALTIME_DIR, exist_ok=True)
+        os.makedirs(REALTIME_MEMORY_DIR, exist_ok=True)
+        report_output = run_orchestrator(
+            weekly_folder=REALTIME_DIR,
+            memory_folder=REALTIME_MEMORY_DIR
+        )
+        with open("realtime_engagement_report.txt", "w", encoding="utf-8") as f:
+            f.write(report_output)
+        return {
+            "success": True,
+            "message": "Real-time pipeline completed successfully.",
+            "report_preview": report_output[:2000] + "...",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Real-time pipeline execution failed: {e!s}"
         ) from e
 
 
@@ -153,11 +178,75 @@ def get_employees_status():
     return summary
 
 
+@app.get("/api/employees/realtime")
+def get_realtime_employees_status():
+    """Loads all real-time employees' final classifications and metrics based on real-time memory files."""
+    if not os.path.exists(REALTIME_MEMORY_DIR):
+        return []
+
+    memory_files = glob.glob(os.path.join(REALTIME_MEMORY_DIR, "*.json"))
+    records = {}
+
+    for path in memory_files:
+        filename = os.path.basename(path)
+        parts = filename.replace(".json", "").split("_week")
+        if len(parts) != 2:
+            continue
+
+        name = parts[0].capitalize()
+        try:
+            week = int(parts[1])
+        except ValueError:
+            continue
+
+        try:
+            with open(path, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except Exception:
+            continue
+
+        if name not in records:
+            records[name] = {}
+
+        records[name][week] = data
+
+    summary = []
+    for name, weeks_data in records.items():
+        if not weeks_data:
+            continue
+        latest_week = max(weeks_data.keys())
+        latest_status = weeks_data[latest_week]
+
+        summary.append(
+            {
+                "name": name,
+                "score": latest_status.get("score", 1),
+                "classification": latest_status.get("classification", "Healthy"),
+                "rationale": latest_status.get("rationale", ""),
+                "latest_week": latest_week,
+                "history": [
+                    {
+                        "week": w,
+                        "score": weeks_data[w].get("score", 1),
+                        "classification": weeks_data[w].get(
+                            "classification", "Healthy"
+                        ),
+                    }
+                    for w in sorted(weeks_data.keys())
+                ],
+            }
+        )
+
+    summary.sort(key=lambda x: x["name"])
+    return summary
+
+
 @app.get("/api/employee/{name}/briefing")
-def get_employee_briefing(name: str):
+def get_employee_briefing(name: str, scope: str = "main"):
     """Loads the manager briefing card contents from the employee's latest memory file."""
     name_lower = name.strip().lower()
-    pattern = os.path.join(MEMORY_DIR, f"{name_lower}_week*.json")
+    target_dir = REALTIME_MEMORY_DIR if scope == "realtime" else MEMORY_DIR
+    pattern = os.path.join(target_dir, f"{name_lower}_week*.json")
     memory_files = glob.glob(pattern)
     
     if not memory_files:
@@ -219,6 +308,37 @@ def clear_pipeline_data():
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to clear memory: {e!s}"
+        ) from e
+
+
+@app.get("/api/report/realtime")
+def get_realtime_report():
+    """Serves the raw generated realtime_engagement_report.txt file."""
+    report_path = "realtime_engagement_report.txt"
+    if os.path.exists(report_path):
+        return FileResponse(report_path, media_type="text/plain")
+    raise HTTPException(status_code=404, detail="Real-time engagement report file not found.")
+
+
+@app.post("/api/memory/clear/realtime")
+def clear_realtime_data():
+    """Deletes all real-time memory JSON files and the real-time engagement report."""
+    try:
+        if os.path.exists(REALTIME_MEMORY_DIR):
+            files = glob.glob(os.path.join(REALTIME_MEMORY_DIR, "*.json"))
+            for f in files:
+                os.remove(f)
+        if os.path.exists(REALTIME_DIR):
+            files = glob.glob(os.path.join(REALTIME_DIR, "*.csv"))
+            for f in files:
+                os.remove(f)
+        report_path = "realtime_engagement_report.txt"
+        if os.path.exists(report_path):
+            os.remove(report_path)
+        return {"success": True, "message": "Real-time data and memory cleared."}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear real-time data: {e!s}"
         ) from e
 
 
@@ -397,8 +517,8 @@ class RawCSVInput(BaseModel):
 def ingest_raw_csv(data: RawCSVInput):
     """Directly ingests pasted raw CSV content in the browser for a given week number."""
     try:
-        os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, f"week{data.week_number}.csv")
+        os.makedirs(REALTIME_DIR, exist_ok=True)
+        file_path = os.path.join(REALTIME_DIR, f"week{data.week_number}.csv")
         with open(file_path, "w", encoding="utf-8") as fh:
             fh.write(data.csv_content.strip())
         return {
@@ -521,8 +641,8 @@ class S3SyncInput(BaseModel):
 def ingest_from_db(data: DatabaseSyncInput):
     """Simulates ingesting data from a central corporate SQL database."""
     try:
-        os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, f"week{data.target_week}.csv")
+        os.makedirs(REALTIME_DIR, exist_ok=True)
+        file_path = os.path.join(REALTIME_DIR, f"week{data.target_week}.csv")
         file_exists = os.path.exists(file_path)
         with open(file_path, "a", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
@@ -555,8 +675,8 @@ def ingest_from_db(data: DatabaseSyncInput):
 def ingest_from_s3(data: S3SyncInput):
     """Simulates ingesting data from AWS S3 cloud buckets."""
     try:
-        os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, f"week{data.target_week}.csv")
+        os.makedirs(REALTIME_DIR, exist_ok=True)
+        file_path = os.path.join(REALTIME_DIR, f"week{data.target_week}.csv")
         file_exists = os.path.exists(file_path)
         with open(file_path, "a", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
@@ -621,8 +741,8 @@ def ingest_natural_language(data: NaturalLanguageInput):
         acc = int(extracted.get("task_accuracy", random.randint(85, 100)))
         sent = str(extracted.get("sentiment", random.choice(["Positive", "Neutral", "Negative"]))).strip().capitalize()
 
-        os.makedirs(WEEKLY_DIR, exist_ok=True)
-        file_path = os.path.join(WEEKLY_DIR, f"week{data.week_number}.csv")
+        os.makedirs(REALTIME_DIR, exist_ok=True)
+        file_path = os.path.join(REALTIME_DIR, f"week{data.week_number}.csv")
 
         file_exists = os.path.exists(file_path)
         with open(file_path, "a", encoding="utf-8", newline="") as fh:

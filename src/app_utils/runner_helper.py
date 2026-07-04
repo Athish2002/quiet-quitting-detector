@@ -75,6 +75,10 @@ Gemini.api_client = property(patched_api_client)
 Gemini._live_api_client = property(patched_live_api_client)
 
 
+# Global tracker for the last known successful model during this runtime session
+_LAST_SUCCESSFUL_MODEL = None
+
+
 # ---------------------------------------------------------------------------
 # Runner API
 # ---------------------------------------------------------------------------
@@ -93,9 +97,9 @@ def run_agent_sync(
     under heavy quota usage.
     """
     import asyncio
+    global _LAST_SUCCESSFUL_MODEL
 
     # 1. Determine model fallback sequence.
-    current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
     fallback_models = [
         "gemini-2.5-flash",
         "gemini-1.5-flash",
@@ -104,9 +108,14 @@ def run_agent_sync(
         "gemini-3.5-flash",
     ]
 
-    candidates = fallback_models.copy()
-    if current_model_name not in candidates:
-        candidates.insert(0, current_model_name)
+    # Prioritize the last known working model if set to avoid redundant 429 delays
+    if _LAST_SUCCESSFUL_MODEL:
+        candidates = [_LAST_SUCCESSFUL_MODEL] + [m for m in fallback_models if m != _LAST_SUCCESSFUL_MODEL]
+    else:
+        current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
+        candidates = fallback_models.copy()
+        if current_model_name not in candidates:
+            candidates.insert(0, current_model_name)
 
     from concurrent.futures import ThreadPoolExecutor
 
@@ -157,7 +166,10 @@ def run_agent_sync(
             # Spawn a thread to guarantee there is no running loop in the execution context
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(_execute_in_new_loop, model_name)
-                return future.result()
+                result = future.result()
+                # Successfully completed! Store this model as the current working model
+                _LAST_SUCCESSFUL_MODEL = model_name
+                return result
 
         except Exception as e:
             last_exception = e

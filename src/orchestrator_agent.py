@@ -33,9 +33,8 @@ orchestrator_agent = Agent(
 )
 
 
-def run_orchestrator() -> str:
+def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "data/memory") -> str:
     """Orchestrates the entire quiet quitting detection pipeline."""
-    weekly_folder = "data/weekly"
 
     # Rule 3: Always validate that CSV files exist before reading them
     if not os.path.exists(weekly_folder):
@@ -46,7 +45,7 @@ def run_orchestrator() -> str:
     # Flexible modular ingestion layer
     raw_rows = ingest_weekly_csvs(weekly_folder)
     if not raw_rows:
-        error_msg = "No CSV files found in data/weekly/. Pipeline execution aborted."
+        error_msg = f"No CSV files found in {weekly_folder}. Pipeline execution aborted."
         print(error_msg)
         return error_msg
 
@@ -93,7 +92,7 @@ def run_orchestrator() -> str:
 
         for w in range(1, max_week + 1):
             memory_file_name = f"{first_name.lower()}_week{w}.json"
-            memory_file_path = os.path.join("data", "memory", memory_file_name)
+            memory_file_path = os.path.join(memory_folder, memory_file_name)
             
             # Check if this week's evaluation already exists in memory
             if os.path.exists(memory_file_path):
@@ -131,10 +130,10 @@ def run_orchestrator() -> str:
                             {
                                 "signal": "MISSING_DATA_GAP",
                                 "severity": "low",
-                                "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
+                                                    "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
                             }
                         )
-                    risk_data = score_risk(first_name, signals, w)
+                    risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
                     briefing = generate_briefing(first_name, signals, risk_data)
                     risk_data["signals"] = signals
                     if briefing:
@@ -158,7 +157,7 @@ def run_orchestrator() -> str:
                     )
                 
                 # 2. Risk Scorer Agent (save as of week w)
-                risk_data = score_risk(first_name, signals, w)
+                risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
                 
                 # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
                 briefing = generate_briefing(first_name, signals, risk_data)

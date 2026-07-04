@@ -114,7 +114,7 @@ def _classify(score: int) -> str:
 # ---------------------------------------------------------------------------
 # Helper: load employee history with lookback cap + integrity check       [Fix 2]
 # ---------------------------------------------------------------------------
-def _load_employee_history(first_name_lower: str) -> list[dict]:
+def _load_employee_history(first_name_lower: str, memory_dir: str = None) -> list[dict]:
     """Load previous JSON memory files for this employee, up to MAX_HISTORY_WEEKS.
 
     Changes vs original:
@@ -123,7 +123,8 @@ def _load_employee_history(first_name_lower: str) -> list[dict]:
       records are skipped with a warning log (no name in log message).
     - Silently skips unreadable files (Rule 5).
     """
-    pattern = os.path.join(MEMORY_DIR, f"{first_name_lower}_week*.json")
+    local_dir = memory_dir or MEMORY_DIR
+    pattern = os.path.join(local_dir, f"{first_name_lower}_week*.json")
     matched_files = glob.glob(pattern)
 
     now = time.time()
@@ -220,7 +221,7 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dict:
+def score_risk(employee_name: str, signals: list[dict], week_number: int, memory_dir: str = None) -> dict:
     """Calculates risk score and classification, loading history and saving current to data\\memory\\.
 
     Steps:
@@ -235,7 +236,8 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
     first_name_lower = first_name.lower()
 
     # Step 1 ---------------------------------------------------------------
-    history = _load_employee_history(first_name_lower)
+    local_dir = memory_dir or MEMORY_DIR
+    history = _load_employee_history(first_name_lower, local_dir)
 
     # Step 2 ---------------------------------------------------------------
     apply_recurrence_bonus, current_healthy_streak = _compute_recurrence_bonus(history)
@@ -308,9 +310,9 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
         result["healthy_streak"] = new_healthy_streak  # stored in memory JSON
 
         # Save to memory ----------------------------------------------------
-        os.makedirs(MEMORY_DIR, exist_ok=True)  # Rule 3: ensure dir exists
+        os.makedirs(local_dir, exist_ok=True)  # Rule 3: ensure dir exists
         memory_file_name = f"{first_name_lower}_week{week_number}.json"
-        current_file_path = os.path.join(MEMORY_DIR, memory_file_name)
+        current_file_path = os.path.join(local_dir, memory_file_name)
 
         # Strip internal bookkeeping key before saving.          [Rule 6]
         save_result = {k: v for k, v in result.items() if not k.startswith("_")}
@@ -335,9 +337,9 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
 
         # Still attempt to save the fallback so history remains continuous.
         try:
-            os.makedirs(MEMORY_DIR, exist_ok=True)
+            os.makedirs(local_dir, exist_ok=True)
             memory_file_name = f"{first_name_lower}_week{week_number}.json"
-            fallback_path = os.path.join(MEMORY_DIR, memory_file_name)
+            fallback_path = os.path.join(local_dir, memory_file_name)
             with open(fallback_path, "w", encoding="utf-8") as fh:
                 json.dump(fallback, fh, indent=2)
         except Exception:

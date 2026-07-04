@@ -1180,6 +1180,13 @@
                 <div class="panel-body">
                     <!-- Tab 1: Registry -->
                     <div class="panel-tab-content active" id="registry-tab">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding: 0.5rem; background:rgba(255,255,255,0.03); border-radius:6px; border: 1px solid rgba(255,255,255,0.05); gap: 0.5rem;">
+                            <span style="font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap;">Active List</span>
+                            <div style="display:flex; gap:0.25rem;">
+                                <button class="btn btn-secondary active" id="btn-scope-main" style="padding: 0.25rem 0.5rem; font-size: 0.68rem; border-radius:4px; font-weight:500;">Main Cohort</button>
+                                <button class="btn btn-secondary" id="btn-scope-realtime" style="padding: 0.25rem 0.5rem; font-size: 0.68rem; border-radius:4px; font-weight:500;">Real-Time</button>
+                            </div>
+                        </div>
                         <div class="employee-list" id="employee-list-container">
                             <div class="empty-state">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /></svg>
@@ -1381,6 +1388,7 @@
         const API_URL = "http://127.0.0.1:8000/api";
         let employees = [];
         let selectedEmployee = null;
+        let currentScope = "main";
 
         // Quotes for homepage rotation
         const quotes = [
@@ -1434,6 +1442,23 @@
 
         // Initialization
         window.addEventListener("DOMContentLoaded", () => {
+            const btnScopeMain = document.getElementById("btn-scope-main");
+            const btnScopeRealtime = document.getElementById("btn-scope-realtime");
+
+            btnScopeMain.addEventListener("click", () => {
+                currentScope = "main";
+                btnScopeMain.classList.add("active");
+                btnScopeRealtime.classList.remove("active");
+                fetchEmployees();
+            });
+
+            btnScopeRealtime.addEventListener("click", () => {
+                currentScope = "realtime";
+                btnScopeRealtime.classList.add("active");
+                btnScopeMain.classList.remove("active");
+                fetchEmployees();
+            });
+
             // Restore session state
             const savedView = localStorage.getItem("view");
             if (savedView === "console") {
@@ -1472,7 +1497,8 @@
             runBtn.addEventListener("click", async () => {
                 setLoading(runBtn, runSpinner, "Evaluating model diagnostics...", true);
                 try {
-                    const res = await fetch(`${API_URL}/run`, { method: "POST" });
+                    const endpoint = currentScope === "realtime" ? `${API_URL}/run/realtime` : `${API_URL}/run`;
+                    const res = await fetch(endpoint, { method: "POST" });
                     const result = await res.json();
                     if (result.success) {
                         showToast("Model diagnostics completed!");
@@ -1504,10 +1530,12 @@
 
             // Reset button
             clearBtn.addEventListener("click", async () => {
-                if (!confirm("Are you sure you want to clear historical scores and memory JSONs?")) return;
+                const clearMsg = currentScope === "realtime" ? "Are you sure you want to clear real-time ingestion records and scores?" : "Are you sure you want to clear historical scores and memory JSONs?";
+                if (!confirm(clearMsg)) return;
                 statusSpan.textContent = "Clearing records...";
                 try {
-                    const res = await fetch(`${API_URL}/memory/clear`, { method: "POST" });
+                    const endpoint = currentScope === "realtime" ? `${API_URL}/memory/clear/realtime` : `${API_URL}/memory/clear`;
+                    const res = await fetch(endpoint, { method: "POST" });
                     const result = await res.json();
                     if (result.success) {
                         showToast("Historical memory cleared successfully.");
@@ -1702,7 +1730,8 @@
                 historyModal.classList.add("open");
                 modalBody.innerHTML = "<p>Loading executive summary report...</p>";
                 try {
-                    const res = await fetch(`${API_URL}/report/raw`);
+                    const endpoint = currentScope === "realtime" ? `${API_URL}/report/realtime` : `${API_URL}/report/raw`;
+                    const res = await fetch(endpoint);
                     if (res.status === 200) {
                         const txt = await res.text();
                         renderProfessionalReport(txt);
@@ -1804,11 +1833,26 @@
 
         async function fetchEmployees() {
             try {
-                const response = await fetch(`${API_URL}/employees`);
+                const endpoint = currentScope === "realtime" ? `${API_URL}/employees/realtime` : `${API_URL}/employees`;
+                const response = await fetch(endpoint);
                 employees = await response.json();
                 renderEmployeeList();
                 if (employees.length > 0) {
                     selectEmployee(employees[0].name);
+                } else {
+                    selectedEmployee = null;
+                    diagContainer.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h.01M12 16h.01M12 12h.01M12 8h.01M12 4h.01M8 20h.01M8 16h.01M8 12h.01M8 8h.01M8 4h.01M16 20h.01M16 16h.01M16 12h.01M16 8h.01M16 4h.01M4 20h.01M4 16h.01M4 12h.01M4 8h.01M4 4h.01M20 20h.01M20 16h.01M20 12h.01M20 8h.01M20 4h.01"/></svg>
+                            <p>No employee selected. Run evaluation or select an employee from the registry list to view their detailed disengagement diagnosis.</p>
+                        </div>
+                    `;
+                    briefingContainer.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m4-2v4m-2-2h4" /></svg>
+                            <p>No briefing card compiled. Flagged disengagement risks will trigger cohort briefing cards automatically.</p>
+                        </div>
+                    `;
                 }
             } catch (e) {
                 console.error("Failed to load employee list:", e);
@@ -2004,7 +2048,7 @@
             `;
             
             try {
-                const response = await fetch(`${API_URL}/employee/${name}/briefing`);
+                const response = await fetch(`${API_URL}/employee/${name}/briefing?scope=${currentScope}`);
                 const data = await response.json();
                 
                 if (data.found) {
