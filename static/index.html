@@ -1005,12 +1005,18 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.5);
             font-size: 0.85rem;
             transform: translateY(150%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, visibility 0.3s ease;
             z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
         
         .toast.show {
             transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
         }
 
         /* -------------------------------------------------------------------
@@ -1968,6 +1974,16 @@
         }
 
         async function fetchBriefing(name) {
+            if (selectedEmployee && selectedEmployee.classification === "Healthy") {
+                briefingContainer.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                        <p>Healthy employee status. No manager supportive briefing required this week.</p>
+                    </div>
+                `;
+                return;
+            }
+
             briefingContainer.innerHTML = `
                 <div class="empty-state">
                     <span class="spinner spinner-white" style="display:inline-block; border-top-color:var(--primary);"></span>

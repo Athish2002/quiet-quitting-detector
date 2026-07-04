@@ -312,22 +312,52 @@ def generate_mock_data():
 
                     # Write mock memory files for weeks 1-3 so history renders in the UI
                     if w < 4:
+                        # Base score assignment with random variance
                         if profile == "Silent Exit":
-                            sc = 4 if w == 1 else (6 if w == 2 else 8)
+                            base_sc = 3 if w == 1 else (6 if w == 2 else 8)
                         elif profile == "At Risk":
-                            sc = 2 if w == 1 else (4 if w == 2 else 6)
+                            base_sc = 2 if w == 1 else (4 if w == 2 else 6)
                         elif profile == "Watch":
-                            sc = 2 if w < 3 else 4
+                            base_sc = 2 if w == 1 else (3 if w == 2 else 4)
                         else:
-                            sc = random.randint(1, 2)
+                            base_sc = 1
                         
-                        cls_map = {1: "Healthy", 2: "Healthy", 4: "Watch", 6: "At Risk", 8: "Silent Exit"}
+                        # Add variance
+                        sc = max(1, min(10, base_sc + random.randint(-1, 1)))
                         
+                        # Determine classification and context-aware dynamic rationale
+                        if sc <= 2:
+                            cls_val = "Healthy"
+                            rat_val = f"Operational baseline assessment. Stable tasks volume ({int(tasks)} completed) and standard latency."
+                        elif sc <= 4:
+                            cls_val = "Watch"
+                            rat_val = f"Early indicator check. Elevated response time ({resp}h) or marginal decrease in task accuracy ({int(acc)}%)."
+                        elif sc <= 7:
+                            cls_val = "At Risk"
+                            rat_val = f"Disengagement warning. Persistent declines in task performance and low weekly hours ({int(hours)}h)."
+                        else:
+                            cls_val = "Silent Exit"
+                            rat_val = f"Severe disengagement flags. Consecutive drop in productivity and communication latency spikes."
+                        
+                        # Simulate pre-detected signals list for memory file parity
+                        mock_signals = []
+                        if tasks < 7:
+                            mock_signals.append({"signal_name": "Declining Task Completion", "weeks_detected": [w], "severity": "medium" if tasks >= 4 else "high"})
+                        if resp > 1.5:
+                            mock_signals.append({"signal_name": "Response Time Spike", "weeks_detected": [w], "severity": "high" if resp > 2.2 else "medium"})
+                        if after > 2:
+                            mock_signals.append({"signal_name": "Excessive After-Hours Logins", "weeks_detected": [w], "severity": "medium"})
+                        if sick > 1:
+                            mock_signals.append({"signal_name": "Increasing Sick Days", "weeks_detected": [w], "severity": "high"})
+                        if acc < 85:
+                            mock_signals.append({"signal_name": "Quality Degradation", "weeks_detected": [w], "severity": "medium"})
+
                         mock_memory = {
                             "score": sc,
-                            "classification": cls_map.get(sc, "Healthy"),
-                            "rationale": "Historical data point.",
-                            "healthy_streak": w if sc <= 2 else 0
+                            "classification": cls_val,
+                            "rationale": rat_val,
+                            "healthy_streak": w if sc <= 2 else 0,
+                            "signals": mock_signals
                         }
                         mem_path = os.path.join(MEMORY_DIR, f"{emp.lower()}_week{w}.json")
                         with open(mem_path, "w", encoding="utf-8") as mf:

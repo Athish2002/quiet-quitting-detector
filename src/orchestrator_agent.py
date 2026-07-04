@@ -95,53 +95,79 @@ def run_orchestrator() -> str:
             memory_file_name = f"{first_name.lower()}_week{w}.json"
             memory_file_path = os.path.join("data", "memory", memory_file_name)
             
-            # Extract sub-timeline up to week w
-            sub_timeline = full_timeline[:w]
-            w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
-            
-            # 1. Trend Detector Agent
-            signals = detect_trends(first_name, sub_timeline)
-            
-            # Inject missing data warning explicitly if present
-            if w_missing:
-                signals.append(
-                    {
-                        "signal": "MISSING_DATA_GAP",
-                        "severity": "low",
-                        "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
-                    }
-                )
-
             # Check if this week's evaluation already exists in memory
             if os.path.exists(memory_file_path):
                 try:
                     with open(memory_file_path, "r", encoding="utf-8") as f:
                         risk_data = json.load(f)
                     briefing = risk_data.get("briefing", "")
-                    # If it's not Healthy but briefing is missing, try to generate it
+                    signals = risk_data.get("signals", [])
+                    
+                    # If it's not Healthy but briefing is missing, we can generate it
                     if not briefing and risk_data.get("classification", "").upper() not in ["HEALTHY"]:
+                        sub_timeline = full_timeline[:w]
+                        w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
+                        signals = detect_trends(first_name, sub_timeline)
+                        if w_missing:
+                            signals.append(
+                                {
+                                    "signal": "MISSING_DATA_GAP",
+                                    "severity": "low",
+                                    "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
+                                }
+                            )
                         briefing = generate_briefing(first_name, signals, risk_data)
                         if briefing:
                             risk_data["briefing"] = briefing
+                            risk_data["signals"] = signals
                             with open(memory_file_path, "w", encoding="utf-8") as f:
                                 json.dump(risk_data, f, indent=2)
                 except Exception:
+                    sub_timeline = full_timeline[:w]
+                    w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
+                    signals = detect_trends(first_name, sub_timeline)
+                    if w_missing:
+                        signals.append(
+                            {
+                                "signal": "MISSING_DATA_GAP",
+                                "severity": "low",
+                                "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
+                            }
+                        )
                     risk_data = score_risk(first_name, signals, w)
                     briefing = generate_briefing(first_name, signals, risk_data)
+                    risk_data["signals"] = signals
                     if briefing:
                         risk_data["briefing"] = briefing
-                        with open(memory_file_path, "w", encoding="utf-8") as f:
-                            json.dump(risk_data, f, indent=2)
-            else:
-                # 2. Risk Scorer Agent (save as of week w)
-                risk_data = score_risk(first_name, signals, w)
-                # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
-                briefing = generate_briefing(first_name, signals, risk_data)
-                # Embed briefing in the saved memory file
-                if briefing:
-                    risk_data["briefing"] = briefing
                     with open(memory_file_path, "w", encoding="utf-8") as f:
                         json.dump(risk_data, f, indent=2)
+            else:
+                # If memory file doesn't exist, execute agents chronologically
+                sub_timeline = full_timeline[:w]
+                w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
+                
+                # 1. Trend Detector Agent
+                signals = detect_trends(first_name, sub_timeline)
+                if w_missing:
+                    signals.append(
+                        {
+                            "signal": "MISSING_DATA_GAP",
+                            "severity": "low",
+                            "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
+                        }
+                    )
+                
+                # 2. Risk Scorer Agent (save as of week w)
+                risk_data = score_risk(first_name, signals, w)
+                
+                # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
+                briefing = generate_briefing(first_name, signals, risk_data)
+                
+                risk_data["signals"] = signals
+                if briefing:
+                    risk_data["briefing"] = briefing
+                with open(memory_file_path, "w", encoding="utf-8") as f:
+                    json.dump(risk_data, f, indent=2)
 
             if w == max_week:
                 last_risk_data = risk_data
