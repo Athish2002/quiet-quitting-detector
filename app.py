@@ -72,6 +72,19 @@ def favicon():
     return Response(status_code=204)
 
 
+@app.get("/api/metrics")
+def get_metrics():
+    """Returns the API usage metrics (success vs rejected)."""
+    metrics_file = "api_metrics.json"
+    if os.path.exists(metrics_file):
+        try:
+            with open(metrics_file, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"success": 0, "rejected": 0}
+
+
 @app.post("/api/run")
 def execute_pipeline():
     """Triggers the full multi-agent pipeline and returns the summary."""

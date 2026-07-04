@@ -266,7 +266,7 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
             "classification": best_record.get("classification", "Watch"),
             "rationale": (
                 f"[Local ML Fallback Model] Classified with {int(best_similarity * 100)}% signal similarity "
-                f"based on historical learning from '{os.path.basename(best_match_file)}'. "
+                f"based on historical behavioral patterns. "
                 f"Reference Rationale: {best_record.get('rationale', '')}"
             ),
             "healthy_streak": 0,

@@ -1,7 +1,7 @@
-employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,sick_days
-Arjun,5,3.2,1,1
-Priya,5,2.9,1,1
-Karthik,5,2.4,2,1
-Divya,9,0.7,0,0
-Ravi,8,0.8,0,0
-Meena,6,2.0,3,2
+employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,sick_days,weekly_hours,task_accuracy,sentiment
+Arjun,2,4.23,2,0,40,85,Negative
+Priya,6,2.29,1,1,53,80,Negative
+Karthik,9,0.59,1,0,39,96,Positive
+Divya,9,0.36,1,0,41,97,Neutral
+Ravi,5,2.21,1,1,43,88,Negative
+Meena,8,0.3,0,0,41,95,Positive

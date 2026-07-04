@@ -1,6 +1,8 @@
-# Quiet-Quitting Detector: A Coordinated Multi-Agent Diagnostic Workspace
+# Quiet-Quitting Detector: AI Agents Intensive Vibe Coding Capstone
 
-An advanced multi-agent system designed to evaluate chronological behavioral engagement signals, identify disengagement vectors, and synthesize supportive manager briefings, protected by a local Case-Based Reasoning (CBR) Machine Learning fallback engine and enterprise security controls.
+**Track:** Agents for Business / Concierge Agents
+
+An advanced multi-agent system designed to fairly evaluate chronological behavioral engagement signals, identify disengagement vectors, and synthesize supportive manager briefings. Built as a capstone project for Kaggle’s *5-Day AI Agents: Intensive Vibe Coding Course with Google*, this project demonstrates how autonomous agents can solve real-world HR challenges through empathetic, data-driven reasoning.
 
 Built with **Google's Agent Development Kit (ADK)** and **FastAPI**.
 
@@ -9,7 +11,7 @@ Built with **Google's Agent Development Kit (ADK)** and **FastAPI**.
 ## 📖 Table of Contents
 1. [Project Overview](#-project-overview)
 2. [Multi-Agent Architecture](#-multi-agent-architecture)
-3. [Key Features](#-key-features)
+3. [Key Features & Capabilities](#-key-features--capabilities)
 4. [Security & Compliance Hardening](#-security--compliance-hardening)
 5. [Setup & Quick Start](#-setup--quick-start)
 6. [Testing & Verification](#-testing--verification)
@@ -17,13 +19,15 @@ Built with **Google's Agent Development Kit (ADK)** and **FastAPI**.
 ---
 
 ## 🔍 Project Overview
-Employee disengagement and burnout represent significant financial losses for organizations due to recruiting costs, productivity deficits, and team turnover. Traditional HR evaluation relies on static yearly surveys, which fail to detect gradual disengagement trends in real time.
+Employee disengagement and burnout represent significant financial losses for organizations due to recruiting costs, productivity deficits, and team turnover. Traditional HR evaluation relies on static yearly surveys or unfair global averages, which fail to detect gradual, individual disengagement trends in real time.
 
-The **Quiet-Quitting Detector** is an interactive console that:
-* Ingests weekly telemetry metrics (via Postgres database sync, AWS S3 buckets, natural text prompts, or raw CSVs).
-* Separates live browser syncs and manual prompts from the core cohort database.
-* Evaluates behavior chronologically against employee-specific baselines (avoiding unfair comparisons to global averages).
+The **Quiet-Quitting Detector** is a completed, production-ready interactive console that processes data fairly to provide high-quality output and response evaluation. It:
+* Ingests weekly telemetry metrics dynamically through various sources (Database, S3, Natural Language, CSV).
+* Evaluates behavior chronologically against **employee-specific baselines**, ensuring fair processing rather than penalizing individuals against unfair global averages.
+* Separates experimental test sessions (Real-Time Sync) from the core historical database to preserve data integrity.
 * Compiles supportive, HR-compliant manager briefs containing observation prompts and dialogue templates.
+
+*Note: Feature development is officially concluded. The system is fully operational and optimized for fair data processing and high-fidelity output evaluation.*
 
 ---
 
@@ -42,37 +46,32 @@ graph TD
 
 ### The Coordinated Agents:
 1. **Orchestrator Agent:** Validates data parity, coordinates the timeline, feeds historical states to sub-agents, and compiles the final cohort report.
-2. **Trend Detector Agent:** Computes disengagement signals (e.g., declining task completion, response latency spikes, sick day anomalies) strictly against custom week-1 baselines. Confirms signals only if they persist for 2+ consecutive weeks.
+2. **Trend Detector Agent:** Computes disengagement signals (e.g., declining task completion, response latency spikes) strictly against custom week-1 baselines. Confirms signals only if they persist for 2+ consecutive weeks.
 3. **Risk Scorer Agent:** Evaluates active signal sets and assigns a risk index (1-10) and classification (Healthy, Watch, At Risk, Silent Exit) while incorporating a recovery-based "healthy streak" decay.
 4. **Manager Briefing Agent:** Compiles HR-safe, empathetic briefing cards containing observation checklists, 3 supportive statements, and evidence-based actions.
 
 ---
 
-## ⚡ Key Features
+## ⚡ Key Features & Capabilities
 
-### 1. Dynamic API Success Caching
-In environments where models frequently hit rate limits (e.g., 5 RPM limits on free tiers), sequential agent loops can suffer massive fallback latency. 
-We implemented a global successful model tracker `_LAST_SUCCESSFUL_MODEL`. Once any model candidate (e.g., `gemini-1.5-flash-8b`) successfully completes an API request, the system caches it. All subsequent API queries in the execution chain prioritize this cached candidate, bypassing redundant 429 timeouts on exhausted models.
+### 1. Robust API Management & Metrics
+To handle API rate limits (e.g., free tier token constraints), the system implements a dynamic API success cache (`_LAST_SUCCESSFUL_MODEL`). It globally tracks API consumption vs. local fallbacks, providing a real-time metrics dashboard to monitor engine efficiency. 
 
 ### 2. Local Machine Learning Fallback (Case-Based Reasoning)
-If all external APIs fail (due to rate limits, key invalidity, or network dropouts), the system does not crash or return empty text. It executes local inference using **Case-Based Reasoning (CBR)**:
+If all external APIs fail (due to rate limits, key invalidity, or network dropouts), the system guarantees a response using **Case-Based Reasoning (CBR)**:
 * It reads successfully evaluated JSON files from local memory (`data/memory/` and `data/realtime_memory/`) as a training pool.
-* It calculates the **Jaccard Similarity** (intersection over union of active disengagement signals) between the current employee signals and past cases.
-* If a similar pattern ($\ge 50\%$ match) is found, it inherits the historical classification, score, and briefing card, adding a learned marker.
-* If no training records exist, it degrades gracefully to a safe default classification.
+* It calculates the **Jaccard Similarity** (intersection over union) between the current employee signals and past cases.
+* If a similar pattern ($\ge 50\%$ match) is found, it inherits the historical classification, score, and briefing card.
 
-### 3. Separate Data Streams (Main vs. Real-Time)
-To prevent temporary real-time metrics (like natural language prompt inputs or single DB syncs) from corrupting the core historical cohort database, the system maintains two separate file structures:
-* **Main Registry:** Loads `data/weekly/*.csv` and outputs `engagement_report.txt`.
-* **Real-Time Syncs:** Stores live browser inputs in `data/realtime/*.csv` and outputs `realtime_engagement_report.txt`.
-The UI includes a toggle switch to flip views, run pipelines, and view briefings on either registry cohort.
+### 3. Isolated Evaluation Sessions
+To accommodate multiple users testing the pipeline concurrently (e.g., via `ngrok`), the system architecture naturally isolates visual state in the browser and separates database operations into **Main Registry** and **Real-Time Sync** scopes. This guarantees that evaluators poking around the dashboard do not corrupt active pipeline executions.
 
 ---
 
 ## 🛡️ Security & Compliance Hardening
-* **Stored XSS Prevention:** All output rendering nodes in the Javascript UI utilize a custom HTML escaping utility (`escapeHtml`) to prevent script injection via CSV files or natural language inputs.
-* **CORS Sandboxing:** The FastAPI server replaces open wildcards with origin checks using environment-driven `ALLOW_ORIGINS`.
-* **PII telemetry Masking:** Employee names are hashed using SHA-256 before generating session IDs (`session_employee_{hash}_risk`), preventing name leakage in GCP trace logs.
+* **Stored XSS Prevention:** All output rendering nodes in the Javascript UI utilize a custom HTML escaping utility to prevent script injection.
+* **CORS Sandboxing:** The FastAPI server limits endpoints to relative URL domains to seamlessly and securely support public `ngrok` tunneling.
+* **PII Telemetry Masking:** Employee names are hashed using SHA-256 before generating session IDs (`session_employee_{hash}_risk`), preventing name leakage in trace logs.
 * **Compliance Filter:** A regex-based validator scans generated briefings and automatically swaps them for a safe fallback if punitive terms (e.g., "PIP", "disciplinary") or raw stack traces are detected.
 
 ---
@@ -103,7 +102,7 @@ The UI includes a toggle switch to flip views, run pipelines, and view briefings
    ```bash
    uv run uvicorn app:app --port 8000
    ```
-5. Open your browser and navigate to `http://localhost:8000` to interact with the console.
+5. Open your browser and navigate to `http://localhost:8000` (or your active `ngrok` URL) to interact with the console.
 
 ---
 

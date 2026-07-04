@@ -1152,6 +1152,10 @@
             <h1 id="header-logo-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
                 Quiet-Quitting Detector Console
+                <span id="api-metrics-badge" style="font-size: 0.8rem; margin-left: 15px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: normal;" title="API Consumption vs Fallbacks">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span id="api-metrics-text">API Tracker Loading...</span>
+                </span>
             </h1>
             <div class="header-actions">
                 <span id="pipeline-status" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
@@ -1385,7 +1389,8 @@
             div.textContent = str ?? "";
             return div.innerHTML;
         }
-        const API_URL = "http://127.0.0.1:8000/api";
+        // Configuration: Automatically handle local file:// testing vs active web servers (localhost/ngrok)
+        const API_URL = window.location.protocol === "file:" ? "http://127.0.0.1:8000/api" : "/api";
         let employees = [];
         let selectedEmployee = null;
         let currentScope = "main";
@@ -1441,7 +1446,20 @@
         const toast = document.getElementById("toast-container");
 
         // Initialization
+        async function updateApiMetrics() {
+            try {
+                const response = await fetch(`${API_URL}/metrics`);
+                const data = await response.json();
+                const badge = document.getElementById('api-metrics-text');
+                if (badge) {
+                    badge.innerHTML = `API Success: <strong style="color: var(--healthy)">${data.success}</strong> | Local Fallbacks: <strong style="color: var(--watch)">${data.rejected}</strong>`;
+                }
+            } catch (e) { console.error("Could not fetch API metrics", e); }
+        }
+
         window.addEventListener("DOMContentLoaded", () => {
+            updateApiMetrics();
+            setInterval(updateApiMetrics, 5000);
             const btnScopeMain = document.getElementById("btn-scope-main");
             const btnScopeRealtime = document.getElementById("btn-scope-realtime");
 
@@ -2067,8 +2085,26 @@
         }
 
         function renderBriefingCard(rawCard, classification = "Watch") {
+            const briefingContainer = document.getElementById("briefing-container");
             const glowClass = classification === "Silent Exit" ? "briefing-card-glow-exit" : (classification === "At Risk" ? "briefing-card-glow-risk" : "briefing-card-glow-watch");
             
+            if (!rawCard) {
+                briefingContainer.innerHTML = `
+                    <div class="briefing-card-content">
+                        <div class="briefing-card ${glowClass}">
+                            <div class="briefing-header" style="color: var(--watch);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                System Notice
+                            </div>
+                            <div class="briefing-body">
+                                No briefing card was generated. This happens when the AI models are offline and no historical match could be found.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             const lines = rawCard.split('\n');
             let signals = "";
             let dialogue = [];
@@ -2083,7 +2119,7 @@
 
                 if (clean.includes("Signals Detected:") || clean.includes("Signals:")) {
                     section = "signals";
-                } else if (clean.includes("Supportive Guidance") || clean.includes("3 Supportive Things") || clean.includes("Dialogue") || clean.includes("Empathetic")) {
+                } else if (clean.includes("Supportive Guidance") || clean.includes("3 Supportive Things") || clean.includes("Dialogue") || clean.includes("Empathetic") || clean.includes("Manager Briefing")) {
                     section = "dialogue";
                 } else if (clean.includes("Things Never to Say") || clean.includes("2 Things Never") || clean.includes("Never Say")) {
                     section = "warnings";
@@ -2098,6 +2134,7 @@
                     else if (section === "warnings") warnings.push(text);
                     else if (section === "actions") actions.push(text);
                     else if (section === "observation") observations += text + " ";
+                    else dialogue.push(text); // Catch-all for unsectioned text
                 }
             });
 
