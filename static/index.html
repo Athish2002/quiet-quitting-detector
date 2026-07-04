@@ -85,13 +85,16 @@
             align-items: center;
             justify-content: center;
             flex-grow: 1;
-            padding: 4rem 2rem;
-            max-width: 1200px;
+            padding: 5rem 3rem;
+            max-width: 1400px;
             margin: 0 auto;
             text-align: center;
-            gap: 2.5rem;
+            gap: 3rem;
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             position: relative;
+            background-image: radial-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            border-radius: 24px;
         }
 
         /* CSS Radial Glow Effects */
@@ -137,13 +140,15 @@
 
         .welcome-title {
             font-family: var(--font-display);
-            font-size: 3.8rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
+            font-size: 3.5rem;
+            font-weight: 850;
             background: linear-gradient(135deg, #ffffff 40%, var(--primary) 70%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin-bottom: 0.5rem;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
         }
 
         .welcome-subtitle {
@@ -159,9 +164,9 @@
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 2rem;
             width: 100%;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
 
         .feature-card {

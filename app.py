@@ -4,7 +4,7 @@ import json
 import os
 import random
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -53,6 +53,11 @@ app.add_middleware(
 
 MEMORY_DIR = "data/memory"
 WEEKLY_DIR = "data/weekly"
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(status_code=204)
 
 
 @app.post("/api/run")

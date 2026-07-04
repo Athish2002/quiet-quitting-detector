@@ -108,6 +108,8 @@ def run_agent_sync(
     if current_model_name not in candidates:
         candidates.insert(0, current_model_name)
 
+    from concurrent.futures import ThreadPoolExecutor
+
     last_exception = None
 
     async def _async_run(model_name: str) -> str:
@@ -141,9 +143,21 @@ def run_agent_sync(
 
         return response_text.strip()
 
+    def _execute_in_new_loop(model_name: str):
+        # Create a new event loop for this thread to avoid event loop conflicts in FastAPI
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(_async_run(model_name))
+        finally:
+            loop.close()
+
     for i, model_name in enumerate(candidates):
         try:
-            return asyncio.run(_async_run(model_name))
+            # Spawn a thread to guarantee there is no running loop in the execution context
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_execute_in_new_loop, model_name)
+                return future.result()
 
         except Exception as e:
             last_exception = e
