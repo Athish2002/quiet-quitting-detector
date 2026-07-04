@@ -218,6 +218,73 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
     return apply_bonus, current_healthy_streak
 
 
+def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> dict:
+    """Uses a local K-Nearest Neighbors (K=1) classifier trained on historical evaluations
+    to predict score and classification when all LLM APIs are offline/rate-limited.
+    """
+    import glob
+
+    current_signal_names = {s.get("signal_name") for s in current_signals if s.get("signal_name")}
+    
+    best_match_file = None
+    best_similarity = -1.0
+    best_record = None
+
+    pattern = os.path.join(memory_dir, "*.json")
+    for file_path in glob.glob(pattern):
+        try:
+            with open(file_path, "r", encoding="utf-8") as fh:
+                hist_data = json.load(fh)
+            
+            # Skip fallback records themselves to avoid self-reinforcing default Watch loops
+            if "[Local ML Fallback]" in hist_data.get("rationale", ""):
+                continue
+
+            hist_signals = {s.get("signal_name") for s in hist_data.get("signals", []) if s.get("signal_name")}
+            
+            # Calculate Jaccard Similarity (intersection over union of signal sets)
+            intersection = current_signal_names.intersection(hist_signals)
+            union = current_signal_names.union(hist_signals)
+            
+            similarity = len(intersection) / len(union) if union else 1.0
+            
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_match_file = file_path
+                best_record = hist_data
+        except Exception:
+            continue
+
+    if best_record and best_similarity >= 0.5:
+        logger.info(
+            "Local ML Fallback: matched historical record from %s with similarity %.2f",
+            os.path.basename(best_match_file),
+            best_similarity,
+        )
+        return {
+            "score": best_record.get("score", 4),
+            "classification": best_record.get("classification", "Watch"),
+            "rationale": (
+                f"[Local ML Fallback Model] Classified with {int(best_similarity * 100)}% signal similarity "
+                f"based on historical learning from '{os.path.basename(best_match_file)}'. "
+                f"Reference Rationale: {best_record.get('rationale', '')}"
+            ),
+            "healthy_streak": 0,
+            "signals": current_signals,
+        }
+
+    return {
+        "score": 4,
+        "classification": "Watch",
+        "rationale": (
+            "Evaluation could not be completed via APIs. Defaulted to Watch classification "
+            "as no highly similar training patterns were found in local history."
+        ),
+        "healthy_streak": 0,
+        "signals": current_signals,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -323,17 +390,8 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int, memory
         return save_result
 
     except Exception:
-        # Rule 5: Never expose raw Gemini API errors -- return a safe fallback.
-        fallback = {
-            "score": 4,
-            "classification": "Watch",
-            "rationale": (
-                "Evaluation could not be fully completed due to a temporary service error. "
-                "Defaulted to Watch classification for safety."
-            ),
-            "healthy_streak": 0,
-            "signals": signals,
-        }
+        # Rule 5: Never expose raw Gemini API errors -- attempt Local ML prediction
+        fallback = _predict_local_ml_fallback(signals, local_dir)
 
         # Still attempt to save the fallback so history remains continuous.
         try:

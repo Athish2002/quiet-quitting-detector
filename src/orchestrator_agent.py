@@ -115,7 +115,7 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                                     "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
                                 }
                             )
-                        briefing = generate_briefing(first_name, signals, risk_data)
+                        briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
                         if briefing:
                             risk_data["briefing"] = briefing
                             risk_data["signals"] = signals
@@ -134,7 +134,7 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                             }
                         )
                     risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
-                    briefing = generate_briefing(first_name, signals, risk_data)
+                    briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
                     risk_data["signals"] = signals
                     if briefing:
                         risk_data["briefing"] = briefing
@@ -160,7 +160,7 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                 risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
                 
                 # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
-                briefing = generate_briefing(first_name, signals, risk_data)
+                briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
                 
                 risk_data["signals"] = signals
                 if briefing:

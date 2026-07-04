@@ -111,7 +111,50 @@ def _validate_briefing(text: str) -> str:
     return text
 
 
-def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) -> str:
+def _predict_local_briefing_fallback(current_signals: list[dict], memory_dir: str) -> str | None:
+    """Finds the most similar historical evaluation and returns its briefing card
+    as an ML-driven fallback when APIs are offline.
+    """
+    import glob
+    import json
+    import os
+
+    current_signal_names = {s.get("signal_name") for s in current_signals if s.get("signal_name")}
+    
+    best_similarity = -1.0
+    best_briefing = None
+
+    pattern = os.path.join(memory_dir, "*.json")
+    for file_path in glob.glob(pattern):
+        try:
+            with open(file_path, "r", encoding="utf-8") as fh:
+                hist_data = json.load(fh)
+            
+            hist_briefing = hist_data.get("briefing", "")
+            if not hist_briefing or "A temporary issue prevented a detailed briefing" in hist_briefing:
+                continue
+
+            hist_signals = {s.get("signal_name") for s in hist_data.get("signals", []) if s.get("signal_name")}
+            
+            intersection = current_signal_names.intersection(hist_signals)
+            union = current_signal_names.union(hist_signals)
+            similarity = len(intersection) / len(union) if union else 1.0
+            
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_briefing = (
+                    f"[Local ML Fallback Briefing] (Matched {int(similarity * 100)}% similarity to "
+                    f"'{os.path.basename(file_path)}')\n\n" + hist_briefing
+                )
+        except Exception:
+            continue
+
+    if best_briefing and best_similarity >= 0.5:
+        return best_briefing
+    return None
+
+
+def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict, memory_dir: str = None) -> str:
     """Generates a warm, supportive briefing for the manager if classification is Watch, At Risk, or Silent Exit."""
     classification = risk_data.get("classification", "").upper()
     if classification not in ["WATCH", "AT RISK", "SILENT EXIT"]:
@@ -139,6 +182,10 @@ def generate_briefing(employee_name: str, signals: list[dict], risk_data: dict) 
         return _validate_briefing(response_text)
 
     except Exception:
-        # Rule 5: Never expose raw Gemini API errors.
+        # Rule 5: Never expose raw Gemini API errors -- attempt Local ML prediction
+        if memory_dir:
+            matched_briefing = _predict_local_briefing_fallback(signals, memory_dir)
+            if matched_briefing:
+                return matched_briefing
         # [Fix 1] Error fallback no longer embeds the first name.
         return _SAFE_FALLBACK_BRIEFING
