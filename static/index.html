@@ -1704,6 +1704,61 @@
                     historyModal.classList.remove("open");
                 }
             });
+
+            // Homepage Feature Cards Details Click Listeners
+            const featureDetailModal = document.getElementById("feature-detail-modal");
+            const closeFeatureModalBtn = document.getElementById("close-feature-modal");
+            const featureModalTitle = document.getElementById("feature-modal-title");
+            const featureModalBody = document.getElementById("feature-modal-body");
+
+            document.querySelectorAll(".features-grid .feature-card").forEach((card, idx) => {
+                card.style.cursor = "pointer";
+                card.addEventListener("click", () => {
+                    featureModalTitle.textContent = featureDetails[idx].title;
+                    featureModalBody.innerHTML = featureDetails[idx].body;
+                    featureDetailModal.classList.add("open");
+                });
+            });
+
+            if (closeFeatureModalBtn) {
+                closeFeatureModalBtn.addEventListener("click", () => {
+                    featureDetailModal.classList.remove("open");
+                });
+            }
+
+            if (featureDetailModal) {
+                featureDetailModal.addEventListener("click", (e) => {
+                    if (e.target === featureDetailModal) {
+                        featureDetailModal.classList.remove("open");
+                    }
+                });
+            }
+
+            // Interactive Guided Tour Script Listeners
+            const tourBtn = document.getElementById("tour-btn");
+            const tourNextBtn = document.getElementById("tour-next-btn");
+            const tourExitBtn = document.getElementById("tour-exit-btn");
+            const tourOverlay = document.getElementById("tour-overlay");
+
+            if (tourBtn) {
+                tourBtn.addEventListener("click", startTour);
+            }
+            if (tourNextBtn) {
+                tourNextBtn.addEventListener("click", () => {
+                    if (currentTourStep < tourSteps.length - 1) {
+                        currentTourStep++;
+                        showTourStep(currentTourStep);
+                    } else {
+                        exitTour();
+                    }
+                });
+            }
+            if (tourExitBtn) {
+                tourExitBtn.addEventListener("click", exitTour);
+            }
+            if (tourOverlay) {
+                tourOverlay.addEventListener("click", exitTour);
+            }
         });
 
         // Tab switches
@@ -2150,25 +2205,7 @@
             }
         ];
 
-        document.querySelectorAll(".features-grid .feature-card").forEach((card, idx) => {
-            card.style.cursor = "pointer";
-            card.addEventListener("click", () => {
-                const modal = document.getElementById("feature-detail-modal");
-                document.getElementById("feature-modal-title").textContent = featureDetails[idx].title;
-                document.getElementById("feature-modal-body").innerHTML = featureDetails[idx].body;
-                modal.classList.add("open");
-            });
-        });
 
-        document.getElementById("close-feature-modal").addEventListener("click", () => {
-            document.getElementById("feature-detail-modal").classList.remove("open");
-        });
-
-        document.getElementById("feature-detail-modal").addEventListener("click", (e) => {
-            if (e.target === document.getElementById("feature-detail-modal")) {
-                document.getElementById("feature-detail-modal").classList.remove("open");
-            }
-        });
 
         // Interactive Guided Tour Script
         const tourSteps = [
@@ -2332,18 +2369,7 @@
             document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
         }
 
-        // Attach listeners
-        document.getElementById("tour-btn").addEventListener("click", startTour);
-        document.getElementById("tour-next-btn").addEventListener("click", () => {
-            if (currentTourStep < tourSteps.length - 1) {
-                currentTourStep++;
-                showTourStep(currentTourStep);
-            } else {
-                exitTour();
-            }
-        });
-        document.getElementById("tour-exit-btn").addEventListener("click", exitTour);
-        document.getElementById("tour-overlay").addEventListener("click", exitTour);
+
     </script>
 
     <!-- Interactive Guided Tour HTML Elements -->
