@@ -27,7 +27,10 @@ extractor_agent = Agent(
       "tasks_completed": 10,
       "avg_response_time_hours": 1.5,
       "after_hours_logins": 2,
-      "sick_days": 1
+      "sick_days": 1,
+      "weekly_hours": 40,
+      "task_accuracy": 95,
+      "sentiment": "Neutral"
     }
     Only output valid JSON. Do not write explanations or conversational text.
     """,
@@ -486,13 +489,16 @@ def ingest_from_db(data: DatabaseSyncInput):
                         "avg_response_time_hours",
                         "after_hours_logins",
                         "sick_days",
+                        "weekly_hours",
+                        "task_accuracy",
+                        "sentiment"
                     ]
                 )
-            writer.writerow(["Karthik", "7", "1.1", "0", "0"])
-            writer.writerow(["Divya", "10", "0.4", "0", "0"])
+            writer.writerow(["Karthik", "7", "1.1", "0", "0", "42", "94", "Neutral"])
+            writer.writerow(["Divya", "10", "0.4", "0", "0", "38", "98", "Positive"])
         return {
             "success": True,
-            "message": f"Successfully synchronized 2 employee records from Database table '{data.table_name}' for Week {data.target_week}.",
+            "message": f"Successfully synchronized 2 employee records (with Weekly Hours, Task Accuracy, Sentiment) from Database table '{data.table_name}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
@@ -517,12 +523,15 @@ def ingest_from_s3(data: S3SyncInput):
                         "avg_response_time_hours",
                         "after_hours_logins",
                         "sick_days",
+                        "weekly_hours",
+                        "task_accuracy",
+                        "sentiment"
                     ]
                 )
-            writer.writerow(["Ravi", "9", "0.6", "0", "0"])
+            writer.writerow(["Ravi", "9", "0.6", "0", "0", "40", "96", "Positive"])
         return {
             "success": True,
-            "message": f"Successfully downloaded bucket content from S3 path '{data.s3_uri}' for Week {data.target_week}.",
+            "message": f"Successfully downloaded bucket content (with Weekly Hours, Task Accuracy, Sentiment) from S3 path '{data.s3_uri}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
@@ -560,6 +569,9 @@ def ingest_natural_language(data: NaturalLanguageInput):
         resp = float(extracted.get("avg_response_time_hours", 0.0))
         after = int(extracted.get("after_hours_logins", 0))
         sick = int(extracted.get("sick_days", 0))
+        hours = int(extracted.get("weekly_hours", random.randint(35, 45)))
+        acc = int(extracted.get("task_accuracy", random.randint(85, 100)))
+        sent = str(extracted.get("sentiment", random.choice(["Positive", "Neutral", "Negative"]))).strip().capitalize()
 
         os.makedirs(WEEKLY_DIR, exist_ok=True)
         file_path = os.path.join(WEEKLY_DIR, f"week{data.week_number}.csv")
@@ -575,9 +587,12 @@ def ingest_natural_language(data: NaturalLanguageInput):
                         "avg_response_time_hours",
                         "after_hours_logins",
                         "sick_days",
+                        "weekly_hours",
+                        "task_accuracy",
+                        "sentiment"
                     ]
                 )
-            writer.writerow([name, tasks, resp, after, sick])
+            writer.writerow([name, tasks, resp, after, sick, hours, acc, sent])
 
         return {
             "success": True,
@@ -587,6 +602,9 @@ def ingest_natural_language(data: NaturalLanguageInput):
                 "avg_response_time": resp,
                 "after_hours_logins": after,
                 "sick_days": sick,
+                "weekly_hours": hours,
+                "task_accuracy": acc,
+                "sentiment": sent,
             },
         }
     except Exception as e:
