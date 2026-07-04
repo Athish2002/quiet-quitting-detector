@@ -316,6 +316,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
 
         # Strip internal bookkeeping key before saving.          [Rule 6]
         save_result = {k: v for k, v in result.items() if not k.startswith("_")}
+        save_result["signals"] = signals
         with open(current_file_path, "w", encoding="utf-8") as fh:
             json.dump(save_result, fh, indent=2)
 
@@ -331,6 +332,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
                 "Defaulted to Watch classification for safety."
             ),
             "healthy_streak": 0,
+            "signals": signals,
         }
 
         # Still attempt to save the fallback so history remains continuous.
