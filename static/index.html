@@ -1012,6 +1012,81 @@
         .toast.show {
             transform: translateY(0);
         }
+
+        /* -------------------------------------------------------------------
+           Interactive Guided Tour (Intro Mode)
+           ------------------------------------------------------------------- */
+        .tour-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(3, 5, 10, 0.7);
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(2px);
+            transition: all 0.3s ease;
+        }
+
+        .tour-highlight {
+            position: relative;
+            z-index: 1001 !important;
+            box-shadow: 0 0 0 9999px rgba(3, 5, 10, 0.7), 0 0 25px var(--primary) !important;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .tour-tooltip {
+            position: fixed;
+            z-index: 1002;
+            width: 320px;
+            background: var(--card-color);
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            display: none;
+            flex-direction: column;
+            gap: 0.8rem;
+            animation: tourFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            backdrop-filter: var(--glass-blur);
+        }
+
+        @keyframes tourFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .tour-tooltip-title {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .tour-tooltip-desc {
+            font-size: 0.84rem;
+            color: var(--text-primary);
+            line-height: 1.55;
+        }
+
+        .tour-tooltip-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.4rem;
+        }
+
+        .tour-tooltip-step {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .tour-btn-group {
+            display: flex;
+            gap: 0.4rem;
+        }
     </style>
 </head>
 <body>
@@ -1067,6 +1142,7 @@
             </h1>
             <div class="header-actions">
                 <span id="pipeline-status" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
+                <button class="btn btn-secondary" id="tour-btn" style="border-color: var(--accent); color: var(--accent);">Interactive Guide</button>
                 <button class="btn btn-secondary" id="history-report-btn">Show Report</button>
                 <button class="btn btn-secondary" id="mock-data-btn">Random Data</button>
                 <button class="btn btn-danger" id="clear-data-btn">Reset</button>
@@ -1079,9 +1155,9 @@
 
         <main>
             <!-- Sidebar Options -->
-            <div class="panel">
+            <div class="panel" id="sidebar-panel">
                 <div class="panel-header">
-                    <div class="tab-menu">
+                    <div class="tab-menu" id="tab-menu">
                         <button class="tab-btn active" onclick="switchTab('registry-tab')">Registry</button>
                         <button class="tab-btn" onclick="switchTab('paste-tab')">Ingest Sources</button>
                         <button class="tab-btn" onclick="switchTab('evaluator-tab')">Simulator</button>
@@ -1242,7 +1318,7 @@
             </div>
 
             <!-- Deep Dive Diagnostics Column -->
-            <div class="panel">
+            <div class="panel" id="diagnostics-panel">
                 <div class="panel-header">
                     <span>Employee Diagnostic</span>
                 </div>
@@ -1255,7 +1331,7 @@
             </div>
 
             <!-- Supportive Briefing Cards Column -->
-            <div class="panel">
+            <div class="panel" id="action-plan-panel">
                 <div class="panel-header">
                     <span>Supportive Action Plan</span>
                 </div>
@@ -2035,6 +2111,176 @@
             spinner.style.display = isLoading ? "inline-block" : "none";
             if (statusText) statusSpan.textContent = statusText;
         }
+
+        // Interactive Guided Tour Script
+        const tourSteps = [
+            {
+                elementId: "tour-btn",
+                title: "Welcome to Intro-Mode!",
+                description: "This interactive tour will guide you through the Quiet-Quitting Detector workspace so you understand the purpose and functionality of every component.",
+                position: "bottom"
+            },
+            {
+                elementId: "header-logo-title",
+                title: "Console Brand & Home Logo",
+                description: "Clicking this logo or title at any time returns you to the welcoming landing homepage where quotes and the project summary are displayed.",
+                position: "bottom"
+            },
+            {
+                elementId: "mock-data-btn",
+                title: "Random Mock Data",
+                description: "Click this first to write randomized trajectories for 6 employees (Week 1 to Week 4) as raw CSV files and pre-generate Week 1-3 memory JSONs.",
+                position: "bottom"
+            },
+            {
+                elementId: "run-pipeline-btn",
+                title: "Evaluate Registry (Run AI)",
+                description: "Once data is generated or synced, click this to run the 4-agent Gemini evaluation. It processes diagnostic scores, signals, and briefings sequentially.",
+                position: "bottom"
+            },
+            {
+                elementId: "history-report-btn",
+                title: "Executive Synthesis Report",
+                description: "Click this to open a summary modal containing the final executive report compiled by the Orchestrator for all flagged workers.",
+                position: "bottom"
+            },
+            {
+                elementId: "clear-data-btn",
+                title: "Database Reset",
+                description: "Completely clears all corporate CSV metrics, resets memory files, and resets the interface back to its initial blank states.",
+                position: "bottom"
+            },
+            {
+                elementId: "tab-menu",
+                title: "Navigation Tabs",
+                description: "Toggle the sidebar content between the Employee Registry, Ingestion Sources, and the Interactive Simulator.",
+                position: "right"
+            },
+            {
+                elementId: "registry-tab",
+                title: "Employee Registry Status",
+                description: "Shows all active employees, their current risk score (1-10), and their latest week of diagnostic calculations. Click any card to select them.",
+                position: "right"
+            },
+            {
+                elementId: "diagnostics-panel",
+                title: "Employee Diagnostic Detail",
+                description: "Shows visual progress of the risk score, the AI rationale diagnosis, and the chronological timeline chart summarizing metrics week-by-week.",
+                position: "left"
+            },
+            {
+                elementId: "action-plan-panel",
+                title: "Manager Supportive Action Plan",
+                description: "Generates HR-compliant dialogue cards and checklists to help managers coordinate supportive 1-on-1 workload discussions.",
+                position: "left"
+            }
+        ];
+
+        let currentTourStep = 0;
+
+        function startTour() {
+            switchTab('registry-tab');
+            currentTourStep = 0;
+            showTourStep(0);
+        }
+
+        function showTourStep(index) {
+            const overlay = document.getElementById("tour-overlay");
+            const tooltip = document.getElementById("tour-tooltip");
+            
+            overlay.style.display = "block";
+            tooltip.style.display = "flex";
+            
+            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
+            
+            const step = tourSteps[index];
+            const element = document.getElementById(step.elementId);
+            
+            if (element) {
+                element.classList.add("tour-highlight");
+                
+                const rect = element.getBoundingClientRect();
+                let top = 0;
+                let left = 0;
+                
+                if (step.position === "bottom") {
+                    top = rect.bottom + window.scrollY + 12;
+                    left = rect.left + window.scrollX + (rect.width / 2) - 160;
+                } else if (step.position === "right") {
+                    top = rect.top + window.scrollY;
+                    left = rect.right + window.scrollX + 12;
+                } else if (step.position === "left") {
+                    top = rect.top + window.scrollY;
+                    left = rect.left + window.scrollX - 332;
+                } else {
+                    top = (window.innerHeight / 2) - 100;
+                    left = (window.innerWidth / 2) - 160;
+                }
+                
+                // Keep tooltip on screen
+                if (left < 10) left = 10;
+                if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
+                if (top < 10) top = 10;
+                
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+                
+                document.getElementById("tour-title").innerHTML = `
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle; display:inline-block; margin-right:4px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                    ${step.title}
+                `;
+                document.getElementById("tour-desc").textContent = step.description;
+                document.getElementById("tour-step-counter").textContent = `Step ${index + 1} of ${tourSteps.length}`;
+                
+                const nextBtn = document.getElementById("tour-next-btn");
+                if (index === tourSteps.length - 1) {
+                    nextBtn.textContent = "Finish";
+                } else {
+                    nextBtn.textContent = "Next";
+                }
+            } else {
+                if (index < tourSteps.length - 1) {
+                    showTourStep(index + 1);
+                } else {
+                    exitTour();
+                }
+            }
+        }
+
+        function exitTour() {
+            document.getElementById("tour-overlay").style.display = "none";
+            document.getElementById("tour-tooltip").style.display = "none";
+            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
+        }
+
+        // Attach listeners
+        document.getElementById("tour-btn").addEventListener("click", startTour);
+        document.getElementById("tour-next-btn").addEventListener("click", () => {
+            if (currentTourStep < tourSteps.length - 1) {
+                currentTourStep++;
+                showTourStep(currentTourStep);
+            } else {
+                exitTour();
+            }
+        });
+        document.getElementById("tour-exit-btn").addEventListener("click", exitTour);
+        document.getElementById("tour-overlay").addEventListener("click", exitTour);
     </script>
+
+    <!-- Interactive Guided Tour HTML Elements -->
+    <div id="tour-overlay" class="tour-overlay"></div>
+    <div id="tour-tooltip" class="tour-tooltip">
+        <div class="tour-tooltip-title">
+            <span id="tour-title">Step Title</span>
+        </div>
+        <div class="tour-tooltip-desc" id="tour-desc">Step Description</div>
+        <div class="tour-tooltip-footer">
+            <span class="tour-tooltip-step" id="tour-step-counter">1 of 10</span>
+            <div class="tour-btn-group">
+                <button class="btn btn-secondary" id="tour-exit-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">Exit</button>
+                <button class="btn" id="tour-next-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #060913;">Next</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
