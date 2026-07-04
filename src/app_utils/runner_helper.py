@@ -97,10 +97,11 @@ def run_agent_sync(
     # 1. Determine model fallback sequence.
     current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
     fallback_models = [
-        "gemini-3.1-flash-lite",
-        "gemini-2.5-flash-lite",
-        "gemini-3.5-flash",
         "gemini-2.5-flash",
+        "gemini-1.5-flash",
+        "gemma-2-27b-it",  # Open-source fallback model (Gemma 2 27B)
+        "gemma-2-9b-it",   # Open-source fallback model (Gemma 2 9B)
+        "gemini-3.5-flash",
     ]
 
     candidates = fallback_models.copy()
