@@ -32,7 +32,16 @@ extractor_agent = Agent(
       "task_accuracy": 95,
       "sentiment": "Neutral"
     }
-    Only output valid JSON. Do not write explanations or conversational text.
+    
+    Guidelines to widen matching and fuzzy logic mapping:
+    - If a metric is not mentioned in the text, estimate a reasonable default value or leave it blank (e.g. 0 for sick days, 40 for weekly hours, 95 for accuracy, "Neutral" for sentiment).
+    - Map synonyms and behavioral descriptions flexibly:
+      * "holiday", "absences", "leaves", "days off", "vacation" -> map to "sick_days"
+      * "worked X hours", "spent X hours", "only for X hours" -> map to "weekly_hours"
+      * "worked everyday", "night logins", "late logins", "after-hours" -> map to "after_hours_logins"
+      * "accuracy", "quality", "score", "performance accuracy" -> map to "task_accuracy"
+      * "latency", "response", "delay", "avg response", "response speed" -> map to "avg_response_time_hours"
+    - Only output valid JSON. Do not write explanations or conversational text.
     """,
 )
 
@@ -575,6 +584,15 @@ def ingest_from_s3(data: S3SyncInput):
         ) from e
 
 
+def extract_json_block(text: str) -> str:
+    """Helper to extract JSON object safely from text that contains explanations or code fences."""
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1:
+        return text[start:end+1]
+    return text
+
+
 class NaturalLanguageInput(BaseModel):
     week_number: int
     text_prompt: str
@@ -591,13 +609,7 @@ def ingest_natural_language(data: NaturalLanguageInput):
             prompt=data.text_prompt,
         )
 
-        clean_str = raw_json_str.strip()
-        if clean_str.startswith("```"):
-            lines = clean_str.split("\n")
-            clean_str = "\n".join(
-                [line for line in lines if not line.startswith("```")]
-            )
-
+        clean_str = extract_json_block(raw_json_str)
         extracted = json.loads(clean_str.strip())
 
         name = extracted.get("employee_name", "Unknown").strip().capitalize()
