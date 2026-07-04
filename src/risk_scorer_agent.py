@@ -310,9 +310,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
         # Save to memory ----------------------------------------------------
         os.makedirs(MEMORY_DIR, exist_ok=True)  # Rule 3: ensure dir exists
         memory_file_name = f"{first_name_lower}_week{week_number}.json"
-        current_file_path = (
-            MEMORY_DIR + "\\" + memory_file_name
-        )  # Windows backslash path
+        current_file_path = os.path.join(MEMORY_DIR, memory_file_name)
 
         # Strip internal bookkeeping key before saving.          [Rule 6]
         save_result = {k: v for k, v in result.items() if not k.startswith("_")}
@@ -339,7 +337,7 @@ def score_risk(employee_name: str, signals: list[dict], week_number: int) -> dic
         try:
             os.makedirs(MEMORY_DIR, exist_ok=True)
             memory_file_name = f"{first_name_lower}_week{week_number}.json"
-            fallback_path = MEMORY_DIR + "\\" + memory_file_name
+            fallback_path = os.path.join(MEMORY_DIR, memory_file_name)
             with open(fallback_path, "w", encoding="utf-8") as fh:
                 json.dump(fallback, fh, indent=2)
         except Exception:

@@ -1371,6 +1371,11 @@
     <div class="toast" id="toast-container">Action completed successfully.</div>
 
     <script>
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str ?? "";
+            return div.innerHTML;
+        }
         const API_URL = "http://127.0.0.1:8000/api";
         let employees = [];
         let selectedEmployee = null;
@@ -1830,7 +1835,7 @@
                 
                 item.innerHTML = `
                     <div class="employee-item-header">
-                        <span class="employee-name">${emp.name}</span>
+                        <span class="employee-name">${escapeHtml(emp.name)}</span>
                         <span class="badge badge-${classClass}">${emp.classification}</span>
                     </div>
                     <div class="employee-mini-stats">
@@ -1881,7 +1886,7 @@
                         <div class="score-text" style="color: ${strokeColor}">${score}</div>
                     </div>
                     <div class="detail-hero-content">
-                        <span class="detail-hero-name">${selectedEmployee.name}</span>
+                        <span class="detail-hero-name">${escapeHtml(selectedEmployee.name)}</span>
                         <div><span class="badge badge-${classClass}">${classification}</span></div>
                     </div>
                 </div>
@@ -1944,7 +1949,7 @@
                         <div class="score-text" style="color: ${strokeColor}">${score}</div>
                     </div>
                     <div class="detail-hero-content">
-                        <span class="detail-hero-name">${name} (Simulator)</span>
+                        <span class="detail-hero-name">${escapeHtml(name)} (Simulator)</span>
                         <div><span class="badge badge-${classClass}">${classification}</span></div>
                     </div>
                 </div>
@@ -2060,8 +2065,8 @@
                             Observation Insights
                         </div>
                         <div class="briefing-body">
-                            ${signals ? `<strong>Behaviors:</strong> ${signals}<br><br>` : ''}
-                            ${observations || "Review communication latency and task delivery trajectory."}
+                            ${signals ? `<strong>Behaviors:</strong> ${escapeHtml(signals)}<br><br>` : ''}
+                            ${escapeHtml(observations) || "Review communication latency and task delivery trajectory."}
                         </div>
                     </div>
                 `;
@@ -2077,7 +2082,7 @@
                         </div>
                         <div class="briefing-body">
                             <ul id="dialogue-list">
-                                ${dialogue.map(d => `<li>${d}</li>`).join('')}
+                                ${dialogue.map(d => `<li>${escapeHtml(d)}</li>`).join('')}
                             </ul>
                         </div>
                     </div>
@@ -2093,7 +2098,7 @@
                         </div>
                         <div class="briefing-body briefing-body-danger">
                             <ul>
-                                ${warnings.map(w => `<li>${w}</li>`).join('')}
+                                ${warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}
                             </ul>
                         </div>
                     </div>
@@ -2109,7 +2114,7 @@
                         </div>
                         <div class="briefing-body">
                             <ul>
-                                ${actions.map(a => `<li>${a}</li>`).join('')}
+                                ${actions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
                             </ul>
                         </div>
                     </div>
@@ -2133,15 +2138,15 @@
                 if (!header) return;
 
                 if (header.includes("TEAM SUMMARY")) {
-                    parsedHtml += `<h2>Team Summary cohort list</h2><pre>${rest}</pre>`;
+                    parsedHtml += `<h2>Team Summary cohort list</h2><pre>${escapeHtml(rest)}</pre>`;
                 } else if (header.includes("INDIVIDUAL RISK CARDS")) {
-                    parsedHtml += `<h2>Individual Risk Cards</h2><pre>${rest}</pre>`;
+                    parsedHtml += `<h2>Individual Risk Cards</h2><pre>${escapeHtml(rest)}</pre>`;
                 } else if (header.includes("ARJUN BRIEFING") || header.includes("BRIEFING")) {
-                    parsedHtml += `<h2>Empathetic Briefing</h2><pre>${rest}</pre>`;
+                    parsedHtml += `<h2>Empathetic Briefing</h2><pre>${escapeHtml(rest)}</pre>`;
                 } else if (header.includes("MEMORY FILE CONFIRMATION")) {
-                    parsedHtml += `<h2>Stored Memory Logs</h2><pre>${rest}</pre>`;
+                    parsedHtml += `<h2>Stored Memory Logs</h2><pre>${escapeHtml(rest)}</pre>`;
                 } else {
-                    parsedHtml += `<h2>${header}</h2><pre>${rest}</pre>`;
+                    parsedHtml += `<h2>${escapeHtml(header)}</h2><pre>${escapeHtml(rest)}</pre>`;
                 }
             });
 

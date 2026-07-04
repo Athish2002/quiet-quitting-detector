@@ -21,6 +21,8 @@ WORKDIR /code
 COPY ./pyproject.toml ./README.md ./uv.lock* ./
 
 COPY ./src ./src
+COPY ./app.py ./app.py
+COPY ./static ./static
 
 RUN uv sync --frozen
 
@@ -32,4 +34,4 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "src.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -50,23 +50,21 @@ def preprocess_employee_records(
         except ValueError:
             sick_days = 0
 
-        import random
-
         try:
             raw_hours = resolve_header_value(row, COLUMN_ALIASES["weekly_hours"], "")
-            weekly_hours = int(raw_hours) if raw_hours else random.randint(35, 45)
+            weekly_hours = int(raw_hours) if raw_hours else None
         except ValueError:
-            weekly_hours = random.randint(35, 45)
+            weekly_hours = None
 
         try:
             raw_acc = resolve_header_value(row, COLUMN_ALIASES["task_accuracy"], "")
-            task_accuracy = int(raw_acc) if raw_acc else random.randint(85, 100)
+            task_accuracy = int(raw_acc) if raw_acc else None
         except ValueError:
-            task_accuracy = random.randint(85, 100)
+            task_accuracy = None
 
         sentiment = resolve_header_value(row, COLUMN_ALIASES["sentiment"], "")
         if not sentiment:
-            sentiment = random.choice(["Positive", "Neutral", "Negative"])
+            sentiment = None
         else:
             sentiment = sentiment.capitalize()
 
