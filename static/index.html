@@ -2641,6 +2641,32 @@
             });
         };
 
+        function renderRegistryTab() {
+            renderEmployeeList();
+        }
+
+        function renderPasteTab() {
+            const dbUrl = document.getElementById("db-url");
+            if (dbUrl) dbUrl.value = "postgresql://production-hr-db:5432/engagement";
+            const dbTable = document.getElementById("db-table");
+            if (dbTable) dbTable.value = "weekly_metrics";
+            const s3Uri = document.getElementById("s3-uri");
+            if (s3Uri) s3Uri.value = "s3://corporate-talent-logs/2026/Q3/week4.csv";
+        }
+
+        function renderEvaluatorTab() {
+            const hoursRange = document.getElementById("sim-hours");
+            const hoursVal = document.getElementById("hours-val");
+            if (hoursRange && hoursVal) {
+                hoursVal.textContent = hoursRange.value;
+            }
+            const accuracyRange = document.getElementById("sim-accuracy");
+            const accuracyVal = document.getElementById("accuracy-val");
+            if (accuracyRange && accuracyVal) {
+                accuracyVal.textContent = accuracyRange.value;
+            }
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll(".tab-btn").forEach(btn => {
                 btn.classList.remove("active");
@@ -2652,6 +2678,15 @@
                 content.classList.remove("active");
             });
             document.getElementById(tabId).classList.add("active");
+
+            // Correctly renders or refreshes content for the active tab
+            if (tabId === "registry-tab") {
+                renderRegistryTab();
+            } else if (tabId === "paste-tab") {
+                renderPasteTab();
+            } else if (tabId === "evaluator-tab") {
+                renderEvaluatorTab();
+            }
         }
 
         function setLoading(btn, spinner, statusText, isLoading) {
