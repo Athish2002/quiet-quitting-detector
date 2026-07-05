@@ -92,7 +92,6 @@
             margin: 0 auto;
             text-align: center;
             gap: 3rem;
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             position: relative;
             border-radius: 24px;
         }
@@ -110,11 +109,6 @@
             filter: blur(100px);
             z-index: -1;
             border-radius: 50%;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .welcome-hero {
@@ -1026,80 +1020,7 @@
             pointer-events: auto;
         }
 
-        /* -------------------------------------------------------------------
-           Interactive Guided Tour (Intro Mode)
-           ------------------------------------------------------------------- */
-        .tour-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(3, 5, 10, 0.7);
-            z-index: 1000;
-            display: none;
-            backdrop-filter: blur(2px);
-            transition: all 0.3s ease;
-        }
 
-        .tour-highlight {
-            position: relative;
-            z-index: 1001 !important;
-            box-shadow: 0 0 0 9999px rgba(3, 5, 10, 0.7), 0 0 25px var(--primary) !important;
-            pointer-events: none;
-            transition: all 0.3s ease;
-        }
-
-        .tour-tooltip {
-            position: fixed;
-            z-index: 1002;
-            width: 320px;
-            background: var(--card-color);
-            border: 1px solid var(--primary);
-            border-radius: 12px;
-            padding: 1.25rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            display: none;
-            flex-direction: column;
-            gap: 0.8rem;
-            animation: tourFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            backdrop-filter: var(--glass-blur);
-        }
-
-        @keyframes tourFadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .tour-tooltip-title {
-            font-family: var(--font-display);
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .tour-tooltip-desc {
-            font-size: 0.84rem;
-            color: var(--text-primary);
-            line-height: 1.55;
-        }
-
-        .tour-tooltip-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0.4rem;
-        }
-
-        .tour-tooltip-step {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .tour-btn-group {
-            display: flex;
-            gap: 0.4rem;
-        }
     </style>
 </head>
 <body>
@@ -1310,7 +1231,7 @@
             </h1>
             <div class="header-actions">
                 <span id="pipeline-status" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
-                <button class="btn btn-secondary" id="tour-btn" style="border-color: var(--accent); color: var(--accent);">Interactive Guide</button>
+
                 <button class="btn btn-secondary" id="history-report-btn">Show Report</button>
                 <button class="btn btn-secondary" id="mock-data-btn">Random Data</button>
                 <button class="btn btn-danger" id="clear-data-btn">Reset</button>
@@ -1594,7 +1515,6 @@
 
         // UI References
         let welcomeView, consoleView, enterBtn, logoTitle;
-        let quoteText, quoteAuthor;
         let runBtn, runSpinner, statusSpan;
         let mockBtn, clearBtn;
         let historyBtn, historyModal, closeModalBtn, modalBody;
@@ -1669,8 +1589,8 @@
                         </div>
                     `;
                     updatePipelineDiagram(false);
-                    const cbrAlert = document.getElementById("cbr-fallback-alert");
-                    if (cbrAlert) cbrAlert.style.display = "none";
+                    const cbrAlertEl = document.getElementById("cbr-fallback-alert");
+                    if (cbrAlertEl) cbrAlertEl.style.display = "none";
                     return;
                 }
                 
@@ -1749,8 +1669,7 @@
             consoleView = document.getElementById("console-view");
             enterBtn = document.getElementById("enter-console-btn");
             logoTitle = document.getElementById("header-logo-title");
-            quoteText = document.getElementById("random-quote-text");
-            quoteAuthor = document.getElementById("random-quote-author");
+
             runBtn = document.getElementById("run-pipeline-btn");
             runSpinner = document.getElementById("run-spinner");
             statusSpan = document.getElementById("pipeline-status");
@@ -1797,14 +1716,7 @@
                 closeViewerBtn.addEventListener("click", closeDocViewer);
             }
 
-            // Bind Document Viewer trigger links
-            const tmLink = document.getElementById("home-threat-model-link");
-            if (tmLink) {
-                tmLink.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    fetchAndShowDoc("threat-model");
-                });
-            }
+
 
             const rawReportLink = document.getElementById("home-raw-report-link");
             if (rawReportLink) {
@@ -2201,31 +2113,7 @@
                 });
             }
 
-            // Interactive Guided Tour Script Listeners
-            const tourBtn = document.getElementById("tour-btn");
-            const tourNextBtn = document.getElementById("tour-next-btn");
-            const tourExitBtn = document.getElementById("tour-exit-btn");
-            const tourOverlay = document.getElementById("tour-overlay");
 
-            if (tourBtn) {
-                tourBtn.addEventListener("click", startTour);
-            }
-            if (tourNextBtn) {
-                tourNextBtn.addEventListener("click", () => {
-                    if (currentTourStep < tourSteps.length - 1) {
-                        currentTourStep++;
-                        showTourStep(currentTourStep);
-                    } else {
-                        exitTour();
-                    }
-                });
-            }
-            if (tourExitBtn) {
-                tourExitBtn.addEventListener("click", exitTour);
-            }
-            if (tourOverlay) {
-                tourOverlay.addEventListener("click", exitTour);
-            }
         });
 
 
@@ -2756,207 +2644,7 @@
             }
         ];
 
-        // Interactive Guided Tour Script
-        const tourSteps = [
-            {
-                elementId: "tour-btn",
-                title: "Welcome to Intro-Mode!",
-                description: "This interactive tour will guide you through the disengagement detector console layout so you understand every component and tool.",
-                position: "bottom"
-            },
-            {
-                elementId: "pipeline-flow-panel",
-                title: "Coordinated 4-Agent Pipeline Flow",
-                description: "Displays disengagement workflow execution. As each ADK agent (Orchestrator, Trend Detector, Risk Scorer, Briefing Agent) runs, its status updates live.",
-                position: "bottom"
-            },
-            {
-                elementId: "home-registry-panel",
-                title: "Live Diagnostics Registry Status",
-                description: "Aggregates disengagement scores, classifications, and disengagement signals for all employees, pulled dynamically from master files.",
-                position: "right"
-            },
-            {
-                elementId: "home-raw-report-link",
-                title: "Master Report Log Badge",
-                description: "Clicking this badge loads the sandbox-safe In-App Document Viewer to display the raw compiled master briefing report (engagement_report.txt) instantly.",
-                position: "bottom"
-            },
-            {
-                elementId: "stride-hardening-panel",
-                title: "STRIDE Hardening Log",
-                description: "Documents active threat mitigations (PII name masking, output filter validation, HTML input sanitization, global cooldown cache) validated in test suites.",
-                position: "left"
-            },
-            {
-                elementId: "enter-console-btn",
-                title: "Enter Diagnostics Control Room",
-                description: "Ready to test or simulate? Click this button to switch from the Cockpit Overview to the main Diagnostics Control Room console.",
-                position: "bottom"
-            },
-            {
-                elementId: "mock-data-btn",
-                title: "Random Mock Data",
-                description: "Click this to write randomized trajectories for 6 employees (Week 1 to Week 4) as raw CSV files and pre-generate Week 1-3 memory JSONs.",
-                position: "bottom"
-            },
-            {
-                elementId: "run-pipeline-btn",
-                title: "Evaluate Registry (Run AI)",
-                description: "Once data is ready, click this to run the 4-agent Gemini evaluation. It processes diagnostic disengagement scores, signals, and briefings sequentially.",
-                position: "bottom"
-            },
-            {
-                elementId: "history-report-btn",
-                title: "Executive Synthesis Report",
-                description: "Click this to open a summary modal containing the final executive report compiled by the Orchestrator for all disengaged workers.",
-                position: "bottom"
-            },
-            {
-                elementId: "clear-data-btn",
-                title: "Database Reset",
-                description: "Completely clears all corporate CSV metrics, resets memory files, and resets the interface back to its initial blank states.",
-                position: "bottom"
-            },
-            {
-                elementId: "tab-menu",
-                title: "Navigation Tabs",
-                description: "Toggle the sidebar content between the Employee Registry, Ingestion Sources, and the Interactive Simulator.",
-                position: "right"
-            },
-            {
-                elementId: "paste-tab",
-                title: "Explaining Ingestion Sources",
-                description: "We support two robust ingestion paths: raw CSV copy-pasting or Natural Language prompt parsing. Click Next to switch tabs and view them!",
-                position: "right"
-            },
-            {
-                elementId: "evaluator-tab",
-                title: "Interactive Simulator Mode",
-                description: "Allows you to dynamically adjust working hours, task accuracy, and communication sentiment to simulate and evaluate hypothetical disengagement trajectories.",
-                position: "right"
-            },
-            {
-                elementId: "registry-tab",
-                title: "Employee Registry Status",
-                description: "Shows all active employees, their current risk score (1-10), and their latest week of diagnostic calculations. Click any card to select them.",
-                position: "right"
-            },
-            {
-                elementId: "diagnostics-panel",
-                title: "Employee Diagnostic Detail",
-                description: "Shows visual progress of the risk score, the AI rationale diagnosis, and the chronological timeline chart summarizing metrics week-by-week.",
-                position: "left"
-            },
-            {
-                elementId: "action-plan-panel",
-                title: "Manager Supportive Action Plan",
-                description: "Generates HR-compliant dialogue dialogue cards and checklists to help managers coordinate supportive 1-on-1 workload discussions.",
-                position: "left"
-            }
-        ];
 
-        let currentTourStep = 0;
-
-        function startTour() {
-            currentTourStep = 0;
-            showTourStep(0);
-        }
-
-        function showTourStep(index) {
-            const overlay = document.getElementById("tour-overlay");
-            const tooltip = document.getElementById("tour-tooltip");
-            
-            overlay.style.display = "block";
-            tooltip.style.display = "flex";
-            
-            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
-            
-            // Auto switch views/tabs during tour steps to follow layout structure
-            if (index <= 5) {
-                if (welcomeView) welcomeView.style.display = "grid";
-                if (consoleView) consoleView.style.display = "none";
-            } else {
-                if (welcomeView) welcomeView.style.display = "none";
-                if (consoleView) consoleView.style.display = "flex";
-                if (index === 11) {
-                    switchTab('paste-tab');
-                } else if (index === 12) {
-                    switchTab('evaluator-tab');
-                } else if (index === 13) {
-                    switchTab('registry-tab');
-                }
-            }
-
-            const step = tourSteps[index];
-            const element = document.getElementById(step.elementId);
-            
-            if (element) {
-                element.classList.add("tour-highlight");
-                
-                const rect = element.getBoundingClientRect();
-                let top = 0;
-                let left = 0;
-                
-                if (step.position === "bottom") {
-                    top = rect.bottom + window.scrollY + 12;
-                    left = rect.left + window.scrollX + (rect.width / 2) - 160;
-                } else if (step.position === "right") {
-                    top = rect.top + window.scrollY;
-                    left = rect.right + window.scrollX + 12;
-                } else if (step.position === "left") {
-                    top = rect.top + window.scrollY;
-                    left = rect.left + window.scrollX - 332;
-                } else {
-                    top = (window.innerHeight / 2) - 100;
-                    left = (window.innerWidth / 2) - 160;
-                }
-                
-                // Keep tooltip on screen
-                if (left < 10) left = 10;
-                if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
-                if (top < 10) top = 10;
-                
-                tooltip.style.top = `${top}px`;
-                tooltip.style.left = `${left}px`;
-                
-                document.getElementById("tour-title").innerHTML = `
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle; display:inline-block; margin-right:4px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
-                    ${step.title}
-                `;
-                document.getElementById("tour-desc").textContent = step.description;
-                document.getElementById("tour-step-counter").textContent = `Step ${index + 1} of ${tourSteps.length}`;
-                
-                const nextBtn = document.getElementById("tour-next-btn");
-                if (index === tourSteps.length - 1) {
-                    nextBtn.textContent = "Finish";
-                } else {
-                    nextBtn.textContent = "Next";
-                }
-            } else {
-                if (index < tourSteps.length - 1) {
-                    showTourStep(index + 1);
-                } else {
-                    exitTour();
-                }
-            }
-        }
-
-        function exitTour() {
-            document.getElementById("tour-overlay").style.display = "none";
-            document.getElementById("tour-tooltip").style.display = "none";
-            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
-            
-            // Restore actual saved view state
-            const savedView = safeGetItem("view");
-            if (savedView === "console") {
-                if (welcomeView) welcomeView.style.display = "none";
-                if (consoleView) consoleView.style.display = "flex";
-            } else {
-                if (welcomeView) welcomeView.style.display = "grid";
-                if (consoleView) consoleView.style.display = "none";
-            }
-        }
 
         function openDocViewer(title, content, isMarkdown = false) {
             const panel = document.getElementById("doc-viewer-panel");
@@ -3042,21 +2730,7 @@
 
     </script>
 
-    <!-- Interactive Guided Tour HTML Elements -->
-    <div id="tour-overlay" class="tour-overlay"></div>
-    <div id="tour-tooltip" class="tour-tooltip">
-        <div class="tour-tooltip-title">
-            <span id="tour-title">Step Title</span>
-        </div>
-        <div class="tour-tooltip-desc" id="tour-desc">Step Description</div>
-        <div class="tour-tooltip-footer">
-            <span class="tour-tooltip-step" id="tour-step-counter">1 of 10</span>
-            <div class="tour-btn-group">
-                <button class="btn btn-secondary" id="tour-exit-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">Exit</button>
-                <button class="btn" id="tour-next-btn" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #060913;">Next</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Modal for Homepage Feature Details -->
     <div class="modal" id="feature-detail-modal">
