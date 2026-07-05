@@ -31,7 +31,8 @@ graph TD
 ```
 
 ### A. The Ingestion & Preprocessing Layers ([ingestion.py](file:///d:/Antigravity/Capstone%20Project/src/data_layer/ingestion.py) & [preprocessing.py](file:///d:/Antigravity/Capstone%20Project/src/data_layer/preprocessing.py))
-- **Fuzzy Alias Mapping:** Maps raw data keys from diverse sources (Postgres DB columns, AWS S3 buckets, manual uploads) to standardized keys. For example, columns like `hours_worked`, `hours`, or `weekly hours` are mapped seamlessly to `weekly_hours`.
+- **Fuzzy Alias Mapping:** Maps raw data keys from diverse sources (simulated Postgres DB columns, S3 storage URIs, raw CSV rows, text prompts) to standardized keys. For example, columns like `hours_worked`, `hours`, or `weekly hours` are mapped seamlessly to `weekly_hours`.
+- **Active vs. Simulated Ingest Paths:** Raw CSV upload and Natural Language prompt extraction represent fully functional paths. Ingestion endpoints for Postgres DB and AWS S3 are mock-implemented as prototypes to demonstrate future connection architectures without provisioning costly cloud servers.
 - **Probabilistic Fallbacks:** If uploaded CSV files omit certain metrics, the preprocessing layer automatically generates realistic, probabilistic values (instead of static values) to ensure continuous logic flow without breaking the AI.
 - **Strict Privacy Rule 1:** Fully strips employee last names, IDs, and usernames, preserving only first names in all prompts, responses, and session metadata.
 

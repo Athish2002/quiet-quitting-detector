@@ -743,7 +743,7 @@ def ingest_from_db(data: DatabaseSyncInput):
             writer.writerow(["Divya", "10", "0.4", "0", "0", "38", "98", "Positive"])
         return {
             "success": True,
-            "message": f"Successfully synchronized 2 employee records (with Weekly Hours, Task Accuracy, Sentiment) from Database table '{data.table_name}' for Week {data.target_week}.",
+            "message": f"[Simulation] Successfully simulated synchronization of 2 employee records from Database table '{data.table_name}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
@@ -776,7 +776,7 @@ def ingest_from_s3(data: S3SyncInput):
             writer.writerow(["Ravi", "9", "0.6", "0", "0", "40", "96", "Positive"])
         return {
             "success": True,
-            "message": f"Successfully downloaded bucket content (with Weekly Hours, Task Accuracy, Sentiment) from S3 path '{data.s3_uri}' for Week {data.target_week}.",
+            "message": f"[Simulation] Successfully simulated downloading bucket contents from S3 path '{data.s3_uri}' for Week {data.target_week}.",
         }
     except Exception as e:
         raise HTTPException(
