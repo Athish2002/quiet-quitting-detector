@@ -1589,45 +1589,16 @@
         ];
 
         // UI References
-        const welcomeView = document.getElementById("welcome-view");
-        const consoleView = document.getElementById("console-view");
-        const enterBtn = document.getElementById("enter-console-btn");
-        const logoTitle = document.getElementById("header-logo-title");
-        
-        const quoteText = document.getElementById("random-quote-text");
-        const quoteAuthor = document.getElementById("random-quote-author");
-
-        const runBtn = document.getElementById("run-pipeline-btn");
-        const runSpinner = document.getElementById("run-spinner");
-        const statusSpan = document.getElementById("pipeline-status");
-        
-        const mockBtn = document.getElementById("mock-data-btn");
-        const clearBtn = document.getElementById("clear-data-btn");
-        const historyBtn = document.getElementById("history-report-btn");
-        const historyModal = document.getElementById("history-modal");
-        const closeModalBtn = document.getElementById("close-modal-btn");
-        const modalBody = document.getElementById("modal-report-content");
-        
-        const dbSyncBtn = document.getElementById("db-sync-btn");
-        const s3SyncBtn = document.getElementById("s3-sync-btn");
-        
-        const submitPromptBtn = document.getElementById("submit-prompt-btn");
-        const promptSpinner = document.getElementById("prompt-spinner");
-        const promptWeek = document.getElementById("prompt-week");
-        const promptText = document.getElementById("prompt-text");
-        
-        const submitCsvBtn = document.getElementById("submit-csv-btn");
-        const csvSpinner = document.getElementById("csv-spinner");
-        const pasteWeek = document.getElementById("paste-week");
-        const pasteCsv = document.getElementById("paste-csv");
-        
-        const submitSimBtn = document.getElementById("submit-sim-btn");
-        const simSpinner = document.getElementById("sim-spinner");
-        
-        const listContainer = document.getElementById("employee-list-container");
-        const diagContainer = document.getElementById("diagnostic-container");
-        const briefingContainer = document.getElementById("briefing-container");
-        const toast = document.getElementById("toast-container");
+        let welcomeView, consoleView, enterBtn, logoTitle;
+        let quoteText, quoteAuthor;
+        let runBtn, runSpinner, statusSpan;
+        let mockBtn, clearBtn;
+        let historyBtn, historyModal, closeModalBtn, modalBody;
+        let dbSyncBtn, s3SyncBtn;
+        let submitPromptBtn, promptSpinner, promptWeek, promptText;
+        let submitCsvBtn, csvSpinner, pasteWeek, pasteCsv;
+        let submitSimBtn, simSpinner;
+        let listContainer, diagContainer, briefingContainer, toast;
 
         // Initialization
         async function updateApiMetrics() {
@@ -1769,6 +1740,39 @@
         }
 
         window.addEventListener("DOMContentLoaded", () => {
+            // Initialize UI References after DOM is fully constructed
+            welcomeView = document.getElementById("welcome-view");
+            consoleView = document.getElementById("console-view");
+            enterBtn = document.getElementById("enter-console-btn");
+            logoTitle = document.getElementById("header-logo-title");
+            quoteText = document.getElementById("random-quote-text");
+            quoteAuthor = document.getElementById("random-quote-author");
+            runBtn = document.getElementById("run-pipeline-btn");
+            runSpinner = document.getElementById("run-spinner");
+            statusSpan = document.getElementById("pipeline-status");
+            mockBtn = document.getElementById("mock-data-btn");
+            clearBtn = document.getElementById("clear-data-btn");
+            historyBtn = document.getElementById("history-report-btn");
+            historyModal = document.getElementById("history-modal");
+            closeModalBtn = document.getElementById("close-modal-btn");
+            modalBody = document.getElementById("modal-report-content");
+            dbSyncBtn = document.getElementById("db-sync-btn");
+            s3SyncBtn = document.getElementById("s3-sync-btn");
+            submitPromptBtn = document.getElementById("submit-prompt-btn");
+            promptSpinner = document.getElementById("prompt-spinner");
+            promptWeek = document.getElementById("prompt-week");
+            promptText = document.getElementById("prompt-text");
+            submitCsvBtn = document.getElementById("submit-csv-btn");
+            csvSpinner = document.getElementById("csv-spinner");
+            pasteWeek = document.getElementById("paste-week");
+            pasteCsv = document.getElementById("paste-csv");
+            submitSimBtn = document.getElementById("submit-sim-btn");
+            simSpinner = document.getElementById("sim-spinner");
+            listContainer = document.getElementById("employee-list-container");
+            diagContainer = document.getElementById("diagnostic-container");
+            briefingContainer = document.getElementById("briefing-container");
+            toast = document.getElementById("toast-container");
+
             updateApiMetrics();
             setInterval(updateApiMetrics, 5000);
 
