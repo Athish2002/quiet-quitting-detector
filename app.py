@@ -312,6 +312,15 @@ def get_raw_report():
     raise HTTPException(status_code=404, detail="Engagement report file not found.")
 
 
+@app.get("/api/report/threat-model")
+def get_threat_model():
+    """Serves the security THREAT_MODEL.md file content."""
+    threat_model_path = "THREAT_MODEL.md"
+    if os.path.exists(threat_model_path):
+        return FileResponse(threat_model_path, media_type="text/markdown")
+    raise HTTPException(status_code=404, detail="Threat model file not found.")
+
+
 @app.post("/api/memory/clear")
 def clear_pipeline_data():
     """Deletes all employee memory JSON files and the master engagement report."""

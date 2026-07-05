@@ -1105,7 +1105,7 @@
 <body>
 
     <!-- Welcoming Landing Homepage View -->
-    <div id="welcome-view" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem 3rem 1rem; border-radius: 24px;">
+    <div id="welcome-view" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem 3rem 1rem; border-radius: 24px;">
         <!-- Header Banner spanning full width -->
         <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
@@ -1118,54 +1118,55 @@
             </button>
         </div>
 
-        <!-- Left Column: Live Registry & Agent Pipeline Flow -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-            
-            <!-- Agentic Pipeline Visual Flow -->
+        <!-- Coordinated 4-Agent Pipeline spanning full width -->
+        <div style="grid-column: 1 / -1;">
             <div class="panel" style="padding: 1.2rem;">
                 <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; margin-top: 0;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    Coordinated 4-Agent Pipeline
+                    Coordinated 4-Agent Pipeline Flow
                 </h3>
                 
-                <div style="display: grid; grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr; align-items: center; gap: 0.3rem; background: rgba(0,0,0,0.15); padding: 0.8rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                <div style="display: grid; grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.15); padding: 0.8rem; border-radius: 12px; border: 1px solid var(--border-color);">
                     <!-- Node 1: Orchestrator -->
-                    <div id="pipeline-node-orchestrator" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.72rem; color: var(--text-primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Orchestrator</div>
-                        <div class="node-status" style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <div id="pipeline-node-orchestrator" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); font-weight: bold;">Orchestrator</div>
+                        <div class="node-status" style="font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                             <span class="status-dot" style="width: 5px; height: 5px; border-radius: 50%; background: var(--text-secondary); display: inline-block;"></span> Pending
                         </div>
                     </div>
                     <!-- Arrow -->
-                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">➔</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">➔</div>
                     <!-- Node 2: Trend Detector -->
-                    <div id="pipeline-node-trend" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.72rem; color: var(--text-primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Trend Detector</div>
-                        <div class="node-status" style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <div id="pipeline-node-trend" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); font-weight: bold;">Trend Detector</div>
+                        <div class="node-status" style="font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                             <span class="status-dot" style="width: 5px; height: 5px; border-radius: 50%; background: var(--text-secondary); display: inline-block;"></span> Pending
                         </div>
                     </div>
                     <!-- Arrow -->
-                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">➔</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">➔</div>
                     <!-- Node 3: Risk Scorer -->
-                    <div id="pipeline-node-risk" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.72rem; color: var(--text-primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Risk Scorer</div>
-                        <div class="node-status" style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <div id="pipeline-node-risk" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); font-weight: bold;">Risk Scorer</div>
+                        <div class="node-status" style="font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                             <span class="status-dot" style="width: 5px; height: 5px; border-radius: 50%; background: var(--text-secondary); display: inline-block;"></span> Pending
                         </div>
                     </div>
                     <!-- Arrow -->
-                    <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">➔</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">➔</div>
                     <!-- Node 4: Briefing -->
-                    <div id="pipeline-node-briefing" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 0.72rem; color: var(--text-primary); font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Briefing Agent</div>
-                        <div class="node-status" style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <div id="pipeline-node-briefing" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-primary); font-weight: bold;">Briefing Agent</div>
+                        <div class="node-status" style="font-size: 0.68rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px;">
                             <span class="status-dot" style="width: 5px; height: 5px; border-radius: 50%; background: var(--text-secondary); display: inline-block;"></span> Pending
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Left Column: Live Registry status and optional Fallback details -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <!-- Dynamic CBR Fallback Box -->
             <div id="cbr-fallback-alert" style="display: none; background: rgba(245, 158, 11, 0.05); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-bottom: 0;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1185,7 +1186,7 @@
                 <div class="panel-header" style="padding: 0; border: none; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
                     <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0;">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
-                        Live Diagnostics Registry Status (engagement_report.txt)
+                        Live Diagnostics Registry Status (<a href="#" id="home-raw-report-link" style="color: var(--primary); text-decoration: underline; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View raw engagement_report.txt"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> engagement_report.txt</a>)
                     </h3>
                     <span id="live-registry-count" style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary); font-weight: bold;">0 Records</span>
                 </div>
@@ -1278,7 +1279,7 @@
                             <li><strong>ADK Multi-Agent Orchestration:</strong> Sequential, thread-isolated cascade flow coordinates metrics analysis and manager briefing generation across 4 distinct LLM nodes.</li>
                             <li><strong>MCP Web Search:</strong> Triggered strictly during <em>Silent Exit</em> evaluations to query contextual industry averages and workspace recovery guides.</li>
                             <li><strong>Agent Memory with Decay:</strong> Tracks historical disengagement scores chronologically, applying consecutive week scaling and decaying risk indexes back to normal on healthy behavior.</li>
-                            <li><strong>STRIDE Threat Model Hardening:</strong> Secure-by-design implementation resolving spoofing, data leakage, and denial of service. Read the full <a href="file:///d:/Antigravity/Capstone Project/THREAT_MODEL.md" target="_blank" style="color: var(--primary); text-decoration: underline;">THREAT_MODEL.md</a>.</li>
+                            <li><strong>STRIDE Threat Model Hardening:</strong> Secure-by-design implementation resolving spoofing, data leakage, and denial of service. Read the full <a href="#" id="home-threat-model-link" style="color: var(--primary); text-decoration: underline; font-weight: bold; cursor: pointer;">THREAT_MODEL.md (View In-App)</a>.</li>
                         </ul>
                     </div>
                     <div>
@@ -1747,6 +1748,37 @@
                     const isHidden = cbrContent.style.display === "none";
                     cbrContent.style.display = isHidden ? "block" : "none";
                     toggleCbrBtn.textContent = isHidden ? "Hide Explanation" : "Show Explanation";
+                });
+            }
+
+            // Bind document viewer close action
+            const closeViewerBtn = document.getElementById("doc-viewer-close-btn");
+            if (closeViewerBtn) {
+                closeViewerBtn.addEventListener("click", closeDocViewer);
+            }
+
+            // Bind Document Viewer trigger links
+            const tmLink = document.getElementById("home-threat-model-link");
+            if (tmLink) {
+                tmLink.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    fetchAndShowDoc("threat-model");
+                });
+            }
+
+            const rawReportLink = document.getElementById("home-raw-report-link");
+            if (rawReportLink) {
+                rawReportLink.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    fetchAndShowDoc("raw-report");
+                });
+            }
+
+            const apiMetricsBadge = document.getElementById("api-metrics-badge");
+            if (apiMetricsBadge) {
+                apiMetricsBadge.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    fetchAndShowDoc("api-metrics");
                 });
             }
 
@@ -2877,6 +2909,85 @@
             }
         }
 
+        function openDocViewer(title, content, isMarkdown = false) {
+            const panel = document.getElementById("doc-viewer-panel");
+            const titleEl = document.getElementById("doc-viewer-title");
+            const contentEl = document.getElementById("doc-viewer-content");
+            if (!panel || !titleEl || !contentEl) return;
+            
+            titleEl.innerHTML = `
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; display:inline-block; margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                ${escapeHtml(title)}
+            `;
+            
+            if (isMarkdown) {
+                let html = content
+                    .replace(/# (.*)/g, '<h1 style="color:var(--primary); font-size:1.45rem; margin-top:1.25rem; margin-bottom:0.75rem; font-family:var(--font-display);">$1</h1>')
+                    .replace(/## (.*)/g, '<h2 style="color:var(--primary); font-size:1.15rem; margin-top:1.25rem; margin-bottom:0.5rem; font-family:var(--font-display); border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.25rem;">$1</h2>')
+                    .replace(/### (.*)/g, '<h3 style="color:var(--accent); font-size:0.95rem; margin-top:0.8rem; margin-bottom:0.4rem;">$1</h3>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-primary);">$1</strong>')
+                    .replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; font-size:0.75rem; color:var(--primary); font-family:monospace;">$1</code>')
+                    .replace(/- (.*)/g, '<li style="margin-left:1.25rem; margin-bottom:4px; color:var(--text-secondary);">$1</li>')
+                    .replace(/\n/g, '<br/>');
+                contentEl.innerHTML = `<div style="font-family:inherit; white-space:normal; line-height:1.6; text-align:left;">${html}</div>`;
+                contentEl.style.fontFamily = "var(--font-main)";
+            } else {
+                contentEl.innerHTML = `<pre style="margin:0; font-family:monospace; font-size:0.78rem; overflow-x:auto; text-align:left; white-space:pre-wrap; word-break:break-all;">${escapeHtml(content)}</pre>`;
+                contentEl.style.fontFamily = "monospace";
+            }
+            
+            panel.style.display = "block";
+            setTimeout(() => {
+                panel.style.transform = "translateX(0)";
+            }, 10);
+        }
+
+        function closeDocViewer() {
+            const panel = document.getElementById("doc-viewer-panel");
+            if (!panel) return;
+            panel.style.transform = "translateX(100%)";
+            setTimeout(() => {
+                panel.style.display = "none";
+            }, 300);
+        }
+
+        async function fetchAndShowDoc(type) {
+            try {
+                let url = "";
+                let title = "";
+                let isMarkdown = false;
+                
+                if (type === "threat-model") {
+                    url = `${API_URL}/report/threat-model`;
+                    title = "THREAT_MODEL.md (Security Hardening)";
+                    isMarkdown = true;
+                } else if (type === "raw-report") {
+                    url = `${API_URL}/report/raw`;
+                    title = "engagement_report.txt (Master Briefing Log)";
+                    isMarkdown = false;
+                } else if (type === "api-metrics") {
+                    url = `${API_URL}/metrics`;
+                    title = "api_metrics.json (LLM Token & Fallback Log)";
+                    isMarkdown = false;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Failed to load document");
+                
+                let content = "";
+                if (type === "api-metrics") {
+                    const json = await response.json();
+                    content = JSON.stringify(json, null, 2);
+                } else {
+                    content = await response.text();
+                }
+                
+                openDocViewer(title, content, isMarkdown);
+            } catch (err) {
+                alert(`Error opening document: ${err.message}`);
+            }
+        }
+
         function exitTour() {
             document.getElementById("tour-overlay").style.display = "none";
             document.getElementById("tour-tooltip").style.display = "none";
@@ -2912,6 +3023,22 @@
             <div class="modal-body" id="feature-modal-body" style="padding: 1.5rem; line-height: 1.6; font-size: 0.9rem;">
                 <!-- content injected dynamically -->
             </div>
+        </div>
+    </div>
+
+    <!-- In-App Document Viewer Slide Panel -->
+    <div id="doc-viewer-panel" style="display: none; position: fixed; top: 0; right: 0; width: 700px; max-width: 90%; height: 100vh; background: rgba(13, 18, 30, 0.98); border-left: 1px solid var(--border-color); box-shadow: -15px 0 35px rgba(0,0,0,0.6); z-index: 3000; padding: 2rem; overflow-y: auto; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 id="doc-viewer-title" style="font-family: var(--font-display); font-size: 1.15rem; color: var(--primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Document Viewer
+            </h2>
+            <button id="doc-viewer-close-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; outline: none; transition: all 0.2s;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="doc-viewer-content" style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color); font-family: 'Courier New', Courier, monospace;">
+            Loading document...
         </div>
     </div>
 </body>
