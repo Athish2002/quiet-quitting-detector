@@ -1535,6 +1535,39 @@
     <div class="toast" id="toast-container">Action completed successfully.</div>
 
     <script>
+        // Global error handler to catch and display any JavaScript crashes directly to the user
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Global JS Error: ", message, " at ", source, ":", lineno);
+            showToast("JS Error: " + message, true);
+            return false;
+        };
+
+        // Safe localStorage helpers to handle sandboxed/restricted environments
+        function safeSetItem(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                console.warn("localStorage set failed:", e);
+            }
+        }
+
+        function safeGetItem(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                console.warn("localStorage get failed:", e);
+                return null;
+            }
+        }
+
+        function safeRemoveItem(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn("localStorage remove failed:", e);
+            }
+        }
+
         function escapeHtml(str) {
             const div = document.createElement("div");
             div.textContent = str ?? "";
@@ -1784,22 +1817,26 @@
             const btnScopeMain = document.getElementById("btn-scope-main");
             const btnScopeRealtime = document.getElementById("btn-scope-realtime");
 
-            btnScopeMain.addEventListener("click", () => {
-                currentScope = "main";
-                btnScopeMain.classList.add("active");
-                btnScopeRealtime.classList.remove("active");
-                fetchEmployees();
-            });
+            if (btnScopeMain) {
+                btnScopeMain.addEventListener("click", () => {
+                    currentScope = "main";
+                    btnScopeMain.classList.add("active");
+                    if (btnScopeRealtime) btnScopeRealtime.classList.remove("active");
+                    fetchEmployees();
+                });
+            }
 
-            btnScopeRealtime.addEventListener("click", () => {
-                currentScope = "realtime";
-                btnScopeRealtime.classList.add("active");
-                btnScopeMain.classList.remove("active");
-                fetchEmployees();
-            });
+            if (btnScopeRealtime) {
+                btnScopeRealtime.addEventListener("click", () => {
+                    currentScope = "realtime";
+                    btnScopeRealtime.classList.add("active");
+                    if (btnScopeMain) btnScopeMain.classList.remove("active");
+                    fetchEmployees();
+                });
+            }
 
             // Restore session state
-            const savedView = localStorage.getItem("view");
+            const savedView = safeGetItem("view");
             if (savedView === "console") {
                 if (welcomeView) welcomeView.style.display = "none";
                 if (consoleView) consoleView.style.display = "flex";
@@ -1814,7 +1851,7 @@
             // Switch to console view
             if (enterBtn) {
                 enterBtn.addEventListener("click", () => {
-                    localStorage.setItem("view", "console");
+                    safeSetItem("view", "console");
                     if (welcomeView) welcomeView.style.display = "none";
                     if (consoleView) consoleView.style.display = "flex";
                     renderEmployeeList();
@@ -1828,7 +1865,7 @@
                     if (e.target.closest('#api-metrics-badge')) {
                         return; // Do not go home if user clicked the API metrics badge
                     }
-                    localStorage.setItem("view", "welcome");
+                    safeSetItem("view", "welcome");
                     if (consoleView) consoleView.style.display = "none";
                     if (welcomeView) welcomeView.style.display = "grid";
                     updateHomepageRegistryStatus();
@@ -1967,7 +2004,7 @@
                             }
                             employees = [];
                             selectedEmployee = null;
-                            localStorage.removeItem("selectedEmployee");
+                            safeRemoveItem("selectedEmployee");
                             renderEmployeeList();
                             if (statusSpan) statusSpan.textContent = "Database reset.";
                         }
@@ -2707,9 +2744,9 @@
         async function selectEmployee(name) {
             selectedEmployee = employees.find(e => e.name === name);
             if (selectedEmployee) {
-                localStorage.setItem("selectedEmployee", name);
+                safeSetItem("selectedEmployee", name);
             } else {
-                localStorage.removeItem("selectedEmployee");
+                safeRemoveItem("selectedEmployee");
             }
             renderEmployeeList();
             renderDiagnostics();
