@@ -1502,7 +1502,10 @@
             });
 
             // Back to home logo click
-            logoTitle.addEventListener("click", () => {
+            logoTitle.addEventListener("click", (e) => {
+                if (e.target.closest('#api-metrics-badge')) {
+                    return; // Do not go home if user clicked the API metrics badge
+                }
                 localStorage.setItem("view", "welcome");
                 consoleView.style.display = "none";
                 welcomeView.style.display = "flex";
