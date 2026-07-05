@@ -2171,12 +2171,60 @@
                 return;
             }
 
+            // Clean and format a markdown line from manager briefing cards safely
+            function formatBriefLine(line) {
+                if (!line) return "";
+                let clean = line.trim();
+                if (clean === "--" || clean === "---" || clean === "-") return "";
+                
+                // Strip list indicators but keep bolding marker ** intact
+                clean = clean.replace(/^[\-]\s*/, "");
+                clean = clean.replace(/^\d+\.\s*/, "");
+                if (clean.startsWith("*") && !clean.startsWith("**")) {
+                    clean = clean.replace(/^\*\s*/, "");
+                }
+                
+                // Convert markdown bolding and italics to HTML
+                clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                clean = clean.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                clean = clean.replace(/^#{1,6}\s*/, ""); // Strip leftover md headers
+                return clean;
+            }
+
+            // Render section items lists into nested structured HTML paragraphs and bullet list sections
+            function renderItemsList(items) {
+                let html = "";
+                let inList = false;
+                
+                items.forEach(item => {
+                    if (item.isBullet) {
+                        if (!inList) {
+                            html += '<ul style="margin: 6px 0;">';
+                            inList = true;
+                        }
+                        html += `<li>${item.text}</li>`;
+                    } else {
+                        if (inList) {
+                            html += '</ul>';
+                            inList = false;
+                        }
+                        html += `<p style="margin: 8px 0 4px 0; line-height: 1.5; font-size: 0.9rem; color: var(--text-secondary);">${item.text}</p>`;
+                    }
+                });
+                
+                if (inList) {
+                    html += '</ul>';
+                }
+                
+                return html;
+            }
+
             const lines = rawCard.split('\n');
-            let signals = "";
+            let signals = [];
             let dialogue = [];
             let warnings = [];
             let actions = [];
-            let observations = "";
+            let observations = [];
 
             let section = "";
             lines.forEach(line => {
@@ -2194,19 +2242,25 @@
                 } else if (clean.includes("Pre-Meeting Observation") || clean.includes("Observation:")) {
                     section = "observation";
                 } else {
-                    const text = clean.replace(/^\*\s*/, "").replace(/^-\s*/, "").replace(/^\d+\.\s*/, "");
-                    if (section === "signals") signals += text + " ";
-                    else if (section === "dialogue") dialogue.push(text);
-                    else if (section === "warnings") warnings.push(text);
-                    else if (section === "actions") actions.push(text);
-                    else if (section === "observation") observations += text + " ";
-                    else dialogue.push(text); // Catch-all for unsectioned text
+                    const isBullet = /^[\*\-]\s+/.test(clean) || /^\d+\.\s+/.test(clean);
+                    const escaped = escapeHtml(clean);
+                    const formatted = formatBriefLine(escaped);
+                    if (!formatted) return; // Skip separators
+                    
+                    const item = { text: formatted, isBullet: isBullet };
+                    
+                    if (section === "signals") signals.push(formatted);
+                    else if (section === "dialogue") dialogue.push(item);
+                    else if (section === "warnings") warnings.push(item);
+                    else if (section === "actions") actions.push(item);
+                    else if (section === "observation") observations.push(formatted);
+                    else dialogue.push(item);
                 }
             });
 
             let html = '<div class="briefing-card-content">';
 
-            if (observations || signals) {
+            if (observations.length > 0 || signals.length > 0) {
                 html += `
                     <div class="briefing-card ${glowClass}">
                         <div class="briefing-header" style="color: var(--watch);">
@@ -2214,8 +2268,8 @@
                             Observation Insights
                         </div>
                         <div class="briefing-body">
-                            ${signals ? `<strong>Behaviors:</strong> ${escapeHtml(signals)}<br><br>` : ''}
-                            ${escapeHtml(observations) || "Review communication latency and task delivery trajectory."}
+                            ${signals.length > 0 ? `<strong>Behaviors:</strong> ${signals.join(', ')}<br><br>` : ''}
+                            ${observations.length > 0 ? observations.map(o => `<p style="margin: 6px 0; line-height: 1.5; font-size: 0.9rem; color: var(--text-secondary);">${o}</p>`).join('') : "Review communication latency and task delivery trajectory."}
                         </div>
                     </div>
                 `;
@@ -2230,9 +2284,9 @@
                             Empathetic Dialogue Scripts
                         </div>
                         <div class="briefing-body">
-                            <ul id="dialogue-list">
-                                ${dialogue.map(d => `<li>${escapeHtml(d)}</li>`).join('')}
-                            </ul>
+                            <div id="dialogue-list">
+                                ${renderItemsList(dialogue)}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2246,9 +2300,7 @@
                             Unsupportive Language (Avoid)
                         </div>
                         <div class="briefing-body briefing-body-danger">
-                            <ul>
-                                ${warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}
-                            </ul>
+                            ${renderItemsList(warnings)}
                         </div>
                     </div>
                 `;
@@ -2262,9 +2314,7 @@
                             Evidence-Based Action Checklist
                         </div>
                         <div class="briefing-body">
-                            <ul>
-                                ${actions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
-                            </ul>
+                            ${renderItemsList(actions)}
                         </div>
                     </div>
                 `;

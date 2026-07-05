@@ -144,7 +144,7 @@ def _predict_local_briefing_fallback(current_signals: list[dict], memory_dir: st
                 best_similarity = similarity
                 best_briefing = (
                     f"[Local ML Fallback Briefing] (Matched {int(similarity * 100)}% similarity to "
-                    f"'{os.path.basename(file_path)}')\n\n" + hist_briefing
+                    f"historical behavioral patterns)\n\n" + hist_briefing
                 )
         except Exception:
             continue
