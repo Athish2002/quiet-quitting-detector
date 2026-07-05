@@ -32,7 +32,7 @@ extractor_agent = Agent(
       "task_accuracy": 95,
       "sentiment": "Neutral"
     }
-    
+
     Guidelines to widen matching and fuzzy logic mapping:
     - If a metric is not mentioned in the text, estimate a reasonable default value or leave it blank (e.g. 0 for sick days, 40 for weekly hours, 95 for accuracy, "Neutral" for sentiment).
     - Map synonyms and behavioral descriptions flexibly:
@@ -52,7 +52,11 @@ app = FastAPI(
 )
 
 # Enable CORS for development/production
-allow_origins = os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else ["http://localhost:8000"]
+allow_origins = (
+    os.getenv("ALLOW_ORIGINS", "").split(",")
+    if os.getenv("ALLOW_ORIGINS")
+    else ["http://localhost:8000"]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
@@ -78,7 +82,7 @@ def get_metrics():
     metrics_file = "api_metrics.json"
     if os.path.exists(metrics_file):
         try:
-            with open(metrics_file, "r") as f:
+            with open(metrics_file) as f:
                 return json.load(f)
         except Exception:
             pass
@@ -108,8 +112,7 @@ def execute_realtime_pipeline():
         os.makedirs(REALTIME_DIR, exist_ok=True)
         os.makedirs(REALTIME_MEMORY_DIR, exist_ok=True)
         report_output = run_orchestrator(
-            weekly_folder=REALTIME_DIR,
-            memory_folder=REALTIME_MEMORY_DIR
+            weekly_folder=REALTIME_DIR, memory_folder=REALTIME_MEMORY_DIR
         )
         with open("realtime_engagement_report.txt", "w", encoding="utf-8") as f:
             f.write(report_output)
@@ -173,6 +176,7 @@ def get_employees_status():
                 "classification": latest_status.get("classification", "Healthy"),
                 "rationale": latest_status.get("rationale", ""),
                 "latest_week": latest_week,
+                "signals": latest_status.get("signals", []),
                 "history": [
                     {
                         "week": w,
@@ -237,6 +241,7 @@ def get_realtime_employees_status():
                 "classification": latest_status.get("classification", "Healthy"),
                 "rationale": latest_status.get("rationale", ""),
                 "latest_week": latest_week,
+                "signals": latest_status.get("signals", []),
                 "history": [
                     {
                         "week": w,
@@ -261,31 +266,36 @@ def get_employee_briefing(name: str, scope: str = "main"):
     target_dir = REALTIME_MEMORY_DIR if scope == "realtime" else MEMORY_DIR
     pattern = os.path.join(target_dir, f"{name_lower}_week*.json")
     memory_files = glob.glob(pattern)
-    
+
     if not memory_files:
         return {
             "found": False,
             "briefing": "No individual briefing card found for this employee.",
         }
-        
+
     # Get the latest week file
-    latest_file = max(memory_files, key=lambda x: int(os.path.basename(x).replace(f"{name_lower}_week", "").replace(".json", "")))
-    
+    latest_file = max(
+        memory_files,
+        key=lambda x: int(
+            os.path.basename(x).replace(f"{name_lower}_week", "").replace(".json", "")
+        ),
+    )
+
     try:
-        with open(latest_file, "r", encoding="utf-8") as f:
+        with open(latest_file, encoding="utf-8") as f:
             data = json.load(f)
-            
-        if "briefing" in data and data["briefing"]:
+
+        if data.get("briefing"):
             return {
                 "found": True,
                 "briefing": data["briefing"],
-                "raw_card": data["briefing"]
+                "raw_card": data["briefing"],
             }
         else:
             return {
                 "found": False,
                 "briefing": "No individual briefing card found for this employee.",
-                "raw_card": ""
+                "raw_card": "",
             }
     except Exception as e:
         raise HTTPException(
@@ -330,7 +340,9 @@ def get_realtime_report():
     report_path = "realtime_engagement_report.txt"
     if os.path.exists(report_path):
         return FileResponse(report_path, media_type="text/plain")
-    raise HTTPException(status_code=404, detail="Real-time engagement report file not found.")
+    raise HTTPException(
+        status_code=404, detail="Real-time engagement report file not found."
+    )
 
 
 @app.post("/api/memory/clear/realtime")
@@ -361,7 +373,7 @@ def generate_mock_data():
     try:
         os.makedirs(WEEKLY_DIR, exist_ok=True)
         os.makedirs(MEMORY_DIR, exist_ok=True)
-        
+
         # Clear existing CSV and Memory files for a fresh start
         for f in glob.glob(os.path.join(WEEKLY_DIR, "*.csv")):
             os.remove(f)
@@ -397,7 +409,7 @@ def generate_mock_data():
                         "sick_days",
                         "weekly_hours",
                         "task_accuracy",
-                        "sentiment"
+                        "sentiment",
                     ]
                 )
                 for emp in employees:
@@ -405,16 +417,24 @@ def generate_mock_data():
                     if profile == "Silent Exit":
                         # Gradual disengagement collapse with random variance
                         tasks = max(1, 10 - int(w * 2.5) + random.randint(-1, 1))
-                        resp = round(max(0.5, 0.4 + w * 1.2 + random.uniform(-0.4, 0.6)), 2)
+                        resp = round(
+                            max(0.5, 0.4 + w * 1.2 + random.uniform(-0.4, 0.6)), 2
+                        )
                         after = random.randint(1, max(1, w))
                         sick = random.randint(0, max(0, w - 2))
                         hours = max(35, 45 - (w * 2) + random.randint(-2, 2))
                         acc = max(70, 98 - (w * 5) + random.randint(-5, 5))
-                        sent = random.choice(["Negative", "Neutral"]) if w > 2 else "Neutral"
+                        sent = (
+                            random.choice(["Negative", "Neutral"])
+                            if w > 2
+                            else "Neutral"
+                        )
                     elif profile == "At Risk":
                         # Moderate disengagement trend
                         tasks = max(2, 10 - int(w * 1.5) + random.randint(-2, 1))
-                        resp = round(max(0.4, 0.5 + w * 0.6 + random.uniform(-0.2, 0.4)), 2)
+                        resp = round(
+                            max(0.4, 0.5 + w * 0.6 + random.uniform(-0.2, 0.4)), 2
+                        )
                         after = random.randint(0, max(1, w - 1))
                         sick = random.randint(0, 1)
                         hours = max(38, 48 - (w * 1.5) + random.randint(-3, 3))
@@ -456,7 +476,9 @@ def generate_mock_data():
                         acc = random.randint(94, 100)
                         sent = random.choice(["Positive", "Neutral"])
 
-                    writer.writerow([emp, int(tasks), resp, after, sick, int(hours), int(acc), sent])
+                    writer.writerow(
+                        [emp, int(tasks), resp, after, sick, int(hours), int(acc), sent]
+                    )
 
                     # Write mock memory files for weeks 1-3 so history renders in the UI
                     if w < 4:
@@ -469,10 +491,10 @@ def generate_mock_data():
                             base_sc = 2 if w == 1 else (3 if w == 2 else 4)
                         else:
                             base_sc = 1
-                        
+
                         # Add variance
                         sc = max(1, min(10, base_sc + random.randint(-1, 1)))
-                        
+
                         # Determine classification and context-aware dynamic rationale
                         if sc <= 2:
                             cls_val = "Healthy"
@@ -485,29 +507,61 @@ def generate_mock_data():
                             rat_val = f"Disengagement warning. Persistent declines in task performance and low weekly hours ({int(hours)}h)."
                         else:
                             cls_val = "Silent Exit"
-                            rat_val = f"Severe disengagement flags. Consecutive drop in productivity and communication latency spikes."
-                        
+                            rat_val = "Severe disengagement flags. Consecutive drop in productivity and communication latency spikes."
+
                         # Simulate pre-detected signals list for memory file parity
                         mock_signals = []
                         if tasks < 7:
-                            mock_signals.append({"signal_name": "Declining Task Completion", "weeks_detected": [w], "severity": "medium" if tasks >= 4 else "high"})
+                            mock_signals.append(
+                                {
+                                    "signal_name": "Declining Task Completion",
+                                    "weeks_detected": [w],
+                                    "severity": "medium" if tasks >= 4 else "high",
+                                }
+                            )
                         if resp > 1.5:
-                            mock_signals.append({"signal_name": "Response Time Spike", "weeks_detected": [w], "severity": "high" if resp > 2.2 else "medium"})
+                            mock_signals.append(
+                                {
+                                    "signal_name": "Response Time Spike",
+                                    "weeks_detected": [w],
+                                    "severity": "high" if resp > 2.2 else "medium",
+                                }
+                            )
                         if after > 2:
-                            mock_signals.append({"signal_name": "Excessive After-Hours Logins", "weeks_detected": [w], "severity": "medium"})
+                            mock_signals.append(
+                                {
+                                    "signal_name": "Excessive After-Hours Logins",
+                                    "weeks_detected": [w],
+                                    "severity": "medium",
+                                }
+                            )
                         if sick > 1:
-                            mock_signals.append({"signal_name": "Increasing Sick Days", "weeks_detected": [w], "severity": "high"})
+                            mock_signals.append(
+                                {
+                                    "signal_name": "Increasing Sick Days",
+                                    "weeks_detected": [w],
+                                    "severity": "high",
+                                }
+                            )
                         if acc < 85:
-                            mock_signals.append({"signal_name": "Quality Degradation", "weeks_detected": [w], "severity": "medium"})
+                            mock_signals.append(
+                                {
+                                    "signal_name": "Quality Degradation",
+                                    "weeks_detected": [w],
+                                    "severity": "medium",
+                                }
+                            )
 
                         mock_memory = {
                             "score": sc,
                             "classification": cls_val,
                             "rationale": rat_val,
                             "healthy_streak": w if sc <= 2 else 0,
-                            "signals": mock_signals
+                            "signals": mock_signals,
                         }
-                        mem_path = os.path.join(MEMORY_DIR, f"{emp.lower()}_week{w}.json")
+                        mem_path = os.path.join(
+                            MEMORY_DIR, f"{emp.lower()}_week{w}.json"
+                        )
                         with open(mem_path, "w", encoding="utf-8") as mf:
                             json.dump(mock_memory, mf, indent=2)
 
@@ -581,7 +635,11 @@ def score_custom_employee(data: CustomEvaluatorInput):
                         "score": (
                             6
                             if data.previous_classification == "At Risk"
-                            else (8 if data.previous_classification == "Silent Exit" else 4)
+                            else (
+                                8
+                                if data.previous_classification == "Silent Exit"
+                                else 4
+                            )
                         ),
                         "classification": data.previous_classification,
                         "rationale": "Mocked historical classification.",
@@ -669,7 +727,7 @@ def ingest_from_db(data: DatabaseSyncInput):
                         "sick_days",
                         "weekly_hours",
                         "task_accuracy",
-                        "sentiment"
+                        "sentiment",
                     ]
                 )
             writer.writerow(["Karthik", "7", "1.1", "0", "0", "42", "94", "Neutral"])
@@ -703,7 +761,7 @@ def ingest_from_s3(data: S3SyncInput):
                         "sick_days",
                         "weekly_hours",
                         "task_accuracy",
-                        "sentiment"
+                        "sentiment",
                     ]
                 )
             writer.writerow(["Ravi", "9", "0.6", "0", "0", "40", "96", "Positive"])
@@ -722,7 +780,7 @@ def extract_json_block(text: str) -> str:
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1:
-        return text[start:end+1]
+        return text[start : end + 1]
     return text
 
 
@@ -752,7 +810,15 @@ def ingest_natural_language(data: NaturalLanguageInput):
         sick = int(extracted.get("sick_days", 0))
         hours = int(extracted.get("weekly_hours", random.randint(35, 45)))
         acc = int(extracted.get("task_accuracy", random.randint(85, 100)))
-        sent = str(extracted.get("sentiment", random.choice(["Positive", "Neutral", "Negative"]))).strip().capitalize()
+        sent = (
+            str(
+                extracted.get(
+                    "sentiment", random.choice(["Positive", "Neutral", "Negative"])
+                )
+            )
+            .strip()
+            .capitalize()
+        )
 
         os.makedirs(REALTIME_DIR, exist_ok=True)
         file_path = os.path.join(REALTIME_DIR, f"week{data.week_number}.csv")
@@ -770,7 +836,7 @@ def ingest_natural_language(data: NaturalLanguageInput):
                         "sick_days",
                         "weekly_hours",
                         "task_accuracy",
-                        "sentiment"
+                        "sentiment",
                     ]
                 )
             writer.writerow([name, tasks, resp, after, sick, hours, acc, sent])

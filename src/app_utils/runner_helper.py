@@ -99,6 +99,7 @@ def run_agent_sync(
     """
     import asyncio
     import time
+
     global _LAST_SUCCESSFUL_MODEL, _EXHAUSTED_MODELS
 
     # 1. Determine model fallback sequence based on available Text-out models.
@@ -111,7 +112,7 @@ def run_agent_sync(
         "gemini-2.5-flash-lite",
         "gemini-2.5-pro",
         "gemini-2.0-flash",
-        "gemini-2.0-flash-lite"
+        "gemini-2.0-flash-lite",
     ]
 
     current_time = time.time()
@@ -128,11 +129,16 @@ def run_agent_sync(
 
     # Prioritize the last known working model if set to avoid redundant 429 delays
     if _LAST_SUCCESSFUL_MODEL and _LAST_SUCCESSFUL_MODEL in available_models:
-        candidates = [_LAST_SUCCESSFUL_MODEL] + [m for m in available_models if m != _LAST_SUCCESSFUL_MODEL]
+        candidates = [_LAST_SUCCESSFUL_MODEL] + [
+            m for m in available_models if m != _LAST_SUCCESSFUL_MODEL
+        ]
     else:
         current_model_name = getattr(agent.model, "model", "gemini-2.5-flash")
         candidates = available_models.copy()
-        if current_model_name not in candidates and current_model_name not in _EXHAUSTED_MODELS:
+        if (
+            current_model_name not in candidates
+            and current_model_name not in _EXHAUSTED_MODELS
+        ):
             candidates.insert(0, current_model_name)
 
     from concurrent.futures import ThreadPoolExecutor
@@ -182,10 +188,12 @@ def run_agent_sync(
     def update_metrics(success: bool):
         metrics_file = "api_metrics.json"
         try:
-            import json, os
+            import json
+            import os
+
             metrics = {"success": 0, "rejected": 0}
             if os.path.exists(metrics_file):
-                with open(metrics_file, "r") as f:
+                with open(metrics_file) as f:
                     metrics = json.load(f)
             if success:
                 metrics["success"] += 1
@@ -210,14 +218,14 @@ def run_agent_sync(
         except Exception as e:
             last_exception = e
             import time
-            
+
             # Mark model as exhausted for 60 seconds to save looping time across other requests
             _EXHAUSTED_MODELS[model_name] = time.time() + 60
-            
+
             # If the current successful model failed, clear it
             if _LAST_SUCCESSFUL_MODEL == model_name:
                 _LAST_SUCCESSFUL_MODEL = None
-                
+
             # Only log candidate swap if we have fallback options remaining
             if i < len(candidates) - 1:
                 print(

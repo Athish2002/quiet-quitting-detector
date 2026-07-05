@@ -62,7 +62,7 @@ COLUMN_ALIASES = {
         "hours",
         "weekly hours",
         "work hours",
-        "logged_hours"
+        "logged_hours",
     ],
     "task_accuracy": [
         "task_accuracy",
@@ -70,7 +70,7 @@ COLUMN_ALIASES = {
         "quality",
         "accuracy_score",
         "task accuracy",
-        "quality_score"
+        "quality_score",
     ],
     "sentiment": [
         "sentiment",
@@ -78,8 +78,8 @@ COLUMN_ALIASES = {
         "response_tone",
         "attitude",
         "communication_sentiment",
-        "morale"
-    ]
+        "morale",
+    ],
 }
 
 
@@ -104,7 +104,7 @@ def resolve_header_value(row: dict, aliases: list[str], default: str = "") -> st
         if not h:
             continue
         h_clean = h.strip().lower()
-        
+
         # Targeted exclusion: prevent after_hours columns from matching weekly_hours
         if "after" in h_clean and ("hours" in aliases or "weekly_hours" in aliases):
             continue

@@ -33,7 +33,9 @@ orchestrator_agent = Agent(
 )
 
 
-def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "data/memory") -> str:
+def run_orchestrator(
+    weekly_folder: str = "data/weekly", memory_folder: str = "data/memory"
+) -> str:
     """Orchestrates the entire quiet quitting detection pipeline."""
 
     # Rule 3: Always validate that CSV files exist before reading them
@@ -45,7 +47,9 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
     # Flexible modular ingestion layer
     raw_rows = ingest_weekly_csvs(weekly_folder)
     if not raw_rows:
-        error_msg = f"No CSV files found in {weekly_folder}. Pipeline execution aborted."
+        error_msg = (
+            f"No CSV files found in {weekly_folder}. Pipeline execution aborted."
+        )
         print(error_msg)
         return error_msg
 
@@ -65,7 +69,7 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
         # Rule 4: If a week of data is missing, note the gap — do not assume disengagement
         processed_weeks = {w["week"] for w in weeks_data}
         expected_weeks = set(range(1, max_week + 1))
-        missing_weeks = expected_weeks - processed_weeks
+        expected_weeks - processed_weeks
 
         full_timeline = []
         for w in range(1, max_week + 1):
@@ -93,19 +97,23 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
         for w in range(1, max_week + 1):
             memory_file_name = f"{first_name.lower()}_week{w}.json"
             memory_file_path = os.path.join(memory_folder, memory_file_name)
-            
+
             # Check if this week's evaluation already exists in memory
             if os.path.exists(memory_file_path):
                 try:
-                    with open(memory_file_path, "r", encoding="utf-8") as f:
+                    with open(memory_file_path, encoding="utf-8") as f:
                         risk_data = json.load(f)
                     briefing = risk_data.get("briefing", "")
                     signals = risk_data.get("signals", [])
-                    
+
                     # If it's not Healthy but briefing is missing, we can generate it
-                    if not briefing and risk_data.get("classification", "").upper() not in ["HEALTHY"]:
+                    if not briefing and risk_data.get(
+                        "classification", ""
+                    ).upper() not in ["HEALTHY"]:
                         sub_timeline = full_timeline[:w]
-                        w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
+                        w_missing = expected_weeks.intersection(
+                            range(1, w + 1)
+                        ) - processed_weeks.intersection(range(1, w + 1))
                         signals = detect_trends(first_name, sub_timeline)
                         if w_missing:
                             signals.append(
@@ -115,7 +123,9 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                                     "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
                                 }
                             )
-                        briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
+                        briefing = generate_briefing(
+                            first_name, signals, risk_data, memory_dir=memory_folder
+                        )
                         if briefing:
                             risk_data["briefing"] = briefing
                             risk_data["signals"] = signals
@@ -123,18 +133,24 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                                 json.dump(risk_data, f, indent=2)
                 except Exception:
                     sub_timeline = full_timeline[:w]
-                    w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
+                    w_missing = expected_weeks.intersection(
+                        range(1, w + 1)
+                    ) - processed_weeks.intersection(range(1, w + 1))
                     signals = detect_trends(first_name, sub_timeline)
                     if w_missing:
                         signals.append(
                             {
                                 "signal": "MISSING_DATA_GAP",
                                 "severity": "low",
-                                                    "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
+                                "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
                             }
                         )
-                    risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
-                    briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
+                    risk_data = score_risk(
+                        first_name, signals, w, memory_dir=memory_folder
+                    )
+                    briefing = generate_briefing(
+                        first_name, signals, risk_data, memory_dir=memory_folder
+                    )
                     risk_data["signals"] = signals
                     if briefing:
                         risk_data["briefing"] = briefing
@@ -143,8 +159,10 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
             else:
                 # If memory file doesn't exist, execute agents chronologically
                 sub_timeline = full_timeline[:w]
-                w_missing = expected_weeks.intersection(range(1, w + 1)) - processed_weeks.intersection(range(1, w + 1))
-                
+                w_missing = expected_weeks.intersection(
+                    range(1, w + 1)
+                ) - processed_weeks.intersection(range(1, w + 1))
+
                 # 1. Trend Detector Agent
                 signals = detect_trends(first_name, sub_timeline)
                 if w_missing:
@@ -155,13 +173,15 @@ def run_orchestrator(weekly_folder: str = "data/weekly", memory_folder: str = "d
                             "details": f"Missing data for week(s): {sorted(w_missing)}. Handled as data gap, not disengagement.",
                         }
                     )
-                
+
                 # 2. Risk Scorer Agent (save as of week w)
                 risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
-                
+
                 # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
-                briefing = generate_briefing(first_name, signals, risk_data, memory_dir=memory_folder)
-                
+                briefing = generate_briefing(
+                    first_name, signals, risk_data, memory_dir=memory_folder
+                )
+
                 risk_data["signals"] = signals
                 if briefing:
                     risk_data["briefing"] = briefing

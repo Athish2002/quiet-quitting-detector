@@ -80,7 +80,6 @@ def preprocess_employee_records(
             "source_file": row.get("__source_file__", ""),
         }
 
-
         if first_name not in employee_records:
             employee_records[first_name] = []
         employee_records[first_name].append(metrics)
