@@ -2541,31 +2541,83 @@
         }
 
         // Professional layout parser for compiled executive report
-        function renderProfessionalReport(rawText) {
-            const sections = rawText.split("========================================================================");
-            let parsedHtml = "";
+        function mdToHtml(text) {
+            // Lightweight regex-based markdown-to-HTML converter (no external deps)
+            const lines = text.split("\n");
+            let html = "";
+            let inList = false;
 
-            sections.forEach(sec => {
-                const lines = sec.trim().split("\n");
-                const header = lines[0].trim();
-                const rest = lines.slice(1).join("\n").trim();
-
-                if (!header) return;
-
-                if (header.includes("TEAM SUMMARY")) {
-                    parsedHtml += `<h2>Team Summary cohort list</h2><pre>${escapeHtml(rest)}</pre>`;
-                } else if (header.includes("INDIVIDUAL RISK CARDS")) {
-                    parsedHtml += `<h2>Individual Risk Cards</h2><pre>${escapeHtml(rest)}</pre>`;
-                } else if (header.includes("ARJUN BRIEFING") || header.includes("BRIEFING")) {
-                    parsedHtml += `<h2>Empathetic Briefing</h2><pre>${escapeHtml(rest)}</pre>`;
-                } else if (header.includes("MEMORY FILE CONFIRMATION")) {
-                    parsedHtml += `<h2>Stored Memory Logs</h2><pre>${escapeHtml(rest)}</pre>`;
+            lines.forEach(line => {
+                // H1
+                if (/^# (.+)/.test(line)) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2 style="color:var(--primary); font-size:1.1rem; font-family:var(--font-display); margin:1.1rem 0 0.4rem; border-bottom:1px solid rgba(255,255,255,0.07); padding-bottom:0.3rem;">${line.replace(/^# /, "")}</h2>`;
+                // H3
+                } else if (/^### (.+)/.test(line)) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h4 style="color:var(--accent); font-size:0.88rem; margin:0.85rem 0 0.25rem; font-weight:700;">${line.replace(/^### /, "")}</h4>`;
+                // H2
+                } else if (/^## (.+)/.test(line)) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h3 style="color:var(--primary); font-size:0.96rem; font-family:var(--font-display); margin:0.95rem 0 0.3rem;">${line.replace(/^## /, "")}</h3>`;
+                // Bullet point (* or -)
+                } else if (/^[\*\-] (.+)/.test(line)) {
+                    if (!inList) { html += "<ul style='margin:0.4rem 0 0.4rem 1.2rem; padding:0;'>"; inList = true; }
+                    let item = line.replace(/^[\*\-] /, "");
+                    item = item.replace(/\*\*(.*?)\*\*/g, "<strong style='color:var(--text-primary);'>$1</strong>");
+                    html += `<li style="color:var(--text-secondary); font-size:0.83rem; margin-bottom:3px;">${item}</li>`;
+                // Separator lines
+                } else if (/^[-=]{3,}$/.test(line.trim())) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += "<hr style='border:none; border-top:1px solid rgba(255,255,255,0.07); margin:0.7rem 0;'>";
+                // Blank line
+                } else if (line.trim() === "") {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += "<br>";
+                // Normal line (apply inline bold)
                 } else {
-                    parsedHtml += `<h2>${escapeHtml(header)}</h2><pre>${escapeHtml(rest)}</pre>`;
+                    if (inList) { html += "</ul>"; inList = false; }
+                    let rendered = line.replace(/\*\*(.*?)\*\*/g, "<strong style='color:var(--text-primary);'>$1</strong>");
+                    html += `<p style="margin:0.15rem 0; color:var(--text-secondary); font-size:0.83rem;">${rendered}</p>`;
                 }
             });
 
-            modalBody.innerHTML = parsedHtml;
+            if (inList) html += "</ul>";
+            return html;
+        }
+
+        function renderProfessionalReport(rawText) {
+            // Split on the ====== dividers used by the plain-text report
+            const sections = rawText.split("============================================================");
+            let parsedHtml = "";
+
+            sections.forEach(sec => {
+                const trimmed = sec.trim();
+                if (!trimmed) return;
+                const lines = trimmed.split("\n");
+                const header = lines[0].trim();
+                const rest = lines.slice(1).join("\n").trim();
+
+                // Map section headers to friendly labels
+                let label = header;
+                if (header.includes("TEAM COHORT SUMMARY")) label = "Team Cohort Summary";
+                else if (header.includes("INDIVIDUAL MEMORY FILES")) label = "Individual Memory Logs";
+                else if (header.includes("PIPELINE COMPLETE")) label = "Pipeline Status";
+
+                parsedHtml += `<div style="margin-bottom:1.1rem;">`;
+                if (label) {
+                    parsedHtml += `<h3 style="color:var(--primary); font-family:var(--font-display); font-size:0.95rem; margin:0 0 0.4rem; text-transform:uppercase; letter-spacing:0.04em;">${escapeHtml(label)}</h3>`;
+                }
+                parsedHtml += mdToHtml(rest);
+                parsedHtml += `</div>`;
+            });
+
+            // If no ==== dividers found (e.g. raw orchestrator text), render whole text directly
+            if (sections.length <= 1) {
+                parsedHtml = `<div style="margin-bottom:1rem;">${mdToHtml(rawText)}</div>`;
+            }
+
+            modalBody.innerHTML = `<div style="font-size:0.83rem; line-height:1.6; text-align:left;">${parsedHtml}</div>`;
         }
 
         async function selectEmployee(name) {
@@ -2646,7 +2698,7 @@
 
 
 
-        function openDocViewer(title, content, isMarkdown = false) {
+        function openDocViewer(title, content, isMarkdown = false, isRawHtml = false) {
             const panel = document.getElementById("doc-viewer-panel");
             const titleEl = document.getElementById("doc-viewer-title");
             const contentEl = document.getElementById("doc-viewer-content");
@@ -2657,7 +2709,11 @@
                 ${escapeHtml(title)}
             `;
             
-            if (isMarkdown) {
+            if (isRawHtml) {
+                // Pre-built HTML passed directly (e.g. api-metrics stat cards)
+                contentEl.innerHTML = `<div style="font-family:var(--font-main); line-height:1.6; text-align:left;">${content}</div>`;
+                contentEl.style.fontFamily = "var(--font-main)";
+            } else if (isMarkdown) {
                 let html = content
                     .replace(/# (.*)/g, '<h1 style="color:var(--primary); font-size:1.45rem; margin-top:1.25rem; margin-bottom:0.75rem; font-family:var(--font-display);">$1</h1>')
                     .replace(/## (.*)/g, '<h2 style="color:var(--primary); font-size:1.15rem; margin-top:1.25rem; margin-bottom:0.5rem; font-family:var(--font-display); border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.25rem;">$1</h2>')
@@ -2704,22 +2760,68 @@
                     isMarkdown = false;
                 } else if (type === "api-metrics") {
                     url = `${API_URL}/metrics`;
-                    title = "api_metrics.json (LLM Token & Fallback Log)";
+                    title = "API Consumption \u2014 Success vs Fallbacks";
                     isMarkdown = false;
                 }
                 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Failed to load document");
                 
-                let content = "";
                 if (type === "api-metrics") {
                     const json = await response.json();
-                    content = JSON.stringify(json, null, 2);
+                    const fallbackModels = [
+                        "gemini-3.5-flash",
+                        "gemini-3.1-flash-lite",
+                        "gemini-3.1-pro",
+                        "gemini-3.0-flash",
+                        "gemini-2.5-flash",
+                        "gemini-2.5-flash-lite",
+                        "gemini-2.5-pro",
+                        "gemini-2.0-flash",
+                        "gemini-2.0-flash-lite",
+                    ];
+                    const totalCalls = (json.success || 0) + (json.rejected || 0);
+                    // Estimate which models are exhausted: last N models in list map to rejections
+                    const rejectedCount = json.rejected || 0;
+                    const modelListHtml = fallbackModels.map((m, i) => {
+                        const isExhausted = i < rejectedCount;
+                        const dotColor = isExhausted ? "#6b7280" : "var(--healthy)";
+                        const labelColor = isExhausted ? "var(--text-secondary)" : "var(--text-primary)";
+                        const statusLabel = isExhausted ? "exhausted" : "available";
+                        return `<div style="display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.78rem;">
+                            <span style="width:7px; height:7px; border-radius:50%; background:${dotColor}; flex-shrink:0;"></span>
+                            <span style="color:${labelColor}; font-family:monospace;">${m}</span>
+                            <span style="color:${isExhausted ? '#6b7280' : 'var(--healthy)'}; font-size:0.7rem; margin-left:auto;">${statusLabel}</span>
+                        </div>`;
+                    }).join("");
+
+                    const metricsHtml = `
+                        <div style="display:flex; gap:12px; margin-bottom:14px;">
+                            <div style="flex:1; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:16px 14px; text-align:center;">
+                                <div style="font-size:2rem; font-weight:800; color:var(--healthy); font-family:var(--font-display); line-height:1;">${json.success || 0}</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">API Success</div>
+                            </div>
+                            <div style="flex:1; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); border-radius:10px; padding:16px 14px; text-align:center;">
+                                <div style="font-size:2rem; font-weight:800; color:var(--watch); font-family:var(--font-display); line-height:1;">${json.rejected || 0}</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Local ML Fallbacks</div>
+                            </div>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-secondary); text-align:center; margin:0 0 14px; line-height:1.5;">Fallbacks occur when the Gemini API is rate-limited; the local similarity model takes over automatically.</p>
+                        <details style="background:rgba(0,0,0,0.2); border:1px solid var(--border-color); border-radius:8px; padding:0;">
+                            <summary style="cursor:pointer; padding:10px 14px; font-size:0.78rem; font-weight:600; color:var(--text-primary); list-style:none; display:flex; align-items:center; gap:6px; user-select:none;">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+                                Model Fallback Sequence
+                            </summary>
+                            <div style="padding:8px 14px 12px; border-top:1px solid var(--border-color);">
+                                ${modelListHtml}
+                            </div>
+                        </details>
+                    `;
+                    openDocViewer(title, metricsHtml, false, true);
                 } else {
-                    content = await response.text();
+                    const content = await response.text();
+                    openDocViewer(title, content, isMarkdown);
                 }
-                
-                openDocViewer(title, content, isMarkdown);
             } catch (err) {
                 alert(`Error opening document: ${err.message}`);
             }
