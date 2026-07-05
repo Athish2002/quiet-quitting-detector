@@ -22,12 +22,12 @@ Built with **Google's Agent Development Kit (ADK)** and **FastAPI**.
 Employee disengagement and burnout represent significant financial losses for organizations due to recruiting costs, productivity deficits, and team turnover. Traditional HR evaluation relies on static yearly surveys or unfair global averages, which fail to detect gradual, individual disengagement trends in real time.
 
 The **Quiet-Quitting Detector** is a completed, production-ready interactive console that processes data fairly to provide high-quality output and response evaluation. It:
-* Ingests weekly telemetry metrics dynamically. In this prototype, Raw CSV upload and Natural Language prompt extraction represent the fully operational, active ingestion pipelines. Database and S3 cloud bucket ingestion options are simulated to demonstrate the feasibility of future enterprise integrations with corporate databases and data warehouses.
+* Ingests weekly telemetry metrics dynamically. In this prototype, Raw CSV upload and Natural Language prompt extraction represent the fully operational, active ingestion pipelines. Database and S3 cloud bucket ingestion options are simulated concepts to demonstrate the architectural possibility of corporate PostgreSQL and AWS S3 integrations, which will be fully implemented with live production connections in the near future.
 * Evaluates behavior chronologically against **employee-specific baselines**, ensuring fair processing rather than penalizing individuals against unfair global averages.
 * Separates experimental test sessions (Real-Time Sync) from the core historical database to preserve data integrity.
 * Compiles supportive, HR-compliant manager briefs containing observation prompts and dialogue templates.
 
-*Note: Feature development is officially concluded. The system is fully operational and optimized for fair data processing and high-fidelity output evaluation. DB and Cloud sync interfaces are annotated as simulations to preserve high credibility.*
+*Note: The core system is fully operational and optimized for fair data processing and high-fidelity output evaluation. The Database and S3 Cloud sync interfaces are presented as prototype concepts showing a clear integration possibility, with live production implementations planned in the near future.*
 
 ---
 
