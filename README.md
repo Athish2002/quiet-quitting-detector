@@ -54,17 +54,22 @@ graph TD
 
 ## ⚡ Key Features & Capabilities
 
-### 1. Robust API Management & Metrics
-To handle API rate limits (e.g., free tier token constraints), the system implements a dynamic API success cache (`_LAST_SUCCESSFUL_MODEL`). It globally tracks API consumption vs. local fallbacks, providing a real-time metrics dashboard to monitor engine efficiency. 
+### 1. Resilient API Cascades & Cooldown Cache
+To handle API rate limits (e.g., free tier token constraints) and avoid authentication hiccups, the system implements:
+* **Active Gemini Cascade:** Sequentially routing API requests through a priority queue of active text-based models (e.g., `gemini-3.5-flash` down to `gemini-2.0-flash-lite`), omitting unsupported open weights models.
+* **Global Model Exhaustion Cache (`_EXHAUSTED_MODELS`):** If a model throws a 429 rate limit or key error, it is blacklisted in-memory for 60 seconds, bypassing slow timeouts on subsequent queries.
+* **API Metrics Log:** Clicking the header status badge opens a detailed routing performance log displaying live success/fallback counts and the active cascade sequence.
 
 ### 2. Local Machine Learning Fallback (Case-Based Reasoning)
-If all external APIs fail (due to rate limits, key invalidity, or network dropouts), the system guarantees a response using **Case-Based Reasoning (CBR)**:
+If all external APIs are offline or exhausted, the system guarantees a fallback response using **Case-Based Reasoning (CBR)**:
 * It reads successfully evaluated JSON files from local memory (`data/memory/` and `data/realtime_memory/`) as a training pool.
 * It calculates the **Jaccard Similarity** (intersection over union) between the current employee signals and past cases.
 * If a similar pattern ($\ge 50\%$ match) is found, it inherits the historical classification, score, and briefing card.
+* **Polished UI view logic:** The fallback outputs clean behavioral summaries and similarity percentages without leaking raw backend JSON filenames or server file paths.
 
-### 3. Isolated Evaluation Sessions
-To accommodate multiple users testing the pipeline concurrently (e.g., via `ngrok`), the system architecture naturally isolates visual state in the browser and separates database operations into **Main Registry** and **Real-Time Sync** scopes. This guarantees that evaluators poking around the dashboard do not corrupt active pipeline executions.
+### 3. Overhauled Briefing Card Renderer & Interactive UI
+* **Markdown Rendering:** The frontend includes an overhauled markdown-to-HTML parser that selectively maps bullet lists vs paragraphs, removes horizontal line visual artifacts (`--`), and formats bolds/italics securely.
+* **Isolated Evaluation Sessions:** To accommodate multiple users testing the pipeline concurrently (e.g., via `ngrok`), the system architecture naturally isolates visual state in the browser and separates database operations into **Main Registry** and **Real-Time Sync** scopes. This guarantees that evaluators poking around the dashboard do not corrupt active pipeline executions.
 
 ---
 

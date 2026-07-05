@@ -73,6 +73,8 @@ The interface is built using modern front-end styling tokens designed to deliver
 - **Glassmorphism Panels:** Containers feature saturated transparency (`backdrop-filter: blur(24px) saturate(180%)`) and thin border overlays for a high-end desktop app feel.
 - **Micro-interactions:** Hovering over employee lists slides the cards smoothly and adds glow shadows. Primary action buttons scale slightly when pressed.
 - **Gentle SVG Pulsing:** Empty states feature slowly pulsing SVG vectors, indicating that the console is active and waiting for input.
+- **Interactive Performance Log Modal:** Clicking the header API status badge opens a detailed overlay detailing live successful API counts, Jaccard similarity fallback matches, and active cascading model list routes.
+- **Overhauled Briefing Card Renderer:** Evaluated manager briefings pass through an intelligent parser that removes horizontal visual dividers (`--`), renders paragraphs spacious and legible, and packages list items cleanly inside bulleted blocks without bullet character duplication.
 - **Custom Scrollbars:** Replaces stock browser scrollbars with custom sleek, thin tracks to match the styling.
 
 ---
