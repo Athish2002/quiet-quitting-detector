@@ -114,7 +114,9 @@ def _classify(score: int) -> str:
 # ---------------------------------------------------------------------------
 # Helper: load employee history with lookback cap + integrity check       [Fix 2]
 # ---------------------------------------------------------------------------
-def _load_employee_history(first_name_lower: str, memory_dir: str = None) -> list[dict]:
+def _load_employee_history(
+    first_name_lower: str, memory_dir: str | None = None
+) -> list[dict]:
     """Load previous JSON memory files for this employee, up to MAX_HISTORY_WEEKS.
 
     Changes vs original:
@@ -224,8 +226,10 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
     """
     import glob
 
-    current_signal_names = {s.get("signal_name") for s in current_signals if s.get("signal_name")}
-    
+    current_signal_names = {
+        s.get("signal_name") for s in current_signals if s.get("signal_name")
+    }
+
     best_match_file = None
     best_similarity = -1.0
     best_record = None
@@ -233,21 +237,25 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
     pattern = os.path.join(memory_dir, "*.json")
     for file_path in glob.glob(pattern):
         try:
-            with open(file_path, "r", encoding="utf-8") as fh:
+            with open(file_path, encoding="utf-8") as fh:
                 hist_data = json.load(fh)
-            
+
             # Skip fallback records themselves to avoid self-reinforcing default Watch loops
             if "[Local ML Fallback]" in hist_data.get("rationale", ""):
                 continue
 
-            hist_signals = {s.get("signal_name") for s in hist_data.get("signals", []) if s.get("signal_name")}
-            
+            hist_signals = {
+                s.get("signal_name")
+                for s in hist_data.get("signals", [])
+                if s.get("signal_name")
+            }
+
             # Calculate Jaccard Similarity (intersection over union of signal sets)
             intersection = current_signal_names.intersection(hist_signals)
             union = current_signal_names.union(hist_signals)
-            
+
             similarity = len(intersection) / len(union) if union else 1.0
-            
+
             if similarity > best_similarity:
                 best_similarity = similarity
                 best_match_file = file_path
@@ -255,7 +263,7 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
         except Exception:
             continue
 
-    if best_record and best_similarity >= 0.5:
+    if best_record and best_match_file and best_similarity >= 0.5:
         logger.info(
             "Local ML Fallback: matched historical record from %s with similarity %.2f",
             os.path.basename(best_match_file),
@@ -288,7 +296,12 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def score_risk(employee_name: str, signals: list[dict], week_number: int, memory_dir: str = None) -> dict:
+def score_risk(
+    employee_name: str,
+    signals: list[dict],
+    week_number: int,
+    memory_dir: str | None = None,
+) -> dict:
     """Calculates risk score and classification, loading history and saving current to data\\memory\\.
 
     Steps:

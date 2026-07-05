@@ -1105,44 +1105,160 @@
 <body>
 
     <!-- Welcoming Landing Homepage View -->
-    <div id="welcome-view">
-        <div class="welcome-badge">Capstone Project Console</div>
-        <div class="welcome-hero">
-            <h1 class="welcome-title">Quiet-Quitting Detector</h1>
-            <p class="welcome-subtitle">
-                An advanced multi-agent system designed to evaluate chronological behavioral engagement signals, identify disengagement vectors, and synthesize supportive management briefs, protected by a local Case-Based Reasoning (CBR) Machine Learning fallback engine.
+    <div id="welcome-view" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem 3rem 1rem; border-radius: 24px;">
+        <!-- Header Banner spanning full width -->
+        <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <span class="welcome-badge" style="background: var(--primary-glow); color: var(--primary); border: 1px solid rgba(45, 212, 191, 0.3);">Kaggle Capstone Diagnostic Dashboard</span>
+                <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--text-primary); margin-top: 0.4rem;">Quiet-Quitting Detector Console</h1>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">Empathetic multi-agent workforce wellness diagnostics, protected by local Case-Based Reasoning fallbacks.</p>
+            </div>
+            <button class="btn enter-btn" id="enter-console-btn" style="margin: 0; padding: 0.8rem 1.8rem; font-size: 0.95rem; font-weight: 700; background: var(--primary); border: none; box-shadow: 0 0 20px var(--primary-glow); border-radius: 8px;">
+                Enter Diagnostics Control Room
+            </button>
+        </div>
+
+        <!-- Left Column: Live Registry & Agent Pipeline Flow -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Live Registry Status Panel -->
+            <div class="panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; min-height: 200px;">
+                <div class="panel-header" style="padding: 0; border: none; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                    <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
+                        Live Diagnostics Registry Status
+                    </h3>
+                    <span id="live-registry-count" style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary); font-weight: bold;">0 Records</span>
+                </div>
+                <div id="live-registry-cards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.8rem; flex-grow: 1; min-height: 100px;">
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary); background: rgba(0,0,0,0.15); border-radius: 8px; border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; height: 100%;">
+                        <p style="font-size: 0.82rem; margin: 0;">No active diagnostics loaded. Click "Enter Diagnostics Control Room" and click "Evaluate Registry" to populate live cards.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agentic Pipeline Visual Flow -->
+            <div class="panel" style="padding: 1.5rem;">
+                <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; margin-top: 0;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Coordinated Multi-Agent Architecture
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.8rem; background: rgba(0,0,0,0.15); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <!-- Ingestion Step -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary); flex-shrink: 0;">1</div>
+                        <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px;">
+                            <strong style="font-size: 0.82rem; color: var(--text-primary);">Data Ingestion & Preprocessing</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Fuzzy maps CSV metrics & hashes employee PII using SHA-256.</p>
+                        </div>
+                    </div>
+                    <!-- Arrow -->
+                    <div style="display: flex; justify-content: center; margin: -0.4rem 0; height: 10px; color: var(--primary);"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+                    <!-- Orchestrator Step -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-glow); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: var(--primary); flex-shrink: 0;">2</div>
+                        <div style="flex: 1; background: rgba(45, 212, 191, 0.05); border: 1px solid var(--primary); padding: 8px 12px; border-radius: 8px;">
+                            <strong style="font-size: 0.82rem; color: var(--primary);">Orchestrator Agent</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Coordinates chronological timeline, loads history, & compiles cohort summaries.</p>
+                        </div>
+                    </div>
+                    <!-- Arrow -->
+                    <div style="display: flex; justify-content: center; margin: -0.4rem 0; height: 10px; color: var(--primary);"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+                    <!-- Trend Detector Step -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary); flex-shrink: 0;">3</div>
+                        <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px;">
+                            <strong style="font-size: 0.82rem; color: var(--text-primary);">Trend Detector Agent</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Flags disengagement vectors (low activity, sick days, latency) against individual week-1 baselines.</p>
+                        </div>
+                    </div>
+                    <!-- Arrow -->
+                    <div style="display: flex; justify-content: center; margin: -0.4rem 0; height: 10px; color: var(--primary);"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+                    <!-- Risk Scorer Step -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary); flex-shrink: 0;">4</div>
+                        <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px;">
+                            <strong style="font-size: 0.82rem; color: var(--text-primary);">Risk Scorer Agent & Local ML Fallback</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Calculates index (1-10) with healthy streak recovery. Uses local CBR fallback if APIs fail.</p>
+                        </div>
+                    </div>
+                    <!-- Arrow -->
+                    <div style="display: flex; justify-content: center; margin: -0.4rem 0; height: 10px; color: var(--primary);"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+                    <!-- Manager Briefing Step -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-glow); border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: var(--accent); flex-shrink: 0;">5</div>
+                        <div style="flex: 1; background: rgba(245, 158, 11, 0.05); border: 1px solid var(--accent); padding: 8px 12px; border-radius: 8px;">
+                            <strong style="font-size: 0.82rem; color: var(--accent);">Manager Briefing Agent</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-secondary); margin: 0;">Compiles HR-safe, supportive action guides and conversation scripts (scrubbed of punitive terms).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: STRIDE Security & Compliance Fixes -->
+        <div class="panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                STRIDE Threat Mitigations & Hardening Log
+            </h3>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+                Below are the production security fixes, privacy guardrails, and API resiliency layers applied to the agent system:
             </p>
-        </div>
-
-        <button class="btn enter-btn" id="enter-console-btn">Launch Diagnostics Console</button>
-
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon-container">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 0.5rem;">
+                <!-- Fix 1: Privacy PII Hashing -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">1. PII Privacy Hardening</strong>
+                        <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: var(--healthy); padding: 1px 6px; border-radius: 4px; font-weight: bold;">STRIDE Mitigated</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.72rem; line-height: 1.4;">
+                        <div style="color: rgba(248, 113, 113, 0.75);"><strong style="color: var(--silent-exit);">Before:</strong> Plain-text employee names in logs, session IDs, and request headers.</div>
+                        <div style="color: rgba(52, 211, 153, 0.9);"><strong style="color: var(--healthy);">After:</strong> Surnames stripped. First names masked via SHA-256 for secure session scopes.</div>
+                    </div>
                 </div>
-                <div class="feature-title">Multi-Stream Ingestion</div>
-                <div class="feature-desc">Load weekly telemetry metrics via CSV, Postgres DB sync, AWS S3, or natural text prompts, fully isolated into Main Registry vs Real-Time Sync databases.</div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-container">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
-                </div>
-                <div class="feature-title">Secure Diagnostic History</div>
-                <div class="feature-desc">Analyzes behavioral changes against baselines with dynamic API success caching, protected by advanced CORS restrictions and stored XSS mitigations.</div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-container">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.68 22.38A6 6 0 0 0 19.3 18m-4.62-5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                </div>
-                <div class="feature-title">Local ML Fallback (CBR)</div>
-                <div class="feature-desc">If APIs exhaust, a local Jaccard-similarity Nearest Neighbor (1-NN) model dynamically predicts risk profiles and compiles briefings from matching history.</div>
-            </div>
-        </div>
 
-        <div class="quote-banner">
-            <span class="quote-text" id="random-quote-text">"Loading management insight..."</span>
-            <span class="quote-author" id="random-quote-author"></span>
+                <!-- Fix 2: Punitive Guardrails -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">2. Forbidden Language Validator</strong>
+                        <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: var(--healthy); padding: 1px 6px; border-radius: 4px; font-weight: bold;">Compliance & Tone</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.72rem; line-height: 1.4;">
+                        <div style="color: rgba(248, 113, 113, 0.75);"><strong style="color: var(--silent-exit);">Before:</strong> Agents could recommend disciplinary plans (PIPs), warnings, or surveillance.</div>
+                        <div style="color: rgba(52, 211, 153, 0.9);"><strong style="color: var(--healthy);">After:</strong> Regex output validator scans briefings, swapping punitive terms for fallback cards.</div>
+                    </div>
+                </div>
+
+                <!-- Fix 3: Stored XSS Prevention -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">3. Output HTML Sanitization</strong>
+                        <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: var(--healthy); padding: 1px 6px; border-radius: 4px; font-weight: bold;">XSS Safeguard</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.72rem; line-height: 1.4;">
+                        <div style="color: rgba(248, 113, 113, 0.75);"><strong style="color: var(--silent-exit);">Before:</strong> Briefing markdown strings directly loaded into innerHTML, causing XSS risks.</div>
+                        <div style="color: rgba(52, 211, 153, 0.9);"><strong style="color: var(--healthy);">After:</strong> Custom HTML escaping utility filters all agent outputs before markdown conversion.</div>
+                    </div>
+                </div>
+
+                <!-- Fix 4: API Resiliency Cooldown -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">4. API Cooldown Cache</strong>
+                        <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: var(--healthy); padding: 1px 6px; border-radius: 4px; font-weight: bold;">DoS Resilient</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.72rem; line-height: 1.4;">
+                        <div style="color: rgba(248, 113, 113, 0.75);"><strong style="color: var(--silent-exit);">Before:</strong> Quota limits caused 429 timeouts or cascading pipeline execution crashes.</div>
+                        <div style="color: rgba(52, 211, 153, 0.9);"><strong style="color: var(--healthy);">After:</strong> 60s cooldown cache blacklists exhausted models, bypassing timeouts instantly.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: auto; padding: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-secondary);">System Status: <strong style="color: var(--healthy);">READY</strong></span>
+                <span style="color: var(--text-secondary);">Jaccard similarity fallback: <strong style="color: var(--primary);">ACTIVE</strong></span>
+            </div>
         </div>
     </div>
 
@@ -1201,44 +1317,6 @@
 
                     <!-- Tab 2: Multiple Ingestion Sources -->
                     <div class="panel-tab-content" id="paste-tab">
-                        
-                        <div class="ingest-header">Database Ingestion</div>
-                        <div class="ingest-box">
-                            <div class="form-group">
-                                <label for="db-url">Connection URL</label>
-                                <input type="text" id="db-url" class="form-control" value="postgresql://production-hr-db:5432/engagement">
-                            </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem;">
-                                <div class="form-group">
-                                    <label for="db-table">Table Name</label>
-                                    <input type="text" id="db-table" class="form-control" value="weekly_metrics">
-                                </div>
-                                <div class="form-group">
-                                    <label for="db-week">Target Week</label>
-                                    <input type="number" id="db-week" class="form-control" value="4" min="1">
-                                </div>
-                            </div>
-                            <button class="sync-btn" style="width:100%;" id="db-sync-btn">
-                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
-                                Pull Database Metrics
-                            </button>
-                        </div>
-
-                        <div class="ingest-header">Cloud Bucket Ingestion</div>
-                        <div class="ingest-box">
-                            <div class="form-group">
-                                <label for="s3-uri">S3 Storage Path (URI)</label>
-                                <input type="text" id="s3-uri" class="form-control" value="s3://corporate-talent-logs/2026/Q3/week4.csv">
-                            </div>
-                            <div class="form-group">
-                                <label for="s3-week">Ingest Week Target</label>
-                                <input type="number" id="s3-week" class="form-control" value="4" min="1">
-                            </div>
-                            <button class="sync-btn" style="width:100%;" id="s3-sync-btn">
-                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42-3.32-3.13-6-6.5-6C6.07 5 3 8.07 3 12c0 2.21 2.24 4.5 4.5 4.5h10z"/></svg>
-                                Sync Cloud Bucket
-                            </button>
-                        </div>
 
                         <div class="ingest-header">Extract Metrics via Prompt (LLM)</div>
                         <div class="ingest-box">
@@ -1457,6 +1535,63 @@
             } catch (e) { console.error("Could not fetch API metrics", e); }
         }
 
+        async function updateHomepageRegistryStatus() {
+            try {
+                const response = await fetch(`${API_URL}/employees`);
+                const data = await response.json();
+                
+                const container = document.getElementById("live-registry-cards");
+                const countBadge = document.getElementById("live-registry-count");
+                
+                if (!container) return;
+                
+                if (!data || data.length === 0) {
+                    if (countBadge) countBadge.textContent = "0 Records";
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary); background: rgba(0,0,0,0.15); border-radius: 8px; border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; height: 100%;">
+                            <p style="font-size: 0.82rem; margin: 0;">No active diagnostics loaded. Click "Enter Diagnostics Control Room" and click "Evaluate Registry" to populate live cards.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (countBadge) countBadge.textContent = `${data.length} Records`;
+                
+                let cardsHtml = "";
+                data.forEach(emp => {
+                    let statusClass = "status-healthy";
+                    let glowClass = "";
+                    if (emp.classification === "Watch") {
+                        statusClass = "status-watch";
+                        glowClass = "glow-watch";
+                    } else if (emp.classification === "At Risk") {
+                        statusClass = "status-at-risk";
+                        glowClass = "glow-at-risk";
+                    } else if (emp.classification === "Silent Exit") {
+                        statusClass = "status-silent-exit";
+                        glowClass = "glow-silent-exit";
+                    }
+                    
+                    cardsHtml += `
+                        <div class="employee-card ${glowClass}" style="padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 6px; background: rgba(20, 27, 48, 0.4); border: 1px solid var(--border-color); text-align: left;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                                <strong style="font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(emp.name)}</strong>
+                                <span class="badge ${statusClass}" style="font-size: 0.65rem; padding: 2px 6px; font-weight: bold; border-radius: 4px; white-space: nowrap;">${escapeHtml(emp.classification)}</span>
+                            </div>
+                            <div style="font-size: 0.72rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                                <span>Index: <strong style="color: var(--text-primary); font-weight: 700;">${emp.score}/10</strong></span>
+                                <span>Week ${emp.latest_week}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = cardsHtml;
+            } catch (err) {
+                console.error("Could not load live registry for homepage", err);
+            }
+        }
+
         window.addEventListener("DOMContentLoaded", () => {
             updateApiMetrics();
             setInterval(updateApiMetrics, 5000);
@@ -1485,11 +1620,9 @@
                 // Start with a blank UI per user request, do not fetch automatically
                 renderEmployeeList();
             } else {
-                welcomeView.style.display = "flex";
+                welcomeView.style.display = "grid";
                 consoleView.style.display = "none";
-                const randQ = quotes[Math.floor(Math.random() * quotes.length)];
-                quoteText.textContent = `"${randQ.text}"`;
-                quoteAuthor.textContent = `— ${randQ.author}`;
+                updateHomepageRegistryStatus();
             }
 
             // Switch to console view
@@ -1508,10 +1641,8 @@
                 }
                 localStorage.setItem("view", "welcome");
                 consoleView.style.display = "none";
-                welcomeView.style.display = "flex";
-                const nextQ = quotes[Math.floor(Math.random() * quotes.length)];
-                quoteText.textContent = `"${nextQ.text}"`;
-                quoteAuthor.textContent = `— ${nextQ.author}`;
+                welcomeView.style.display = "grid";
+                updateHomepageRegistryStatus();
             });
 
             // Bind click listener directly to API Metrics Badge
@@ -1647,53 +1778,57 @@
             });
 
             // SQL DB Sync
-            dbSyncBtn.addEventListener("click", async () => {
-                statusSpan.textContent = "Connecting to Database...";
-                const payload = {
-                    db_url: document.getElementById("db-url").value,
-                    table_name: document.getElementById("db-table").value,
-                    target_week: parseInt(document.getElementById("db-week").value)
-                };
-                try {
-                    const res = await fetch(`${API_URL}/ingest/db`, { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        showToast(data.message);
-                        statusSpan.textContent = "DB sync completed.";
-                        switchTab("registry-tab");
+            if (dbSyncBtn) {
+                dbSyncBtn.addEventListener("click", async () => {
+                    statusSpan.textContent = "Connecting to Database...";
+                    const payload = {
+                        db_url: document.getElementById("db-url") ? document.getElementById("db-url").value : "",
+                        table_name: document.getElementById("db-table") ? document.getElementById("db-table").value : "",
+                        target_week: document.getElementById("db-week") ? parseInt(document.getElementById("db-week").value) : 1
+                    };
+                    try {
+                        const res = await fetch(`${API_URL}/ingest/db`, { 
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showToast(data.message);
+                            statusSpan.textContent = "DB sync completed.";
+                            switchTab("registry-tab");
+                        }
+                    } catch (e) {
+                        showToast("DB sync error.", true);
                     }
-                } catch (e) {
-                    showToast("DB sync error.", true);
-                }
-            });
+                });
+            }
 
             // S3 Bucket Sync
-            s3SyncBtn.addEventListener("click", async () => {
-                statusSpan.textContent = "Syncing S3 buckets...";
-                const payload = {
-                    s3_uri: document.getElementById("s3-uri").value,
-                    target_week: parseInt(document.getElementById("s3-week").value)
-                };
-                try {
-                    const res = await fetch(`${API_URL}/ingest/s3`, { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        showToast(data.message);
-                        statusSpan.textContent = "S3 download completed.";
-                        switchTab("registry-tab");
+            if (s3SyncBtn) {
+                s3SyncBtn.addEventListener("click", async () => {
+                    statusSpan.textContent = "Syncing S3 buckets...";
+                    const payload = {
+                        s3_uri: document.getElementById("s3-uri") ? document.getElementById("s3-uri").value : "",
+                        target_week: document.getElementById("s3-week") ? parseInt(document.getElementById("s3-week").value) : 1
+                    };
+                    try {
+                        const res = await fetch(`${API_URL}/ingest/s3`, { 
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showToast(data.message);
+                            statusSpan.textContent = "S3 download completed.";
+                            switchTab("registry-tab");
+                        }
+                    } catch (e) {
+                        showToast("S3 sync error.", true);
                     }
-                } catch (e) {
-                    showToast("S3 sync error.", true);
-                }
-            });
+                });
+            }
 
             // Natural Language prompt submit
             submitPromptBtn.addEventListener("click", async () => {
@@ -1921,6 +2056,7 @@
                 const response = await fetch(endpoint);
                 employees = await response.json();
                 renderEmployeeList();
+                updateHomepageRegistryStatus();
                 if (employees.length > 0) {
                     selectEmployee(employees[0].name);
                 } else {
@@ -2400,8 +2536,6 @@
                     <p style="margin-bottom:0.8rem; color:var(--text-primary); font-size:0.92rem;">The system is equipped with a highly adaptive ingestion layer capable of pulling employee metrics from multiple enterprise-grade data sources:</p>
                     <ul style="margin: 0.8rem 0 0.8rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; color:var(--text-secondary); font-size:0.86rem;">
                         <li><strong>Manual CSV Pasting:</strong> Directly input raw comma-separated telemetry files containing weekly metrics.</li>
-                        <li><strong>Postgres SQL Database Connection:</strong> Pull rows dynamically from custom tables using a mock connection string.</li>
-                        <li><strong>AWS S3 Cloud Buckets:</strong> Fetch remote files stored inside secure corporate buckets.</li>
                         <li><strong>Natural Language observations:</strong> Input simple statements like <em>"Arjun completed 30 tasks, had 3 sick days, and 45 hours in week 4"</em>. The LLM extracts correct parameters automatically.</li>
                     </ul>
                     <p style="margin-top:0.8rem; color:var(--text-secondary); font-size:0.86rem;">All inputs are run through a robust preprocessing layer which uses fuzzy alias mapping to standardize diverse column headers and resolves missing data points using a probabilistic fallback model.</p>
@@ -2479,7 +2613,7 @@
             {
                 elementId: "paste-tab",
                 title: "Explaining Ingestion Sources",
-                description: "Prior to seeing the options, know that we support 4 ingestion paths: Postgres DB sync, S3 bucket sync, raw CSV copy, or NL Prompt parsing. Click Next to switch tabs and view them!",
+                description: "We support two robust ingestion paths: raw CSV copy-pasting or Natural Language prompt parsing. Click Next to switch tabs and view them!",
                 position: "right"
             },
             {
