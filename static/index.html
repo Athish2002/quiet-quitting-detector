@@ -1105,7 +1105,7 @@
 <body>
 
     <!-- Welcoming Landing Homepage View -->
-    <div id="welcome-view" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem 3rem 1rem; border-radius: 24px;">
+    <div id="welcome-view" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; width: 100%; max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem 3rem 1rem; border-radius: 24px; align-content: start;">
         <!-- Header Banner spanning full width -->
         <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
@@ -1120,7 +1120,7 @@
 
         <!-- Coordinated 4-Agent Pipeline spanning full width -->
         <div style="grid-column: 1 / -1;">
-            <div class="panel" style="padding: 1.2rem;">
+            <div class="panel" id="pipeline-flow-panel" style="padding: 1.2rem;">
                 <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; margin-top: 0;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     Coordinated 4-Agent Pipeline Flow
@@ -1182,11 +1182,15 @@
             </div>
 
             <!-- Live Registry Status Panel -->
-            <div class="panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; min-height: 200px;">
+            <div class="panel" id="home-registry-panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; min-height: 200px;">
                 <div class="panel-header" style="padding: 0; border: none; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
-                    <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0; flex-wrap: wrap;">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m18-12a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
-                        Live Diagnostics Registry Status (<a href="#" id="home-raw-report-link" style="color: var(--primary); text-decoration: underline; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="View raw engagement_report.txt"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> engagement_report.txt</a>)
+                        Live Diagnostics Registry Status
+                        <span class="badge" id="home-raw-report-link" style="font-size: 0.72rem; padding: 3px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; background: rgba(45, 212, 191, 0.1); color: var(--primary); border: 1px solid rgba(45, 212, 191, 0.2); font-family: var(--font-sans); border-radius: 4px; font-weight: normal; margin-left: 8px;" title="View raw disengagement report log file">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span id="home-report-filename">engagement_report.txt</span>
+                        </span>
                     </h3>
                     <span id="live-registry-count" style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; color: var(--text-secondary); font-weight: bold;">0 Records</span>
                 </div>
@@ -1199,7 +1203,7 @@
         </div>
 
         <!-- Right Column: STRIDE Security & Compliance Hardening -->
-        <div class="panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+        <div class="panel" id="stride-hardening-panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
             <h3 style="font-family: var(--font-display); font-size: 1.05rem; color: var(--primary); display: flex; align-items: center; gap: 8px; margin: 0;">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 STRIDE Security Hardening Log
@@ -2752,38 +2756,60 @@
             }
         ];
 
-
-
         // Interactive Guided Tour Script
         const tourSteps = [
             {
                 elementId: "tour-btn",
                 title: "Welcome to Intro-Mode!",
-                description: "This interactive tour will guide you through the Quiet-Quitting Detector workspace so you understand the purpose and functionality of every component.",
+                description: "This interactive tour will guide you through the disengagement detector console layout so you understand every component and tool.",
                 position: "bottom"
             },
             {
-                elementId: "header-logo-title",
-                title: "Console Brand & Home Logo",
-                description: "Clicking this logo or title at any time returns you to the welcoming landing homepage where quotes and the project summary are displayed.",
+                elementId: "pipeline-flow-panel",
+                title: "Coordinated 4-Agent Pipeline Flow",
+                description: "Displays disengagement workflow execution. As each ADK agent (Orchestrator, Trend Detector, Risk Scorer, Briefing Agent) runs, its status updates live.",
+                position: "bottom"
+            },
+            {
+                elementId: "home-registry-panel",
+                title: "Live Diagnostics Registry Status",
+                description: "Aggregates disengagement scores, classifications, and disengagement signals for all employees, pulled dynamically from master files.",
+                position: "right"
+            },
+            {
+                elementId: "home-raw-report-link",
+                title: "Master Report Log Badge",
+                description: "Clicking this badge loads the sandbox-safe In-App Document Viewer to display the raw compiled master briefing report (engagement_report.txt) instantly.",
+                position: "bottom"
+            },
+            {
+                elementId: "stride-hardening-panel",
+                title: "STRIDE Hardening Log",
+                description: "Documents active threat mitigations (PII name masking, output filter validation, HTML input sanitization, global cooldown cache) validated in test suites.",
+                position: "left"
+            },
+            {
+                elementId: "enter-console-btn",
+                title: "Enter Diagnostics Control Room",
+                description: "Ready to test or simulate? Click this button to switch from the Cockpit Overview to the main Diagnostics Control Room console.",
                 position: "bottom"
             },
             {
                 elementId: "mock-data-btn",
                 title: "Random Mock Data",
-                description: "Click this first to write randomized trajectories for 6 employees (Week 1 to Week 4) as raw CSV files and pre-generate Week 1-3 memory JSONs.",
+                description: "Click this to write randomized trajectories for 6 employees (Week 1 to Week 4) as raw CSV files and pre-generate Week 1-3 memory JSONs.",
                 position: "bottom"
             },
             {
                 elementId: "run-pipeline-btn",
                 title: "Evaluate Registry (Run AI)",
-                description: "Once data is generated or synced, click this to run the 4-agent Gemini evaluation. It processes diagnostic scores, signals, and briefings sequentially.",
+                description: "Once data is ready, click this to run the 4-agent Gemini evaluation. It processes diagnostic disengagement scores, signals, and briefings sequentially.",
                 position: "bottom"
             },
             {
                 elementId: "history-report-btn",
                 title: "Executive Synthesis Report",
-                description: "Click this to open a summary modal containing the final executive report compiled by the Orchestrator for all flagged workers.",
+                description: "Click this to open a summary modal containing the final executive report compiled by the Orchestrator for all disengaged workers.",
                 position: "bottom"
             },
             {
@@ -2825,7 +2851,7 @@
             {
                 elementId: "action-plan-panel",
                 title: "Manager Supportive Action Plan",
-                description: "Generates HR-compliant dialogue cards and checklists to help managers coordinate supportive 1-on-1 workload discussions.",
+                description: "Generates HR-compliant dialogue dialogue cards and checklists to help managers coordinate supportive 1-on-1 workload discussions.",
                 position: "left"
             }
         ];
@@ -2833,7 +2859,6 @@
         let currentTourStep = 0;
 
         function startTour() {
-            switchTab('registry-tab');
             currentTourStep = 0;
             showTourStep(0);
         }
@@ -2847,13 +2872,20 @@
             
             document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
             
-            // Auto switch tabs during tour steps to follow user requests
-            if (index === 7) {
-                switchTab('paste-tab');
-            } else if (index === 8) {
-                switchTab('evaluator-tab');
-            } else if (index === 9) {
-                switchTab('registry-tab');
+            // Auto switch views/tabs during tour steps to follow layout structure
+            if (index <= 5) {
+                if (welcomeView) welcomeView.style.display = "grid";
+                if (consoleView) consoleView.style.display = "none";
+            } else {
+                if (welcomeView) welcomeView.style.display = "none";
+                if (consoleView) consoleView.style.display = "flex";
+                if (index === 11) {
+                    switchTab('paste-tab');
+                } else if (index === 12) {
+                    switchTab('evaluator-tab');
+                } else if (index === 13) {
+                    switchTab('registry-tab');
+                }
             }
 
             const step = tourSteps[index];
@@ -2907,6 +2939,22 @@
                 } else {
                     exitTour();
                 }
+            }
+        }
+
+        function exitTour() {
+            document.getElementById("tour-overlay").style.display = "none";
+            document.getElementById("tour-tooltip").style.display = "none";
+            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
+            
+            // Restore actual saved view state
+            const savedView = safeGetItem("view");
+            if (savedView === "console") {
+                if (welcomeView) welcomeView.style.display = "none";
+                if (consoleView) consoleView.style.display = "flex";
+            } else {
+                if (welcomeView) welcomeView.style.display = "grid";
+                if (consoleView) consoleView.style.display = "none";
             }
         }
 
@@ -2989,11 +3037,7 @@
             }
         }
 
-        function exitTour() {
-            document.getElementById("tour-overlay").style.display = "none";
-            document.getElementById("tour-tooltip").style.display = "none";
-            document.querySelectorAll(".tour-highlight").forEach(el => el.classList.remove("tour-highlight"));
-        }
+
 
 
     </script>

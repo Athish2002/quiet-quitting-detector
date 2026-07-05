@@ -104,6 +104,8 @@ def execute_pipeline():
     """Triggers the full multi-agent pipeline and returns the summary."""
     try:
         report_output = run_orchestrator()
+        with open("engagement_report.txt", "w", encoding="utf-8") as f:
+            f.write(report_output)
         return {
             "success": True,
             "message": "Pipeline completed successfully.",
