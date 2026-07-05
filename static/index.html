@@ -1808,6 +1808,7 @@
 
             const apiMetricsBadge = document.getElementById("api-metrics-badge");
             if (apiMetricsBadge) {
+                apiMetricsBadge.style.cursor = "pointer";
                 apiMetricsBadge.addEventListener("click", (e) => {
                     e.preventDefault();
                     fetchAndShowDoc("api-metrics");
@@ -1870,71 +1871,6 @@
                     if (welcomeView) welcomeView.style.display = "grid";
                     updateHomepageRegistryStatus();
                 });
-            }
-
-            // Bind click listener directly to API Metrics Badge
-            const apiMetricsBadge = document.getElementById("api-metrics-badge");
-            if (apiMetricsBadge) {
-                apiMetricsBadge.style.cursor = "pointer";
-                apiMetricsBadge.addEventListener("click", async (e) => {
-                    e.stopPropagation(); // Stop bubbling to prevent header redirect
-                    const modal = document.getElementById("feature-detail-modal");
-                    const mTitle = document.getElementById("feature-modal-title");
-                    const mBody = document.getElementById("feature-modal-body");
-                    
-                    if (!modal || !mTitle || !mBody) return;
-                    
-                    try {
-                        const response = await fetch(`${API_URL}/metrics`);
-                        const data = await response.json();
-                        
-                        mTitle.textContent = "System API Performance & Metrics Log";
-                        mBody.innerHTML = `
-                            <div style="font-family: var(--font-sans); color: var(--text-primary);">
-                                <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
-                                    This panel monitors Google AI Studio API requests and tracks them against the local case-based similarity fallback engine.
-                                </p>
-                                
-                                <div style="display: flex; gap: 15px; margin-bottom: 1.5rem;">
-                                    <div style="flex: 1; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px; border-radius: 8px; text-align: center;">
-                                        <h4 style="margin: 0; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Successful API Calls</h4>
-                                        <p style="margin: 5px 0 0; font-size: 1.8rem; font-weight: bold; color: var(--healthy);">${data.success}</p>
-                                    </div>
-                                    <div style="flex: 1; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 8px; text-align: center;">
-                                        <h4 style="margin: 0; font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Local ML Fallbacks</h4>
-                                        <p style="margin: 5px 0 0; font-size: 1.8rem; font-weight: bold; color: var(--watch);">${data.rejected}</p>
-                                    </div>
-                                </div>
-                                
-                                <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--primary); font-family: var(--font-display); font-size: 1rem;">Resiliency Routing Chain</h4>
-                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                                    When an API rate-limit (429) or invalid configuration is encountered, the execution engine skips the failed model for 60 seconds and falls back through this active priority sequence:
-                                </p>
-                                <ol style="font-size: 0.8rem; margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.6; padding-left: 5px;">
-                                    <li><strong style="color: var(--accent);">gemini-3.5-flash</strong> (Primary Default)</li>
-                                    <li>gemini-3.1-flash-lite</li>
-                                    <li>gemini-3.1-pro</li>
-                                    <li>gemini-3.0-flash</li>
-                                    <li>gemini-2.5-flash</li>
-                                    <li>gemini-2.5-flash-lite</li>
-                                    <li>gemini-2.5-pro</li>
-                                    <li>gemini-2.0-flash</li>
-                                    <li>gemini-2.0-flash-lite</li>
-                                    <li><strong style="color: var(--watch);">Local ML Model</strong> (Similarity pattern matching via Case-Based Reasoning)</li>
-                                </ol>
-                                
-                                <p style="font-size: 0.75rem; margin-top: 1.2rem; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border-left: 3px solid var(--accent); color: var(--text-secondary); line-height: 1.4;">
-                                    💡 <strong>Testing tip:</strong> To simulate the local Case-Based Reasoning fallback flow in a demonstration, temporarily invalidate your <code>GEMINI_API_KEY</code>.
-                                </p>
-                            </div>
-                        `;
-                        modal.classList.add("open");
-                    } catch (err) {
-                        console.error("Could not fetch metrics breakdown", err);
-                    }
-                });
-            }
-
             // Run pipeline
             if (runBtn) {
                 runBtn.addEventListener("click", async () => {
@@ -2280,19 +2216,7 @@
             }
         });
 
-        // Tab switches
-        function switchTab(tabId) {
-            document.querySelectorAll(".tab-btn").forEach(btn => {
-                btn.classList.remove("active");
-                if (btn.getAttribute("onclick").includes(tabId)) {
-                    btn.classList.add("active");
-                }
-            });
-            document.querySelectorAll(".panel-tab-content").forEach(content => {
-                content.classList.remove("active");
-            });
-            document.getElementById(tabId).classList.add("active");
-        }
+
 
         function showToast(message, isError = false) {
             toast.textContent = message;
@@ -2368,12 +2292,7 @@
             });
         }
 
-        async function selectEmployee(name) {
-            selectedEmployee = employees.find(e => e.name === name);
-            renderEmployeeList();
-            renderDiagnostics();
-            fetchBriefing(name);
-        }
+
 
         function renderDiagnostics() {
             if (!selectedEmployee) return;
