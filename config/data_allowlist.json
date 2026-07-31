@@ -1,0 +1,215 @@
+{
+  "$comment": [
+    "PHASE 0 DATA MINIMIZATION ALLOWLIST -- default-deny.",
+    "",
+    "Anything not enumerated in `permitted_fields` is DROPPED AT INGEST, before",
+    "it is ever persisted. This file is the single source of truth for what the",
+    "system is allowed to hold; docs/NOTICE.md is generated FROM this file, so",
+    "the employee-facing notice cannot drift from reality.",
+    "",
+    "Each field carries `risk_scoring`, `rationale` and `benign_explanation`.",
+    "Per the Phase 2 rule -- if you cannot write the benign explanation, the",
+    "field does not ship -- these seed the feature registry rather than being",
+    "bolted on later.",
+    "",
+    "Reviewed by: engineering. MUST be re-reviewed by counsel + any works",
+    "council before this system processes a real person's data."
+  ],
+  "version": 1,
+  "scope": "capstone-demo-synthetic-data-only",
+  "permitted_fields": {
+    "name": {
+      "risk_scoring": false,
+      "pseudonymize": true,
+      "rationale": "Identity, required to route a briefing to the right manager conversation.",
+      "benign_explanation": "n/a -- identifier, not a behavioural signal.",
+      "note": "Replaced by a surrogate ID at ingest; the mapping lives in a separate store.",
+      "aliases": [
+        "employee_name",
+        "name",
+        "first_name",
+        "employee",
+        "username",
+        "user",
+        "first name",
+        "employee name"
+      ]
+    },
+    "week_number": {
+      "risk_scoring": false,
+      "rationale": "Time index. Required for point-in-time correctness and trailing baselines.",
+      "benign_explanation": "n/a -- time index.",
+      "aliases": [
+        "week_number",
+        "week",
+        "week_num",
+        "week no"
+      ]
+    },
+    "tasks_completed": {
+      "risk_scoring": true,
+      "rationale": "Throughput relative to the individual's OWN trailing baseline. A sustained personal drop is a prompt to ask what changed.",
+      "benign_explanation": "Task size varies enormously. One large architectural task, a research spike, or a shift to mentoring/review work all reduce raw counts while contribution rises.",
+      "aliases": [
+        "tasks_completed",
+        "completed_tasks",
+        "tasks",
+        "completed",
+        "task_count",
+        "tasks completed",
+        "completed tasks"
+      ]
+    },
+    "avg_response_time": {
+      "risk_scoring": true,
+      "rationale": "Response latency drift vs the individual's own baseline; a cadence signal, not a productivity one.",
+      "benign_explanation": "Deep-focus work, timezone shifts, meeting-heavy weeks, or a deliberate move away from reactive interrupt-driven work all raise latency.",
+      "aliases": [
+        "avg_response_time_hours",
+        "response_time",
+        "avg_response_time",
+        "response_time_hours",
+        "latency",
+        "average response time",
+        "response time"
+      ]
+    },
+    "weekly_hours": {
+      "risk_scoring": true,
+      "rationale": "Deviation from the individual's own norm, in EITHER direction -- a sustained rise is a burnout prompt, a sustained fall a disengagement prompt.",
+      "benign_explanation": "Approved part-time or compressed schedules, phased return from leave, public holidays, and caregiving arrangements all reduce hours legitimately.",
+      "constraint": "Absolute thresholds are forbidden. Must be expressed as personal deviation only -- an absolute floor penalises part-time and phased-return workers.",
+      "aliases": [
+        "weekly_hours",
+        "hours_worked",
+        "hours",
+        "weekly hours",
+        "work hours",
+        "logged_hours"
+      ]
+    },
+    "after_hours_logins": {
+      "risk_scoring": false,
+      "wellbeing_only": true,
+      "rationale": "Retained ONLY as a wellbeing/burnout indicator. Structurally barred from raising retention risk.",
+      "benign_explanation": "Non-US timezones, caregivers working after a school run, and personal preference for evening focus time all produce after-hours activity with zero disengagement meaning.",
+      "constraint": "May only ever LOWER concern or trigger a workload check-in. Must never increase a retention-risk score. Triggers US state electronic-monitoring notice duties (NY/CT/DE).",
+      "aliases": [
+        "after_hours_logins",
+        "after_hours",
+        "logins",
+        "after hours logins",
+        "night_logins",
+        "after-hours",
+        "afterhours"
+      ]
+    }
+  },
+  "excluded_fields": {
+    "sick_days": {
+      "reason": "HEALTH DATA. GDPR Art. 9 special category; ADA/FMLA discrimination exposure in the US. Using absence to raise a retention-risk score is indefensible.",
+      "severity": "hard-exclusion",
+      "was_previously_ingested": true
+    },
+    "sentiment": {
+      "reason": "Provenance undocumented. If derived from message content this is an EU AI Act Art. 5 PROHIBITED practice (emotion inference in the workplace) -- banned outright, not merely high-risk. If it is a manager's manual tag it is the circular, bias-contaminated label problem instead.",
+      "severity": "hard-exclusion",
+      "was_previously_ingested": true,
+      "reinstatement_condition": "Only with documented provenance proving it is neither content-derived nor a manager opinion, plus counsel sign-off."
+    },
+    "task_accuracy": {
+      "reason": "Performance/quality metric. Mixing performance into a retention-support tool is the fastest route to it being used punitively -- the exact failure mode this system is designed to prevent.",
+      "severity": "policy-exclusion",
+      "was_previously_ingested": true
+    }
+  },
+  "forbidden_patterns": {
+    "$comment": "Substring patterns matched case-insensitively against EVERY incoming field name, so a new source cannot introduce a forbidden field simply by not being on the excluded list. Default-deny already blocks these; this exists to make the violation LOUD rather than silent.",
+    "health": [
+      "sick",
+      "medical",
+      "health",
+      "illness",
+      "diagnos",
+      "disab",
+      "leave_reason",
+      "absence_reason",
+      "fmla",
+      "pregnan"
+    ],
+    "communication_content": [
+      "message",
+      "content",
+      "email_body",
+      "dm_",
+      "chat_text",
+      "transcript",
+      "sentiment",
+      "tone",
+      "emotion",
+      "morale",
+      "attitude"
+    ],
+    "telemetry": [
+      "keystroke",
+      "keylog",
+      "mouse",
+      "screenshot",
+      "webcam",
+      "camera",
+      "screen_capture",
+      "idle_time",
+      "active_window"
+    ],
+    "location": [
+      "location",
+      "gps",
+      "geo",
+      "ip_address",
+      "coordinates",
+      "whereabouts"
+    ],
+    "protected_characteristics": [
+      "race",
+      "ethnic",
+      "gender",
+      "sex",
+      "religio",
+      "age",
+      "birth",
+      "nationality",
+      "marital",
+      "orientation",
+      "veteran"
+    ],
+    "collective_and_political": [
+      "union",
+      "political",
+      "grievance",
+      "whistleblow",
+      "works_council"
+    ],
+    "personal_life": [
+      "personal",
+      "family",
+      "home_",
+      "social_media",
+      "browsing",
+      "off_hours_activity"
+    ],
+    "compensation": [
+      "salary",
+      "comp_amount",
+      "bonus_amount",
+      "pay_",
+      "wage"
+    ]
+  },
+  "retention_days": {
+    "$comment": "TTLs are enforced by src/governance/retention.py and verified by a test that asserts real deletion, not tombstoning.",
+    "raw_events": 90,
+    "features": 395,
+    "scores": 395,
+    "audit_log": 2555
+  }
+}
