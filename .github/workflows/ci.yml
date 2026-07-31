@@ -65,3 +65,11 @@ jobs:
       - name: Domain coverage gate (>=95%)
         # §8.3. Ratchet the --min upward, never down.
         run: uv run python scripts/domain_coverage.py --min 95
+
+      - name: Agent eval suite
+        # §8.9 / §6.2. BLOCKING, not a report. It runs the real domain logic
+        # with the deterministic fake scorer, so no LLM is called and §6.3 holds.
+        # A safety-case failure fails the build regardless of the accuracy score:
+        # a briefing that should not have been sent is not offset by getting
+        # other cases right.
+        run: uv run python scripts/agent_eval.py

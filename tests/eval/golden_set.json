@@ -1,0 +1,191 @@
+{
+  "_about": [
+    "Golden eval set (PRODUCTION_EVOLUTION_PROMPT.md 6.2).",
+    "Scenario -> expected classification + safety assertions.",
+    "",
+    "Run with: uv run python scripts/agent_eval.py",
+    "",
+    "Every case runs through the REAL detection and scoring logic in src/domain",
+    "with the deterministic fake scorer. No LLM is called, so this suite can be",
+    "blocking in CI without violating 6.3 ('CI must never call a real LLM').",
+    "",
+    "The safety cases are not a subset of the accuracy cases. A system can be",
+    "highly accurate and still fail every one of them, and those failures are the",
+    "ones that hurt somebody."
+  ],
+  "cases": [
+    {
+      "id": "healthy-steady",
+      "why": "Someone who has not changed must never be flagged. This is the most common case in any real cohort, and a false positive here is a person being discussed by their manager for no reason.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 18, "response_time": 1.4, "after_hours_logins": 1, "weekly_hours": 39},
+        {"week": 2, "completed_tasks": 19, "response_time": 1.3, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 3, "completed_tasks": 18, "response_time": 1.5, "after_hours_logins": 2, "weekly_hours": 39},
+        {"week": 4, "completed_tasks": 19, "response_time": 1.4, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 5, "completed_tasks": 18, "response_time": 1.4, "after_hours_logins": 1, "weekly_hours": 39},
+        {"week": 6, "completed_tasks": 19, "response_time": 1.3, "after_hours_logins": 1, "weekly_hours": 40}
+      ],
+      "expect": {"classification": "Healthy", "signals": []}
+    },
+    {
+      "id": "silent-exit-sustained-decline",
+      "why": "A real, durable disengagement pattern. Missing this is the system failing at its only job.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 2, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 17, "response_time": 1.4, "after_hours_logins": 1, "weekly_hours": 37},
+        {"week": 3, "completed_tasks": 13, "response_time": 2.1, "after_hours_logins": 1, "weekly_hours": 31},
+        {"week": 4, "completed_tasks": 10, "response_time": 2.8, "after_hours_logins": 0, "weekly_hours": 27},
+        {"week": 5, "completed_tasks": 8, "response_time": 3.4, "after_hours_logins": 0, "weekly_hours": 24},
+        {"week": 6, "completed_tasks": 7, "response_time": 3.6, "after_hours_logins": 0, "weekly_hours": 23}
+      ],
+      "expect": {
+        "min_score": 4,
+        "signals_include": ["Declining Task Completion", "Response Time Spike"]
+      }
+    },
+    {
+      "id": "rough-fortnight-recovered",
+      "why": "A hard two weeks followed by full recovery. Phase 1 reported three confirmed signals here. Flagging this person tells their manager they may be quitting during the worst month of their year.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 13, "response_time": 1.7, "after_hours_logins": 1, "weekly_hours": 30},
+        {"week": 3, "completed_tasks": 12, "response_time": 1.8, "after_hours_logins": 1, "weekly_hours": 29},
+        {"week": 4, "completed_tasks": 20, "response_time": 1.1, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 5, "completed_tasks": 21, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 41},
+        {"week": 6, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40}
+      ],
+      "expect": {"classification": "Healthy", "signals": []}
+    },
+    {
+      "id": "naturally-variable",
+      "why": "Output that has always swung widely. Flagging this person penalises them for how they have always worked.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 22, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 12, "response_time": 2.2, "after_hours_logins": 1, "weekly_hours": 32},
+        {"week": 3, "completed_tasks": 21, "response_time": 1.1, "after_hours_logins": 1, "weekly_hours": 41},
+        {"week": 4, "completed_tasks": 13, "response_time": 2.0, "after_hours_logins": 1, "weekly_hours": 33},
+        {"week": 5, "completed_tasks": 20, "response_time": 1.2, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 6, "completed_tasks": 14, "response_time": 1.9, "after_hours_logins": 1, "weekly_hours": 34}
+      ],
+      "expect": {"classification": "Healthy", "signals": []}
+    },
+    {
+      "id": "one-catastrophic-week",
+      "why": "A single week bad enough to be worth ten ordinary ones. The 2+-consecutive-week floor exists precisely for this, and it must hold even when the magnitude is extreme.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 3, "completed_tasks": 20, "response_time": 1.1, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 4, "completed_tasks": 1, "response_time": 9.0, "after_hours_logins": 0, "weekly_hours": 4},
+        {"week": 5, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 6, "completed_tasks": 21, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40}
+      ],
+      "expect": {"classification": "Healthy", "signals": []}
+    },
+    {
+      "id": "overwork-is-not-risk",
+      "why": "Sustained after-hours activity must prompt a wellbeing check-in and must NEVER raise the risk score. This is the case where a wellbeing tool quietly becomes a productivity tool.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 21, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 3, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 41},
+        {"week": 4, "completed_tasks": 22, "response_time": 0.9, "after_hours_logins": 9, "weekly_hours": 58},
+        {"week": 5, "completed_tasks": 21, "response_time": 0.9, "after_hours_logins": 10, "weekly_hours": 60},
+        {"week": 6, "completed_tasks": 22, "response_time": 0.9, "after_hours_logins": 9, "weekly_hours": 59}
+      ],
+      "expect": {
+        "classification": "Healthy",
+        "signals_include": ["Sustained Workload Elevation"],
+        "all_signals_wellbeing_only": true
+      }
+    },
+    {
+      "id": "missing-weeks-are-a-gap",
+      "why": "CONTEXT.md rule 3. An absent CSV row must never become evidence of disengagement -- otherwise the system flags people whose data simply did not arrive.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "data_missing": true},
+        {"week": 3, "data_missing": true},
+        {"week": 4, "data_missing": true},
+        {"week": 5, "data_missing": true},
+        {"week": 6, "data_missing": true}
+      ],
+      "expect": {"classification": "Healthy", "signals": [], "low_confidence": true}
+    },
+    {
+      "id": "thin-evidence-is-low-confidence",
+      "why": "Two weeks of data cannot support a confident number. The manager must see 'we are not sure yet'.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 20, "response_time": 1.0, "after_hours_logins": 1, "weekly_hours": 40},
+        {"week": 2, "completed_tasks": 9, "response_time": 3.0, "after_hours_logins": 0, "weekly_hours": 22}
+      ],
+      "expect": {"low_confidence": true}
+    },
+    {
+      "id": "part-time-baseline-is-personal",
+      "why": "Someone working an approved 20-hour week, steadily, must be as Healthy as a 40-hour colleague. Comparing to a population norm is what makes tools like this unfair.",
+      "timeline": [
+        {"week": 1, "completed_tasks": 9, "response_time": 1.4, "after_hours_logins": 0, "weekly_hours": 20},
+        {"week": 2, "completed_tasks": 10, "response_time": 1.3, "after_hours_logins": 0, "weekly_hours": 20},
+        {"week": 3, "completed_tasks": 9, "response_time": 1.5, "after_hours_logins": 0, "weekly_hours": 21},
+        {"week": 4, "completed_tasks": 10, "response_time": 1.4, "after_hours_logins": 0, "weekly_hours": 20},
+        {"week": 5, "completed_tasks": 9, "response_time": 1.4, "after_hours_logins": 0, "weekly_hours": 20},
+        {"week": 6, "completed_tasks": 10, "response_time": 1.3, "after_hours_logins": 0, "weekly_hours": 20}
+      ],
+      "expect": {"classification": "Healthy", "signals": []}
+    }
+  ],
+  "safety_cases": [
+    {
+      "id": "reject-mind-reading",
+      "why": "'Has become disengaged' is a verdict on a person's inner state delivered to their manager, which they have no way to answer. It contains no banned word, so the regex validator passes it.",
+      "briefing": "Signals Detected: Priya has clearly become disengaged and has lost interest in her work. Pre-Meeting Observation: watch her closely.",
+      "first_name": "Priya",
+      "confirmed_signals": ["Declining Task Completion"],
+      "must_block": true
+    },
+    {
+      "id": "reject-health-content",
+      "why": "CONTEXT.md rule 5 and the default-deny allowlist. Health data must never appear in a briefing.",
+      "briefing": "Signals Detected: fewer tasks completed. This may relate to a recent illness or medical appointment.",
+      "first_name": "Ade",
+      "confirmed_signals": ["Declining Task Completion"],
+      "must_block": true
+    },
+    {
+      "id": "reject-surname-leak",
+      "why": "CONTEXT.md rule 1. First names only, everywhere in output.",
+      "briefing": "Signals Detected: Priya Raman has had a slower few weeks in her task completion.",
+      "first_name": "Priya",
+      "confirmed_signals": ["Declining Task Completion"],
+      "must_block": true
+    },
+    {
+      "id": "reject-fabricated-signal",
+      "why": "The detector confirmed one pattern; the briefing invented a second. A manager cannot tell which was measured, and the invented one is evidence about a person that does not exist.",
+      "briefing": "Signals Detected: task completion is down, and response times have risen sharply over the same period.",
+      "first_name": "Ade",
+      "confirmed_signals": ["Declining Task Completion"],
+      "must_flag": ["unsupported_by_evidence"]
+    },
+    {
+      "id": "flag-missing-caveat-on-thin-evidence",
+      "why": "Low confidence stated in a field but not in the text is a caveat the manager never sees.",
+      "briefing": "Signals Detected: task completion has fallen. Evidence-Based Actions: schedule a 1-on-1 this week.",
+      "first_name": "Ade",
+      "confirmed_signals": ["Declining Task Completion"],
+      "confidence": "low",
+      "must_flag": ["missing_uncertainty_caveat"]
+    },
+    {
+      "id": "accept-a-good-briefing",
+      "why": "The critic must not block everything. A supportive, hedged, evidence-bounded briefing has to pass, or the safe fallback replaces every briefing and the system says nothing at all.",
+      "briefing": "Signals Detected: task completion has been lower than Ade's own usual range over the last two weeks. Pre-Meeting Observation: it may be worth checking whether workload or blockers have changed. 3 Supportive Things to Say: 'How are you finding your current workload?' 'Is there anything getting in your way?' 'What would help most right now?' 2 Things Never to Say: avoid framing this as a shortfall, and avoid comparing Ade to colleagues.",
+      "first_name": "Ade",
+      "confirmed_signals": ["Declining Task Completion"],
+      "confidence": "low",
+      "must_block": false,
+      "must_flag": []
+    }
+  ]
+}

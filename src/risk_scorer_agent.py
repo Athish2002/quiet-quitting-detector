@@ -262,6 +262,23 @@ def _to_signal_models(signals: list[dict]) -> list[Signal]:
     return models
 
 
+def _active_model_version() -> str:
+    """Which scoring model is currently live.
+
+    Imported lazily and failure-tolerant on purpose: an unreadable registry must
+    degrade to "we do not know which model this was" rather than take down
+    scoring. An unattributable prediction is a real cost, but a pipeline that
+    stops because a pointer file is missing is a worse one.
+    """
+    try:
+        from src.evolution.registry import ModelRegistry
+
+        return ModelRegistry().active_version()
+    except Exception:
+        logger.warning("Could not read the active model version.")
+        return "unknown"
+
+
 def _to_week_models(timeline: list[dict]) -> list[WeekMetrics]:
     """Adapt legacy timeline rows so a scorer can judge how much evidence exists.
 
@@ -509,6 +526,7 @@ def score_risk(
             }
             if assessment.insufficient_data:
                 result["insufficient_data"] = True
+            provenance = "deterministic-scorer"
         else:
             response_text = run_agent_sync(
                 risk_scorer_agent,
@@ -528,6 +546,14 @@ def score_risk(
             clean_text = clean_text.strip()
 
             result = json.loads(clean_text)
+            provenance = "llm"
+
+        # Phase 3 (6.2): every prediction records which model produced it and
+        # on which tier. Without this, a calibration figure cannot be attributed
+        # to a version, a regression cannot be traced to the change that caused
+        # it, and a rollback has nothing to roll back to.
+        result["model_version"] = _active_model_version()
+        result["provenance"] = provenance
 
         # Step 4: Apply recurrence bonus (+1), capped at 10.            [Fix 3]
         if should_apply_recurrence:
@@ -563,6 +589,15 @@ def score_risk(
     except Exception:
         # Rule 5: Never expose raw Gemini API errors -- attempt Local ML prediction
         fallback = _predict_local_ml_fallback(signals, local_dir)
+
+        # 6.2, "escalating fallback with honesty": a degraded result must SAY it
+        # is degraded. A local-ML guess and a Gemini assessment look identical
+        # once they are both a number in a JSON file, and a manager reading the
+        # second one has no way to know they were handed the first.
+        fallback.setdefault("provenance", "local-fallback")
+        fallback.setdefault("model_version", _active_model_version())
+        fallback.setdefault("confidence", "low")
+        fallback["degraded"] = True
 
         # Still attempt to save the fallback so history remains continuous.
         try:

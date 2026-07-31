@@ -10,6 +10,7 @@ from google.adk.models import Gemini
 from src.app_utils.runner_helper import run_agent_sync
 from src.data_layer.ingestion import ingest_weekly_csvs
 from src.data_layer.preprocessing import preprocess_employee_records
+from src.domain.continuity import build_continuity, build_outcomes
 from src.manager_briefing_agent import generate_briefing
 from src.risk_scorer_agent import score_risk
 from src.trend_detector_agent import detect_trends
@@ -35,6 +36,51 @@ orchestrator_agent = Agent(
     model=Gemini(model="gemini-2.5-flash"),
     instruction=SYSTEM_INSTRUCTION,
 )
+
+
+def build_continuity_note(first_name: str, up_to_week: int, memory_folder: str) -> str:
+    """Read this person's prior weeks and reduce them to a continuity summary.
+
+    Reads only the stored evaluations and the manager's structured verdicts --
+    scores, classifications, signal names. Never free text about a person
+    (CONTEXT.md rule 5). Returns "" on any failure: missing continuity makes a
+    briefing repetitive, but a crash here would stop the whole cohort run.
+    """
+    try:
+        from src.domain.models import HistoryRecord
+
+        history: list[HistoryRecord] = []
+        signals_by_week: dict[int, list[str]] = {}
+
+        for week in range(1, up_to_week):
+            path = os.path.join(memory_folder, f"{first_name.lower()}_week{week}.json")
+            if not os.path.exists(path):
+                continue
+            with open(path, encoding="utf-8") as fh:
+                record = json.load(fh)
+            history.append(HistoryRecord.model_validate(record))
+            signals_by_week[len(history)] = [
+                str(s.get("signal_name") or s.get("signal"))
+                for s in record.get("signals", [])
+                if s.get("signal_name") or s.get("signal")
+            ]
+
+        if not history:
+            return ""
+
+        feedback = []
+        try:
+            from src.evolution.feedback_store import FeedbackStore
+
+            feedback = FeedbackStore().for_subject(first_name.lower())
+        except Exception:
+            logger.debug("No feedback store available for continuity.")
+
+        note = build_continuity(build_outcomes(history, signals_by_week, feedback))
+        return note.summary
+    except Exception:
+        logger.warning("Could not build continuity note; briefing will lack history.")
+        return ""
 
 
 def run_orchestrator(
@@ -208,8 +254,17 @@ def run_orchestrator(
                 )
 
                 # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
+                # Phase 3 (6.2): the briefing is told what happened in prior
+                # weeks and what the manager said back, so week 8 builds on week
+                # 3 instead of repeating it. A tool that re-suggests an
+                # intervention the manager already tried and reported as
+                # unhelpful is how it teaches them to stop reading.
                 briefing = generate_briefing(
-                    first_name, signals, risk_data, memory_dir=memory_folder
+                    first_name,
+                    signals,
+                    risk_data,
+                    memory_dir=memory_folder,
+                    continuity=build_continuity_note(first_name, w, memory_folder),
                 )
 
                 risk_data["signals"] = signals

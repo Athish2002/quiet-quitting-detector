@@ -35,6 +35,7 @@ DOMAIN_TESTS = [
     "tests/unit/test_domain_properties.py",
     "tests/unit/test_domain_edges.py",
     "tests/unit/test_domain_statistics.py",
+    "tests/unit/test_evolution.py",
 ]
 
 DEFAULT_MIN = 95.0

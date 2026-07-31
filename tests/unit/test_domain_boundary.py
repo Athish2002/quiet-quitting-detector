@@ -33,6 +33,10 @@ ALLOWED_ROOTS = frozenset(
         "bisect",
         "itertools",
         "functools",
+        # Pure text matching, used by the self-critique pass in critique.py.
+        # Still no I/O, no network, no framework -- the property this contract
+        # exists to protect is untouched.
+        "re",
     }
 )
 

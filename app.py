@@ -1177,6 +1177,121 @@ def ingest_webhook(data: WebhookIngestInput):
         ) from e
 
 
+# ---------------------------------------------------------------------------
+# Phase 3 (§6.2) -- manager feedback and calibration
+#
+# This is the ground-truth signal the system has never had. Until now it
+# produced judgements about people and never once found out whether any of them
+# were right; it could have been wrong about everybody, in the same direction,
+# for a year, and nothing would have noticed.
+# ---------------------------------------------------------------------------
+class FeedbackInput(BaseModel):
+    """A manager's verdict on one briefing.
+
+    Deliberately has no free-text field. A notes box on a form about an employee
+    is where health details and character judgements end up -- not through bad
+    faith, but because a manager trying to be helpful writes them. CONTEXT.md
+    rule 5 forbids exactly that in agent memory, so the schema makes it
+    impossible rather than asking people not to.
+    """
+
+    employee_name: str = Field(min_length=1, max_length=100)
+    week: int = Field(ge=MIN_WEEK, le=MAX_WEEK)
+    verdict: str = Field(pattern="^(accurate|not_accurate|harmful)$")
+    reason: str = "not_stated"
+
+
+@app.post("/api/feedback")
+def submit_feedback(payload: FeedbackInput):
+    """Record a manager's verdict on a briefing."""
+    from src.domain.feedback import FeedbackReason, FeedbackRecord, FeedbackVerdict
+    from src.evolution.feedback_store import FeedbackStore
+
+    first_name = first_name_of(payload.employee_name).lower()
+
+    stored = {}
+    memory_path = os.path.join(MEMORY_DIR, f"{first_name}_week{payload.week}.json")
+    if os.path.exists(memory_path):
+        try:
+            with open(memory_path, encoding="utf-8") as fh:
+                stored = json.load(fh)
+        except Exception:
+            logging.getLogger(__name__).warning(
+                "Could not read the evaluation being rated."
+            )
+
+    if not stored:
+        raise HTTPException(
+            status_code=404,
+            detail="No evaluation on record for that person and week.",
+        )
+
+    try:
+        reason = FeedbackReason(payload.reason)
+    except ValueError:
+        reason = FeedbackReason.NOT_STATED
+
+    record = FeedbackStore().record(
+        FeedbackRecord(
+            subject_id=first_name,
+            week=payload.week,
+            predicted_score=int(stored.get("score", 1)),
+            predicted_classification=str(stored.get("classification", "Healthy")),
+            verdict=FeedbackVerdict(payload.verdict),
+            reason=reason,
+            model_version=str(stored.get("model_version", "unknown")),
+        )
+    )
+
+    log_event(
+        "feedback_recorded",
+        f"Manager verdict '{payload.verdict}' recorded for week {payload.week}.",
+    )
+
+    return {
+        "status": "recorded",
+        "week": record.week,
+        "verdict": record.verdict.value,
+        "model_version": record.model_version,
+    }
+
+
+@app.get("/api/calibration")
+def get_calibration():
+    """Is the system actually right? (§6.2 calibration monitoring)
+
+    Reports lifetime and recent calibration separately, so a tool that was
+    accurate for six months and has been wrong for three weeks shows up as drift
+    rather than being averaged into a still-comfortable lifetime figure.
+    """
+    from src.evolution.calibration import CalibrationTracker
+    from src.evolution.registry import ModelRegistry
+
+    active = ModelRegistry().active_version()
+    view = CalibrationTracker().drift(active_model_version=active)
+
+    return {
+        "active_model_version": active,
+        "overall": view.overall.model_dump(),
+        "recent": view.recent.model_dump(),
+        "drifting": view.drifting,
+        "review_required": view.review_required,
+        "message": view.message,
+    }
+
+
+@app.get("/api/models")
+def list_models():
+    """Registered scoring models and which one is live."""
+    from src.evolution.registry import ModelRegistry
+
+    registry = ModelRegistry()
+    return {
+        "active": registry.active_version(),
+        "versions": [v.model_dump(mode="json") for v in registry.versions()],
+    }
+
+
 # Serve static web files
 if os.path.exists("static"):
     app.mount("/", StaticFiles(directory="static", html=True), name="static")

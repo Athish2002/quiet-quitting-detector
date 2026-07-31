@@ -21,6 +21,8 @@ from google.adk.models import Gemini
 
 from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
+from src.domain.critique import Critique, critique_briefing
+from src.domain.models import Confidence
 
 load_dotenv(override=True)
 
@@ -166,13 +168,65 @@ def _predict_local_briefing_fallback(
     return None
 
 
+#: How many revision attempts the critic gets before falling back to safe text.
+#: One. If the model could not fix a named, specific problem on the first try, a
+#: second identical nudge is unlikely to help and every extra attempt is another
+#: API call spent on a briefing that is already suspect.
+MAX_REVISIONS = 1
+
+
+def _signal_names(signals: list[dict]) -> list[str]:
+    names = []
+    for signal in signals:
+        name = signal.get("signal_name") or signal.get("signal")
+        if name:
+            names.append(str(name))
+    return names
+
+
+def _run_critique(
+    text: str,
+    first_name: str,
+    signals: list[dict],
+    risk_data: dict,
+) -> Critique:
+    """Check a draft against the six rules and the evidence actually available."""
+    try:
+        confidence = Confidence(str(risk_data.get("confidence", "moderate")).lower())
+    except ValueError:
+        confidence = Confidence.MODERATE
+
+    return critique_briefing(
+        text,
+        first_name=first_name,
+        confirmed_signals=_signal_names(signals),
+        confidence=confidence,
+        has_data_gap=any(
+            (s.get("signal") or s.get("signal_name")) == "MISSING_DATA_GAP"
+            for s in signals
+        ),
+    )
+
+
 def generate_briefing(
     employee_name: str,
     signals: list[dict],
     risk_data: dict,
     memory_dir: str | None = None,
+    continuity: str = "",
 ) -> str:
-    """Generates a warm, supportive briefing for the manager if classification is Watch, At Risk, or Silent Exit."""
+    """Generates a warm, supportive briefing for the manager if classification is Watch, At Risk, or Silent Exit.
+
+    Phase 3 adds two things around the draft:
+
+    * `continuity` -- what happened in prior weeks and what the manager said
+      back, so week 8 builds on week 3 instead of restarting from zero (6.2).
+    * a self-critique pass -- the draft is checked against the six ethical rules
+      AND against the signals actually confirmed, then revised once if needed.
+      The regex validator below is now the last line of defence rather than the
+      only one: it can catch a banned word, but not a briefing that states a
+      conclusion the evidence never supported.
+    """
     classification = risk_data.get("classification", "").upper()
     if classification not in ["WATCH", "AT RISK", "SILENT EXIT"]:
         return ""  # Do not run for Healthy employees
@@ -182,9 +236,29 @@ def generate_briefing(
     prompt = f"Create a manager briefing for employee: {first_name}\n"
     prompt += f"Risk Category: {risk_data.get('classification')} (Score: {risk_data.get('score')}/10)\n"
     prompt += f"Risk Rationale: {risk_data.get('rationale')}\n"
-    prompt += "Behavioral Signals Detected:\n"
+
+    confidence = str(risk_data.get("confidence", "")).lower()
+    if confidence in ("low", "none"):
+        prompt += (
+            "CONFIDENCE IS LOW. There is not yet enough of this person's own "
+            "history to be sure. Write the briefing as a question worth asking, "
+            "not as a finding. Say plainly that the evidence is thin.\n"
+        )
+
+    if continuity:
+        prompt += (
+            "\nContinuity from previous weeks (behavioural only -- build on this, "
+            f"do not restart from zero):\n{continuity}\n"
+        )
+
+    prompt += "\nBehavioral Signals Detected:\n"
     for s in signals:
         prompt += f"- {s.get('signal_name') or s.get('signal')} (Severity: {s.get('severity')}): {s.get('details', '')}\n"
+
+    prompt += (
+        "\nDiscuss ONLY the signals listed above. Do not introduce any other "
+        "pattern, and do not describe what the person feels, wants, or intends.\n"
+    )
 
     try:
         response_text = run_agent_sync(
@@ -194,6 +268,38 @@ def generate_briefing(
             session_id=_anon_session_id(first_name.lower(), "briefing"),
             prompt=prompt,
         )
+
+        # Phase 3: critique, then revise once if the critic found something.
+        for _ in range(MAX_REVISIONS):
+            critique = _run_critique(response_text, first_name, signals, risk_data)
+            if critique.is_clean:
+                break
+
+            logger.info(
+                "Briefing critique found %d issue(s); requesting one revision.",
+                len(critique.findings),
+            )
+            response_text = run_agent_sync(
+                manager_briefing_agent,
+                user_id="orchestrator",
+                session_id=_anon_session_id(first_name.lower(), "briefing-revise"),
+                prompt=(
+                    f"{prompt}\n\nYour previous draft:\n{response_text}\n\n"
+                    f"{critique.revision_instructions()}\n"
+                    "Return the corrected briefing only."
+                ),
+            )
+
+        # A blocking finding that survived the revision is not delivered. These
+        # map onto CONTEXT.md rules, and a rule violation is not a quality
+        # trade-off to be weighed against the briefing being useful.
+        final_critique = _run_critique(response_text, first_name, signals, risk_data)
+        if final_critique.must_block:
+            logger.warning(
+                "Briefing blocked by critic after revision: %s",
+                [f.value for f in final_critique.findings],
+            )
+            return _SAFE_FALLBACK_BRIEFING
 
         # [Fix 4] Validate output before returning it.
         return _validate_briefing(response_text)

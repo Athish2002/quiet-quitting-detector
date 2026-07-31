@@ -2,6 +2,46 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 3 (complete) — Intelligence II: agent evolution
+
+- **Manager feedback capture** (`src/domain/feedback.py`, `src/evolution/feedback_store.py`,
+  `POST /api/feedback`). This is the ground-truth signal the system has never
+  had: until now it produced judgements about people and never once found out
+  whether any were right. `harmful` is a separate axis from `not_accurate` — a
+  briefing can be perfectly accurate and still have damaged someone, and
+  collapsing them would let the headline metric improve while harm rose.
+- **No free-text field anywhere in the feedback path.** A notes box on a form
+  about an employee is where health details and character judgements end up. The
+  SQLite schema has no column for it, and a test fails if one is added.
+- **Versioned model registry with an asymmetric promotion gate**
+  (`src/evolution/registry.py`). Never promote an unevaluated model, never
+  promote on a held-out set under 10, and *any* increase in harm blocks
+  promotion however much precision improved. Automatic rollback when live
+  calibration regresses against the version's own held-out evidence.
+- **Every prediction records `model_version` and `provenance`.** Degraded results
+  are labelled `degraded: true` with `confidence: low` — a local-ML guess and a
+  Gemini assessment are indistinguishable once both are a number in a JSON file.
+- **Compounding memory** (`src/domain/continuity.py`): week 8's briefing carries
+  what was raised in week 3, what the manager said back, and whether things have
+  improved since. Behavioural only — week numbers, scores, classifications,
+  signal names. A test asserts the summary leaks no personal content.
+- **Self-critique before the punitive-language validator**
+  (`src/domain/critique.py`). Catches what a deny-list structurally cannot: a
+  verdict on someone's inner state, a conclusion the evidence doesn't support, a
+  fabricated second signal, a missing low-confidence caveat, a surname leak.
+  Blocking findings map onto CONTEXT.md rules and are not traded off.
+- **Calibration monitoring** (`src/evolution/calibration.py`, `GET /api/calibration`):
+  lifetime vs recent, so a system that was accurate for six months and wrong for
+  three weeks shows as drift rather than being averaged into a comfortable
+  figure. Says plainly when there is not enough feedback to tell.
+- **Agent eval suite is BLOCKING in CI** (`scripts/agent_eval.py`,
+  `tests/eval/golden_set.json`). 9 accuracy + 6 safety cases through the real
+  domain logic with the deterministic fake — no LLM, so §6.3 holds. A safety
+  failure fails the build regardless of the accuracy score.
+- Found by the new tests: an adverb defeated the mind-reading check. A model
+  writes "has clearly become disengaged", not "is disengaged", and the hedged
+  phrasing is the one a manager is most likely to believe.
+
 ## Phase 2 (complete) — Intelligence I: honest statistics
 
 - **Personal baselines are now distributions, not a single week.** `median` for

@@ -110,7 +110,7 @@ def deterministic(monkeypatch, tmp_path):
     monkeypatch.setattr(risk_mod, "DEFAULT_SCORER", FakeRiskScorer())
     monkeypatch.setattr(trend_mod, "DEFAULT_ENRICHER", FakeTrendEnricher())
 
-    def _fake_briefing(first_name, signals, risk_data, memory_dir=None):
+    def _fake_briefing(first_name, signals, risk_data, memory_dir=None, continuity=""):
         return f"Check in with {first_name}. Supportive, non-disciplinary."
 
     # The name is bound into the orchestrator's namespace at import time, so the
