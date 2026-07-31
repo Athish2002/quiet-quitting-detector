@@ -21,6 +21,9 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
+from src.app_utils.names import first_name_of
+from src.data_layer.ingestion import parse_week_number
+
 load_dotenv(override=True)
 if "GEMINI_API_KEY" in os.environ:
     os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
@@ -88,11 +91,7 @@ def _load_all_weeks(weekly_folder: str = "data/weekly") -> tuple[dict, int]:
 
     for file_path in csv_files:
         filename = os.path.basename(file_path)
-        try:
-            name_part = os.path.splitext(filename)[0]
-            week_num = int("".join(filter(str.isdigit, name_part)))
-        except ValueError:
-            week_num = 1
+        week_num = parse_week_number(filename)
         max_week = max(max_week, week_num)
 
         with open(file_path, encoding="utf-8") as f:
@@ -104,7 +103,7 @@ def _load_all_weeks(weekly_folder: str = "data/weekly") -> tuple[dict, int]:
                     or row.get("first_name")
                     or "Unknown"
                 )
-                first_name = raw_name.split()[0]
+                first_name = first_name_of(raw_name)
 
                 # Safely parse metrics directly
                 completed_tasks = 0
@@ -187,8 +186,6 @@ def run() -> None:
 
         # -- Build full timeline with gap markers --
         processed_weeks = {w["week"] for w in weeks_data}
-        expected_weeks = set(range(1, max_week + 1))
-        expected_weeks - processed_weeks
 
         full_timeline: list[dict] = []
         for w in range(1, max_week + 1):
@@ -225,12 +222,44 @@ def run() -> None:
         # ==================================================================
         print()
         print("  Running agent evaluation chronologically week-by-week:")
+        memory_dir = os.path.join("data", "memory")
         signals = []
         risk_data = {}
+        briefing = ""
+        final_week_cached = False
 
         for w in range(1, max_week + 1):
             sub_timeline = [rec for rec in full_timeline if rec["week"] <= w]
+            memory_file_path = os.path.join(
+                memory_dir, f"{first_name.lower()}_week{w}.json"
+            )
+
+            # Reuse a previous run's evaluation instead of re-calling the
+            # agents. Without this, every run re-scored every week from
+            # scratch even when nothing about that week had changed --
+            # by far the largest avoidable source of Gemini API calls,
+            # since a typical 4-week re-run only ever has one truly new week.
+            cached = None
+            if os.path.exists(memory_file_path):
+                try:
+                    with open(memory_file_path, encoding="utf-8") as f:
+                        candidate = json.load(f)
+                    if {"score", "classification", "rationale"} <= candidate.keys():
+                        cached = candidate
+                except Exception:
+                    cached = None
+
+            if cached is not None:
+                print(f"    --- Week {w}: reusing cached evaluation (no API calls) ---")
+                signals = cached.get("signals", [])
+                risk_data = cached
+                briefing = cached.get("briefing", "")
+                final_week_cached = w == max_week
+                continue
+
             print(f"    --- Simulating Week {w} ---")
+            final_week_cached = False
+            briefing = ""
 
             # 1. Trend Detector Agent
             try:
@@ -286,8 +315,28 @@ def run() -> None:
         # ==================================================================
         # AGENT 3 -- Manager Briefing (flagged employees only)
         # ==================================================================
-        briefing = ""
-        if classification in FLAGGED:
+        if final_week_cached:
+            # Week was reused from a previous run's memory file -- avoid a
+            # second unnecessary API call by reusing its stored briefing too.
+            _section(f"AGENT 3 > Manager Briefing  [{first_name}]")
+            if classification in FLAGGED:
+                if briefing:
+                    print("  [OK] Reusing cached briefing (no API call).")
+                    print()
+                    print(_indent(briefing, 2))
+                else:
+                    print(
+                        "  Cached record is missing a briefing -- generating it once..."
+                    )
+                    try:
+                        briefing = generate_briefing(first_name, signals, risk_data)
+                    except Exception:
+                        briefing = _SAFE_FALLBACK_BRIEFING
+                    print()
+                    print(_indent(briefing, 2))
+            else:
+                print(f"  [OK] Skipped -- {first_name} is classified as Healthy.")
+        elif classification in FLAGGED:
             _section(f"AGENT 3 > Manager Briefing  [{first_name}]")
             print("  Calling manager_briefing_agent ...")
             try:
@@ -302,6 +351,26 @@ def run() -> None:
         else:
             _section(f"AGENT 3 > Manager Briefing  [{first_name}]")
             print(f"  [OK] Skipped -- {first_name} is classified as Healthy.")
+
+        # Persist the briefing into the same memory JSON file score_risk() just
+        # wrote for the final week. score_risk() only knows about the risk
+        # score/signals at save time -- the briefing is generated afterward in
+        # this script and, without this, was only ever shown in the CLI's own
+        # printed report and never reached data/memory/*.json. That's what the
+        # web UI reads, so briefings generated by this script silently never
+        # appeared there.
+        if briefing:
+            memory_file_path = os.path.join(
+                "data", "memory", f"{first_name.lower()}_week{max_week}.json"
+            )
+            try:
+                with open(memory_file_path, encoding="utf-8") as f:
+                    saved_risk_data = json.load(f)
+                saved_risk_data["briefing"] = briefing
+                with open(memory_file_path, "w", encoding="utf-8") as f:
+                    json.dump(saved_risk_data, f, indent=2)
+            except Exception:
+                pass  # best-effort; the CLI report above already shows the briefing
 
         all_results[first_name] = {
             "signals": signals,

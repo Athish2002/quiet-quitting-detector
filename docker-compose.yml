@@ -1,0 +1,12 @@
+services:
+  quiet-quitting-detector:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      # Persist employee memory, the audit log, settings, and the local
+      # SQLite/bucket ingestion stores across container restarts.
+      - ./data:/code/data
+    restart: unless-stopped

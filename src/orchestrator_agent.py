@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+from collections.abc import Callable
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
@@ -13,6 +15,8 @@ from src.risk_scorer_agent import score_risk
 from src.trend_detector_agent import detect_trends
 
 load_dotenv(override=True)
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_INSTRUCTION = """
 You are the Quiet-Quitting Orchestrator Agent.
@@ -34,14 +38,21 @@ orchestrator_agent = Agent(
 
 
 def run_orchestrator(
-    weekly_folder: str = "data/weekly", memory_folder: str = "data/memory"
+    weekly_folder: str = "data/weekly",
+    memory_folder: str = "data/memory",
+    progress_cb: Callable[[str], None] | None = None,
 ) -> str:
-    """Orchestrates the entire quiet quitting detection pipeline."""
+    """Orchestrates the entire quiet quitting detection pipeline.
+
+    progress_cb, if given, is called once per (employee, week) processed
+    with a short human-readable label -- lets a caller running this in a
+    background thread expose real progress instead of an indefinite spinner.
+    """
 
     # Rule 3: Always validate that CSV files exist before reading them
     if not os.path.exists(weekly_folder):
         error_msg = f"Data folder '{weekly_folder}' does not exist. Please create it and add weekly CSV files."
-        print(error_msg)
+        logger.warning(error_msg)
         return error_msg
 
     # Flexible modular ingestion layer
@@ -50,14 +61,14 @@ def run_orchestrator(
         error_msg = (
             f"No CSV files found in {weekly_folder}. Pipeline execution aborted."
         )
-        print(error_msg)
+        logger.warning(error_msg)
         return error_msg
 
     # Modular preprocessing layer
     employee_records, max_week = preprocess_employee_records(raw_rows)
     if not employee_records:
         error_msg = "No valid employee data found in CSV files."
-        print(error_msg)
+        logger.warning(error_msg)
         return error_msg
 
     pipeline_results = {}
@@ -69,7 +80,6 @@ def run_orchestrator(
         # Rule 4: If a week of data is missing, note the gap — do not assume disengagement
         processed_weeks = {w["week"] for w in weeks_data}
         expected_weeks = set(range(1, max_week + 1))
-        expected_weeks - processed_weeks
 
         full_timeline = []
         for w in range(1, max_week + 1):
@@ -132,6 +142,14 @@ def run_orchestrator(
                             with open(memory_file_path, "w", encoding="utf-8") as f:
                                 json.dump(risk_data, f, indent=2)
                 except Exception:
+                    # The cached memory file for this week could not be read
+                    # or parsed (e.g. corrupted/truncated JSON) -- recompute
+                    # it from scratch rather than fail the whole cohort run.
+                    logger.warning(
+                        "Memory file for week %d unreadable -- recomputing "
+                        "(name omitted for privacy).",
+                        w,
+                    )
                     sub_timeline = full_timeline[:w]
                     w_missing = expected_weeks.intersection(
                         range(1, w + 1)
@@ -188,6 +206,12 @@ def run_orchestrator(
                 with open(memory_file_path, "w", encoding="utf-8") as f:
                     json.dump(risk_data, f, indent=2)
 
+            if progress_cb:
+                try:
+                    progress_cb(f"{first_name} -- week {w}/{max_week}")
+                except Exception:
+                    pass  # progress reporting must never break the pipeline
+
             if w == max_week:
                 last_risk_data = risk_data
                 last_briefing = briefing
@@ -216,7 +240,7 @@ def run_orchestrator(
             prompt=prompt,
         )
 
-        print("\n=== SYSTEM EXECUTION COMPLETED ===")
+        logger.info("Orchestrator pipeline run completed.")
         return report_text.strip()
     except Exception:
         # Respect Rule 5: Never expose raw Gemini API errors

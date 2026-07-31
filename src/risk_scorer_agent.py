@@ -15,12 +15,14 @@ import hashlib
 import json
 import logging
 import os
+import re
 import time
 
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
 
+from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
 
 load_dotenv(override=True)
@@ -114,13 +116,29 @@ def _classify(score: int) -> str:
 # ---------------------------------------------------------------------------
 # Helper: load employee history with lookback cap + integrity check       [Fix 2]
 # ---------------------------------------------------------------------------
+_WEEK_FILE_RE = re.compile(r"_week(\d+)\.json$", re.IGNORECASE)
+
+
+def _week_num_from_path(file_path: str) -> int | None:
+    """Extract the week number embedded in a `{name}_week{N}.json` filename."""
+    match = _WEEK_FILE_RE.search(os.path.basename(file_path))
+    return int(match.group(1)) if match else None
+
+
 def _load_employee_history(
-    first_name_lower: str, memory_dir: str | None = None
+    first_name_lower: str,
+    memory_dir: str | None = None,
+    before_week: int | None = None,
 ) -> list[dict]:
     """Load previous JSON memory files for this employee, up to MAX_HISTORY_WEEKS.
 
     Changes vs original:
     - Only files whose mtime falls within the last MAX_HISTORY_WEEKS weeks are loaded.
+    - [Fix 5] Only files for weeks strictly before `before_week` are loaded, and the
+      result is ordered by that week number (not filename string, which sorts
+      "week10" before "week2"). Without this cap, re-running the chronological
+      simulation (run_pipeline.py) without clearing data/memory/ first lets a
+      week-1 evaluation see leftover week-3/4 files from a prior run.
     - Each loaded record is validated for required fields; corrupt/incomplete
       records are skipped with a warning log (no name in log message).
     - Silently skips unreadable files (Rule 5).
@@ -132,8 +150,21 @@ def _load_employee_history(
     now = time.time()
     cutoff = now - MAX_HISTORY_SECONDS  # [Fix 2] oldest acceptable mtime
 
+    dated_files: list[tuple[int, str]] = []
+    for file_path in matched_files:
+        week_num = _week_num_from_path(file_path)
+        if week_num is None:
+            continue
+        if before_week is not None and week_num >= before_week:
+            # [Fix 5] Never let a week's evaluation see a later week's file.
+            continue
+        dated_files.append((week_num, file_path))
+
+    # [Fix 5] Chronological order by week number, not filename string.
+    dated_files.sort(key=lambda pair: pair[0])
+
     history: list[dict] = []
-    for file_path in sorted(matched_files):
+    for _week_num, file_path in dated_files:
         # Rule 3: Validate the file exists and is within the lookback window.
         if not os.path.isfile(file_path):
             continue
@@ -194,7 +225,7 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
     # Walk history from newest to oldest to count the current healthy streak.
     sorted_history = list(
         history
-    )  # already sorted by filename in _load_employee_history
+    )  # already sorted chronologically by week number in _load_employee_history
     current_healthy_streak = 0
     for record in reversed(sorted_history):
         classification = record.get("classification", "").strip().upper()
@@ -220,9 +251,14 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
     return apply_bonus, current_healthy_streak
 
 
-def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> dict:
-    """Uses a local K-Nearest Neighbors (K=1) classifier trained on historical evaluations
-    to predict score and classification when all LLM APIs are offline/rate-limited.
+def _nearest_neighbor_fallback(
+    current_signals: list[dict], memory_dir: str
+) -> dict | None:
+    """Jaccard-similarity nearest-neighbor match against historical records.
+
+    Used when there isn't yet enough historical data to train the local
+    regression model (see `_predict_local_ml_fallback`). Returns None if no
+    sufficiently similar historical record exists (similarity < 0.5).
     """
     import glob
 
@@ -241,7 +277,8 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
                 hist_data = json.load(fh)
 
             # Skip fallback records themselves to avoid self-reinforcing default Watch loops
-            if "[Local ML Fallback]" in hist_data.get("rationale", ""):
+            rationale = hist_data.get("rationale", "")
+            if "Fallback Model]" in rationale or "Local ML Fallback" in rationale:
                 continue
 
             hist_signals = {
@@ -265,7 +302,7 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
 
     if best_record and best_match_file and best_similarity >= 0.5:
         logger.info(
-            "Local ML Fallback: matched historical record from %s with similarity %.2f",
+            "Nearest-neighbor fallback: matched historical record from %s with similarity %.2f",
             os.path.basename(best_match_file),
             best_similarity,
         )
@@ -273,20 +310,68 @@ def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> 
             "score": best_record.get("score", 4),
             "classification": best_record.get("classification", "Watch"),
             "rationale": (
-                f"[Local ML Fallback Model] Classified with {int(best_similarity * 100)}% signal similarity "
-                f"based on historical behavioral patterns. "
+                f"[Local Nearest-Neighbor Fallback] Classified with {int(best_similarity * 100)}% "
+                f"signal similarity based on historical behavioral patterns. "
                 f"Reference Rationale: {best_record.get('rationale', '')}"
             ),
             "healthy_streak": 0,
             "signals": current_signals,
         }
 
+    return None
+
+
+def _predict_local_ml_fallback(current_signals: list[dict], memory_dir: str) -> dict:
+    """Predicts score and classification locally when all LLM APIs are
+    offline/rate-limited, in three progressively-degrading tiers:
+
+    1. A scikit-learn regression model trained on-the-fly from this
+       project's own historical data/memory/*.json records (gets smarter
+       as more real weeks accumulate).
+    2. A Jaccard-similarity nearest-neighbor match against historical
+       records, if there isn't yet enough data to train tier 1.
+    3. A hardcoded Watch/4 default, if there is no usable history at all.
+    """
+    from src.app_utils.local_ml import train_local_model
+
+    model = train_local_model(memory_dir)
+    if model is not None:
+        try:
+            predicted_score = model.predict_score(current_signals)
+            score = max(1, min(10, round(predicted_score)))
+            classification = _classify(score)
+            logger.info(
+                "Local ML model: predicted score %.2f (rounded %d) from %d training samples.",
+                predicted_score,
+                score,
+                model.sample_count,
+            )
+            return {
+                "score": score,
+                "classification": classification,
+                "rationale": (
+                    f"[Local ML Fallback Model] A locally-trained regression model "
+                    f"(learned from {model.sample_count} prior evaluation(s) stored in "
+                    f"this project's own history) predicted a risk score of {score}/10 "
+                    f"from the current behavioral signal pattern."
+                ),
+                "healthy_streak": 0,
+                "signals": current_signals,
+            }
+        except Exception:
+            logger.warning("Local ML model prediction failed -- degrading further.")
+
+    neighbor_result = _nearest_neighbor_fallback(current_signals, memory_dir)
+    if neighbor_result is not None:
+        return neighbor_result
+
     return {
         "score": 4,
         "classification": "Watch",
         "rationale": (
-            "Evaluation could not be completed via APIs. Defaulted to Watch classification "
-            "as no highly similar training patterns were found in local history."
+            "[Local Fallback Default] Evaluation could not be completed via APIs. "
+            "Defaulted to Watch classification as no historical data was available "
+            "to train a local model or find a similar match."
         ),
         "healthy_streak": 0,
         "signals": current_signals,
@@ -312,12 +397,16 @@ def score_risk(
     5. Save result (including healthy_streak) to data\\memory\\firstname_weekN.json.
     """
     # Rule 1: First name only -- never use full name, surname, or ID.
-    first_name = employee_name.split()[0]
+    first_name = first_name_of(employee_name)
     first_name_lower = first_name.lower()
 
     # Step 1 ---------------------------------------------------------------
     local_dir = memory_dir or MEMORY_DIR
-    history = _load_employee_history(first_name_lower, local_dir)
+    # [Fix 5] Cap history to weeks strictly before the one being scored, so a
+    # chronological re-simulation never reads a "future" week's leftover file.
+    history = _load_employee_history(
+        first_name_lower, local_dir, before_week=week_number
+    )
 
     # Step 2 ---------------------------------------------------------------
     apply_recurrence_bonus, current_healthy_streak = _compute_recurrence_bonus(history)

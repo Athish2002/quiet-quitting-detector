@@ -1,30 +1,46 @@
-# Copyright 2026 Google LLC
+# syntax=docker/dockerfile:1
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Multi-stage build: dependencies are resolved and installed in the
+# `builder` stage (which needs uv + build tooling); the runtime stage
+# copies only the resulting virtualenv and app code, and runs as a
+# non-root user with no build tooling present.
 
-FROM python:3.12-slim
+# ---------------------------------------------------------------------------
+# Stage 1: builder
+# ---------------------------------------------------------------------------
+FROM python:3.12-slim AS builder
 
 RUN pip install --no-cache-dir uv==0.8.13
 
 WORKDIR /code
 
-COPY ./pyproject.toml ./README.md ./uv.lock* ./
+# Install dependencies first (cached separately from app code changes).
+COPY pyproject.toml README.md uv.lock* ./
+RUN uv sync --frozen --no-install-project --no-dev
 
-COPY ./src ./src
-COPY ./app.py ./app.py
-COPY ./static ./static
+# Now install the project itself.
+COPY src ./src
+COPY app.py ./app.py
+COPY static ./static
+RUN uv sync --frozen --no-dev
 
-RUN uv sync --frozen
+# ---------------------------------------------------------------------------
+# Stage 2: runtime
+# ---------------------------------------------------------------------------
+FROM python:3.12-slim
+
+WORKDIR /code
+
+RUN useradd --create-home --uid 1000 appuser \
+    && mkdir -p /code/data \
+    && chown -R appuser:appuser /code
+
+COPY --from=builder --chown=appuser:appuser /code /code
+
+USER appuser
+
+ENV PATH="/code/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
 
 ARG COMMIT_SHA=""
 ENV COMMIT_SHA=${COMMIT_SHA}
@@ -34,4 +50,7 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/metrics', timeout=3)" || exit 1
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]

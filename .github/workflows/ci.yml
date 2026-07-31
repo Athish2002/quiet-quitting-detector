@@ -1,0 +1,54 @@
+name: CI
+
+# Phase 0 scope (PRODUCTION_EVOLUTION_PROMPT.md §9): lint + types + tests.
+# The remaining §8 gates (coverage ratchet, frontend, Docker/trivy, Playwright,
+# gitleaks, import-linter, agent evals) land with the phases that create the
+# things they check -- a gate on a package that does not exist yet is theatre.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Guarantees no test can reach a live provider even if one were mismarked.
+  GEMINI_API_KEY: ""
+  GOOGLE_API_KEY: ""
+  GROQ_API_KEY: ""
+  OLLAMA_MODEL: ""
+  IDENTITY_SALT: ci-fixed-salt-not-a-secret
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (locked)
+        # --frozen fails if uv.lock disagrees with pyproject.toml, so a
+        # dependency change cannot land without its lockfile update.
+        run: uv sync --frozen --all-extras
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format
+        run: uv run ruff format --check .
+
+      - name: Types
+        run: uv run ty check
+
+      - name: Unit tests
+        # Integration tests are excluded deliberately: they require a live LLM
+        # provider and GCP credentials. §6.3 -- "CI must never call a real LLM".
+        run: uv run pytest -m "not integration" -q

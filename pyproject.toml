@@ -1,10 +1,12 @@
 [project]
-name = "temp-scaffold"
-version = "0.1.0"
-description = ""
+name = "quiet-quitting-detector"
+version = "1.0.0"
+description = "Multi-agent employee disengagement detector: chronological, per-employee baselining, six live data-ingestion sources (SQLite, cloud bucket, CSV, file upload, webhook, natural language), and a local ML fallback that keeps working when the Gemini API is rate-limited."
 authors = [
-    {name = "Your Name", email = "your@email.com"},
+    {name = "Athish R S"},
 ]
+readme = "README.md"
+license = "MIT"
 
 dependencies = [
     "google-adk[gcp]>=2.0.0,<3.0.0",
@@ -15,6 +17,7 @@ dependencies = [
     "google-cloud-logging>=3.12.0,<4.0.0",
     "google-cloud-aiplatform[evaluation,agent-engines]>=1.156.0",
     "protobuf>=6.31.1,<7.0.0",
+    "scikit-learn>=1.4.0",
 ]
 requires-python = ">=3.11,<3.14"
 
@@ -30,6 +33,9 @@ dev = [
 eval = [
     "google-adk[eval]>=2.0.0,<3.0.0",
     "google-cloud-aiplatform[evaluation]>=1.156.0",
+]
+cloud = [
+    "boto3>=1.34.0",
 ]
 lint = [
     "ruff>=0.4.6,<1.0.0",
@@ -53,6 +59,12 @@ select = [
     "RUF", # ruff specific rules
 ]
 ignore = ["E501", "C901", "B006"] # ignore line too long, too complex
+
+[tool.ruff.lint.per-file-ignores]
+# app.py must call load_dotenv() before its other imports: under `uvicorn
+# app:app` the config-reading imports below would otherwise run with an empty
+# environment (no API keys), silently forcing every local fallback path.
+"app.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "frontend"]
@@ -91,8 +103,14 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 pythonpath = "."
 asyncio_default_fixture_loop_scope = "function"
+# Integration tests reach a real LLM provider / real GCP credentials, so they
+# cannot run in CI (PRODUCTION_EVOLUTION_PROMPT.md 6.3: "CI must never call a
+# real LLM"). They are marked, not deleted -- run locally with `-m integration`.
+markers = [
+    "integration: requires live network, LLM provider credentials, or a spawned server",
+]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src","frontend"]
+packages = ["src"]
 
 

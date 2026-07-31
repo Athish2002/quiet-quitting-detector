@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
 
+from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
 
 load_dotenv(override=True)
@@ -176,7 +177,7 @@ def generate_briefing(
     if classification not in ["WATCH", "AT RISK", "SILENT EXIT"]:
         return ""  # Do not run for Healthy employees
 
-    first_name = employee_name.split()[0]
+    first_name = first_name_of(employee_name)
 
     prompt = f"Create a manager briefing for employee: {first_name}\n"
     prompt += f"Risk Category: {risk_data.get('classification')} (Score: {risk_data.get('score')}/10)\n"

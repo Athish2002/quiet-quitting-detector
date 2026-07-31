@@ -1,0 +1,32 @@
+# Never send secrets or local runtime data into the build context
+.env
+.env.*
+!.env.example
+data/
+!data/weekly
+data/weekly/.gitkeep
+api_metrics.json
+engagement_report.txt
+realtime_engagement_report.txt
+
+# Python / dev tooling
+.venv
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Version control / editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Local scratch / docs not needed at runtime
+scratch/
+*.md
+!README.md
+
+# Node (not used at runtime, but keep the image lean if present)
+node_modules/

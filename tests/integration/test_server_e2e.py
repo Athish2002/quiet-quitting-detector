@@ -36,6 +36,10 @@ from a2a.types import (
 )
 from requests.exceptions import RequestException
 
+# Requires a live LLM provider / GCP credentials -- excluded from CI per
+# PRODUCTION_EVOLUTION_PROMPT.md 6.3. Run locally with `pytest -m integration`.
+pytestmark = pytest.mark.integration
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

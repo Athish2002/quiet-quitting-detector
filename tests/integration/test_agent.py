@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Requires a live LLM provider / GCP credentials -- excluded from CI per
+# PRODUCTION_EVOLUTION_PROMPT.md 6.3. Run locally with `pytest -m integration`.
+import pytest
 from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from src.agent import root_agent
+
+pytestmark = pytest.mark.integration
 
 
 def test_agent_stream() -> None:
