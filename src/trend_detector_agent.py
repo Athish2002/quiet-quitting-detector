@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.models import Gemini
 
+from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
 
 load_dotenv(override=True)
@@ -57,8 +58,11 @@ trend_detector_agent = Agent(
 TASK_DROP_PCT_MEDIUM = 0.20  # >= 20% drop from baseline -> medium severity
 TASK_DROP_PCT_HIGH = 0.40  # >= 40% drop from baseline -> high severity
 RESPONSE_TIME_PCT = 0.50  # > 50% increase from baseline -> signal
-AFTER_HOURS_THRESHOLD = 2  # > 2 after-hours logins in a week -> signal
-SICK_DAY_INCREASE = 1  # any increase above baseline in the last 2 weeks
+# Personal-deviation thresholds. Absolute cut-offs were removed in Phase 0:
+# they compared people to a population norm, which flags part-time schedules,
+# phased returns from leave, and non-US timezones as disengagement.
+AFTER_HOURS_DEVIATION = 2  # logins above the individual's OWN baseline
+HOURS_DEVIATION_PCT = 0.25  # +/- 25% from the individual's OWN baseline
 
 
 def _get_baseline(full_timeline: list[dict]) -> dict | None:
@@ -84,7 +88,8 @@ def _detect_raw_flags(
 
     baseline_tasks = baseline.get("completed_tasks")
     baseline_response = baseline.get("response_time")
-    baseline_sick = baseline.get("sick_days")
+    baseline_after_hours = baseline.get("after_hours_logins")
+    baseline_hours = baseline.get("weekly_hours")
 
     for week in full_timeline:
         week_num = week.get("week")
@@ -109,34 +114,35 @@ def _detect_raw_flags(
             if increase_pct > RESPONSE_TIME_PCT:  # > 50 % above own baseline
                 flags.append("Response Time Spike")
 
-        # --- Signal 3: Excessive After-Hours Logins ---
+        # --- Signal 3: Sustained Workload Elevation (wellbeing only) ---
+        # after_hours_logins is `wellbeing_only` in the allowlist: it may
+        # prompt a workload check-in but must never raise retention risk.
+        # An absolute threshold here penalised non-US timezones and caregivers
+        # working after a school run, so it is now a personal deviation.
         after_hours = week.get("after_hours_logins")
-        if after_hours is not None and after_hours > AFTER_HOURS_THRESHOLD:
-            flags.append("Excessive After-Hours Logins")
+        if (
+            after_hours is not None
+            and baseline_after_hours is not None
+            and after_hours > baseline_after_hours + AFTER_HOURS_DEVIATION
+        ):
+            flags.append("Sustained Workload Elevation")
 
-        # --- Signal 4: Increasing Sick Days ---
-        sick = week.get("sick_days")
-        if sick is not None and baseline_sick is not None:
-            if sick > baseline_sick + SICK_DAY_INCREASE:  # risen above own baseline
-                flags.append("Increasing Sick Days")
-
-        # --- Signal 5: Quality Degradation ---
-        accuracy = week.get("task_accuracy")
-        if accuracy is not None and accuracy < 85:
-            flags.append("Quality Degradation")
-
-        # --- Signal 6: Low Activity / Burnout Risk ---
+        # --- Signal 4: Working-Hours Deviation ---
+        # Expressed against the individual's own baseline rather than the
+        # former absolute <30 / >50 bounds, which flagged approved part-time
+        # and phased-return-from-leave schedules as disengagement.
         hours = week.get("weekly_hours")
-        if hours is not None:
-            if hours < 30:
-                flags.append("Low Activity")
-            elif hours > 50:
-                flags.append("Burnout Risk")
+        if hours is not None and baseline_hours:
+            delta_ratio = (hours - baseline_hours) / baseline_hours
+            if delta_ratio <= -HOURS_DEVIATION_PCT:
+                flags.append("Reduced Working Hours")
+            elif delta_ratio >= HOURS_DEVIATION_PCT:
+                flags.append("Sustained Workload Elevation")
 
-        # --- Signal 7: Withdrawn Communication ---
-        sentiment = week.get("sentiment")
-        if sentiment is not None and sentiment.strip().lower() == "withdrawn":
-            flags.append("Withdrawn Communication")
+        # Signals removed in Phase 0 -- prohibited by config/data_allowlist.json,
+        # not merely unused: "Increasing Sick Days" (health data, GDPR Art. 9 /
+        # ADA), "Quality Degradation" (performance metric), and "Withdrawn
+        # Communication" (emotion inference, EU AI Act Art. 5).
 
         week_flags[week_num] = flags
 
@@ -219,49 +225,24 @@ def _assign_severity(
             return "medium"
         return "low"
 
-    if signal_name == "Excessive After-Hours Logins":
-        worst = max(
-            (w.get("after_hours_logins") or 0)
-            for w in full_timeline
-            if w.get("week") in weeks_detected
-        )
-        return "high" if worst >= 6 else "medium" if worst >= 4 else "low"
+    baseline_hours = baseline.get("weekly_hours") or 0
 
-    if signal_name == "Increasing Sick Days":
-        baseline_sick = baseline.get("sick_days") or 0
-        worst = max(
-            (w.get("sick_days") or 0)
-            for w in full_timeline
-            if w.get("week") in weeks_detected
-        )
-        diff = worst - baseline_sick
-        return "high" if diff >= 3 else "medium" if diff >= 2 else "low"
-
-    if signal_name == "Quality Degradation":
-        worst_acc = min(
-            (w.get("task_accuracy") or 100)
-            for w in full_timeline
-            if w.get("week") in weeks_detected
-        )
-        return "high" if worst_acc < 70 else "medium" if worst_acc < 80 else "low"
-
-    if signal_name == "Low Activity":
+    if signal_name == "Reduced Working Hours":
         worst_hours = min(
-            (w.get("weekly_hours") or 40)
+            (w.get("weekly_hours") or baseline_hours)
             for w in full_timeline
             if w.get("week") in weeks_detected
         )
-        return "high" if worst_hours < 20 else "medium" if worst_hours < 25 else "low"
+        if not baseline_hours:
+            return "medium"
+        drop = (baseline_hours - worst_hours) / baseline_hours
+        return "high" if drop >= 0.50 else "medium" if drop >= 0.25 else "low"
 
-    if signal_name == "Burnout Risk":
-        worst_hours = max(
-            (w.get("weekly_hours") or 40)
-            for w in full_timeline
-            if w.get("week") in weeks_detected
-        )
-        return "high" if worst_hours > 60 else "medium" if worst_hours > 55 else "low"
-
-    if signal_name == "Withdrawn Communication":
+    if signal_name == "Sustained Workload Elevation":
+        # Capped at "medium" by design. This is a wellbeing prompt -- a nudge to
+        # check on workload -- and must not escalate into a high-severity
+        # retention flag, which is how "works long hours" becomes a mark against
+        # someone rather than a reason to help them.
         return "medium"
 
     return "medium"  # fallback
@@ -274,7 +255,7 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
     optionally enriches descriptions via the LLM.  The LLM is never given
     personal identifiers beyond first name.  [CONTEXT Rule 1]
     """
-    first_name = employee_name.split()[0]  # Rule 1: First name only
+    first_name = first_name_of(employee_name)  # Rule 1: First name only
 
     # Rule 3: Validate data exists before proceeding
     if not data:
