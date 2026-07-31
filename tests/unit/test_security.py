@@ -480,6 +480,69 @@ def test_deleting_an_audit_row_is_detectable(tmp_path):
     assert broken_at == 4
 
 
+def test_an_audit_log_created_before_hash_chaining_still_accepts_writes(tmp_path):
+    """Regression: `CREATE TABLE IF NOT EXISTS` does nothing to an existing
+    table, so a pre-Phase-4 audit.db kept its old shape and every write failed
+    on the missing column -- silently, because record_access() swallows
+    exceptions by design. The log simply stopped recording.
+
+    Found by running the application, not by a test: the tests all used fresh
+    temporary databases and never met an old one.
+    """
+    import sqlite3
+
+    from src.governance import audit
+
+    db = str(tmp_path / "legacy.db")
+    conn = sqlite3.connect(db)
+    conn.executescript(
+        """
+        CREATE TABLE access_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL,
+            subject_id TEXT, purpose TEXT NOT NULL, resource TEXT,
+            outcome TEXT NOT NULL, detail TEXT
+        );
+        INSERT INTO access_log (ts, actor, action, purpose, outcome)
+        VALUES ('2026-01-01T00:00:00Z', 'legacy', 'GET /old', 'testing', 'allowed');
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    audit._initialised.discard(db)
+    record_access(actor="admin", action="GET /new", purpose="testing", db_path=db)
+
+    entries = audit.query_access(db_path=db)
+    assert len(entries) == 2, "the write silently failed against a legacy log"
+    assert entries[0]["entry_hash"], "the new entry was written without a hash"
+
+    # Pre-chain rows are unverifiable, not tampering.
+    intact, broken_at = verify_chain(db)
+    assert intact is True
+    assert broken_at is None
+
+
+def test_removing_a_hash_after_the_chain_starts_is_tampering(tmp_path):
+    """A NULL hash is only innocent BEFORE the chain begins. After that it is
+    somebody deleting one."""
+    import sqlite3
+
+    db = str(tmp_path / "audit.db")
+    for i in range(4):
+        record_access(actor="admin", action=f"a-{i}", purpose="testing", db_path=db)
+
+    conn = sqlite3.connect(db)
+    conn.execute("DROP TRIGGER access_log_no_update")
+    conn.execute("UPDATE access_log SET entry_hash = NULL WHERE id = 3")
+    conn.commit()
+    conn.close()
+
+    intact, broken_at = verify_chain(db)
+    assert intact is False
+    assert broken_at == 3
+
+
 def test_a_refused_request_is_written_to_the_audit_log(client, tmp_path, monkeypatch):
     """Denials are the entries that matter most: a pattern of refusals is the
     only early signal that somebody is trying doors."""

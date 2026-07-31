@@ -229,3 +229,13 @@ data/identity_map.json.tmp
 data/feedback.db
 data/feedback.db-journal
 data/models/
+
+# Frontend build output and dependencies.
+frontend/node_modules/
+frontend/dist/
+# Generated from the running app by scripts/export_openapi.py -- committing it
+# would let it drift from the schema actually served.
+openapi.json
+# Phase 5 intervention store: data about real people's briefings.
+data/interventions.db
+data/interventions.db-journal

@@ -2,6 +2,60 @@
 
 Notable changes per unit of work. Newest first.
 
+## Intervention outcomes + Phases 5-6 (partial)
+
+### New: does manager action appear to help?
+- `src/domain/intervention.py` records what KIND of action a manager took (closed
+  list, no free text) and measures what followed in that person's own metrics.
+- **Regression to the mean is corrected for, and that is the whole point.** This
+  system flags people at their most extreme, so raw before/after change reports
+  improvement for an intervention that did nothing — it would tell every manager
+  their interventions work, be believed, and be wrong. What is reported is
+  *excess* recovery: observed change minus what the person's own week-to-week
+  persistence already predicted.
+- Aggregation is by intervention **type**, never by manager. A per-manager
+  effectiveness score makes this a performance tool whose KPI is other people's
+  wellbeing metrics. A test fails if any manager-scoring function appears.
+- Every outcome is permanently `association_only`; the model is frozen so a
+  consumer cannot strip the caveat before rendering.
+- **Not built**: analysing what a manager *said*. That needs the contents of a
+  private 1-on-1. Reasoning is at the top of `src/domain/intervention.py`.
+
+### Phase 5 (partial) — API restructure
+- `src/api/errors.py`: RFC 9457 problem+json on every error, with a correlation
+  ID. An unhandled exception returns an opaque message — traces here contain
+  employee names, so one reaching a browser is a privacy incident, not a bug.
+- `src/api/routers/evolution.py`: first extracted router. Mounted at `/api/v1`
+  (the versioned contract) and at `/api` as a hidden alias so nothing breaks.
+- `scripts/export_openapi.py` exports the schema in CI rather than committing
+  it, so the generated frontend types cannot drift from what is served.
+- **Still to do**: the other ~28 routes remain in `app.py`. It is not yet a
+  composition root and is still over 400 lines.
+
+### Phase 6 (partial) — React frontend
+- `frontend/`: React 18 + TypeScript (strict) + Vite + TanStack Query + Router.
+- **The UI works again.** Phase 4 left the old dashboard receiving 401s;
+  `ApiKeyGate` prompts for a key, holds it in sessionStorage (dies with the tab),
+  and a 401 clears it and re-prompts instead of hanging on a loading state.
+- Diagnostic Room migrated first, per §9's prescribed order. At low confidence
+  the score is **not rendered as a number at all** — a range and the caveat get
+  equal visual weight, because "6/10" in large type with grey caveat text
+  communicates only the first.
+- 9 vitest tests including a `jest-axe` accessibility assertion; `tsc` strict and
+  `npm test` wired into CI as a separate job.
+- **Still to do**: Console, History and Home pages; generated API client;
+  Playwright E2E.
+
+### Fixed
+- **The audit log had silently stopped recording.** `CREATE TABLE IF NOT EXISTS`
+  does nothing to an existing table, so the Phase 4 hash columns were never added
+  to an existing `audit.db` and every write failed on the missing column —
+  silently, because `record_access()` swallows exceptions by design. Found by
+  running the app, not by a test: the tests all used fresh temporary databases.
+  Migration added, plus a regression test that builds a legacy-shaped log.
+- `verify_chain()` now distinguishes pre-chain rows (unverifiable) from a hash
+  removed after chaining began (tampering).
+
 ## Phase 4 (complete) — security baseline
 
 - **Blocker B1 closed.** Every route requires authentication, enforced by

@@ -2,12 +2,55 @@
 
 Read this first, update it last. Current state only — history lives in `CHANGELOG.md`.
 
-**Current phase: Phases 0–4 complete. Phase 5 (API restructure) is next.**
+**Current phase: Phases 0–4 complete. Phases 5 and 6 are PARTIAL — neither exit
+criterion is met. Read the two sections below before assuming otherwise.**
 
-Everything committed is green: `ruff`, `ruff format`, `ty`, **367 unit tests**, the
-`domain` dependency contract, the `domain` coverage gate (**99.64%**, 1100/1104,
-against a 95% floor), and the agent eval suite (9 accuracy + 6 safety, blocking).
+Everything committed is green: `ruff`, `ruff format`, `ty`, **386 unit tests**, the
+`domain` dependency contract, the `domain` coverage gate (**99.36%**, 1251/1259,
+against a 95% floor), the agent eval suite (9 accuracy + 6 safety, blocking), and
+the frontend's `tsc --noEmit` + 9 vitest tests including a `jest-axe` check.
 Clean tree.
+
+---
+
+## Phase 5 — API restructure (PARTIAL, exit criterion NOT met)
+
+Done: RFC 9457 problem+json errors app-wide (`src/api/errors.py`), `/api/v1`
+versioning, `scripts/export_openapi.py`, and the first extracted router
+(`src/api/routers/evolution.py`).
+
+**Not done: `app.py` is still ~1,250 lines with roughly 28 routes in it.** The
+criterion is "no file over 400 lines; `app.py` is composition root only". The
+remaining routes need moving into routers by resource — mechanical, but a
+session's work on its own.
+
+## Phase 6 — frontend (PARTIAL, one page of four)
+
+`frontend/` is React 18 + TS strict + Vite + TanStack Query + Router, installed
+and passing. **The Diagnostic Room is migrated; Console, History and Home are
+placeholders that say so.** §9 prescribes exactly this pace — "migrate page by
+page, one page per session, running alongside `static/index.html` until parity is
+proven".
+
+**The UI works again.** Phase 4 left it receiving 401s; `ApiKeyGate` now prompts
+for a key, and a 401 clears the stored key and re-prompts rather than hanging.
+Verified end to end against the running backend.
+
+Still to do: the other three pages, the generated API client as source of truth
+(`npm run generate:api` exists but types are hand-written), Playwright E2E.
+
+## New: intervention outcomes
+
+Records what KIND of action a manager took and measures what followed in that
+person's own metrics, **correcting for regression to the mean** — without that
+correction the tool would report success for interventions that did nothing,
+because it flags people at their worst and they revert regardless.
+
+Two structural refusals, both test-guarded:
+- **No per-manager scoring.** It would make this a performance tool whose KPI is
+  other people's wellbeing metrics.
+- **No free text.** Analysing what a manager *said* needs the contents of a
+  private 1-on-1. Reasoning is at the top of `src/domain/intervention.py`.
 
 ---
 
@@ -33,12 +76,11 @@ remembering.
 generates one ephemeral admin key and prints it loudly at startup. A bypass flag
 for local convenience is exactly the flag that ends up set in a deployment.
 
-### ⚠️ Consequence you need to know about
-**The bundled `static/index.html` does not send a key, so the demo UI now gets
-401s.** That is deliberate — leaving a bypass so the old UI kept working would
-have re-opened B1. Drive the API with `Authorization: Bearer <key>` until the
-Phase 6 rebuild adds key handling. This is the first thing to fix if you want the
-demo working before Phase 6.
+### Consequence, now resolved for the new UI
+The old `static/index.html` sends no key and still gets 401s. The new
+`frontend/` SPA handles keys and works — see the Phase 6 section above. The old
+file is served alongside during the page-by-page migration and is retired at the
+end of it.
 
 ---
 
@@ -84,14 +126,15 @@ judgements about people and never once learned whether any were correct.
 
 Gemini is still the **primary risk classifier**. `compute_risk_index()` is used
 by `FakeRiskScorer` and by the eval suite but still has **zero production call
-sites**. Demoting the LLM to narrative-only remains **Phase 6** and must be a
-deliberate, announced change.
+sites**. Demoting the LLM to narrative-only is still pending and must be a
+deliberate, announced change — not slipped into a restructure.
 
 ## Still simulated / not enforced
 
 Full list in `docs/LIMITATIONS.md`. The ones that matter:
 
-1. **The bundled UI is broken by auth** — see the warning above.
+1. **The old `static/index.html` still sends no key** and gets 401s. The new
+   `frontend/` SPA works; the old file goes when the migration finishes.
 2. `key_by_surrogate=False` by default — pseudonymization exists but is off.
    Must flip to `True`, with `IDENTITY_SALT` set, before real data.
 3. **Rate limiting is in-process** — multi-worker deployments multiply the
@@ -100,9 +143,9 @@ Full list in `docs/LIMITATIONS.md`. The ones that matter:
    still duplicate a week on retry.
 5. **Cohort correction is not wired into either entrypoint.** It works and is
    tested, but computing shifts needs a pass over all employees before scoring
-   any of them — a pipeline restructure belonging to Phase 5.
-6. **CSP allows `unsafe-inline`** because the bundled UI is one HTML file with
-   inline scripts. Fixed by the Phase 6 rebuild.
+   any of them — still blocked on finishing the Phase 5 restructure.
+6. **CSP allows `unsafe-inline`** because the old UI is one HTML file with
+   inline scripts. Tightened once that file is retired.
 7. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
    scheduled retention purge, key rotation.
 8. DB and cloud-bucket ingestion read real storage but are seeded synthetically.
@@ -138,14 +181,19 @@ Full list in `docs/LIMITATIONS.md`. The ones that matter:
 
 ## Next session
 
-**Phase 5 — API restructure.** Split `app.py` (now ~1,400 lines) into routers by
-resource with thin handlers delegating to services. Versioned `/api/v1`. RFC 9457
-problem+json errors. Full OpenAPI with examples.
+**Finish Phase 5.** Move the remaining ~28 routes out of `app.py` into
+`src/api/routers/` by resource: health/metrics, pipeline, employees, reports,
+memory, ingest, scoring. Thin handlers only.
 *Exit: no file over 400 lines; `app.py` is composition root only.*
 
-Two things to fold in while restructuring, both currently blocked on it:
-the cohort correction (needs a cohort-wide pass before per-employee scoring) and
-idempotency on the remaining ingest routes.
+Fold in while restructuring, both currently blocked on it:
+- the **cohort correction** (needs a cohort-wide pass before per-employee scoring)
+- **idempotency** on the ingest routes other than the webhook
 
-Consider doing the **UI key handling** first as a small standalone commit — it is
-half an hour and it makes the app demonstrable again.
+**Then Phase 6, one page per session**: Console → History → Home, then retire
+`static/index.html` and add Playwright.
+
+Note on the environment: PyPI is reachable but `uv` is firewall-blocked from
+binding a socket and the venv has no `pip`, so **Python dependencies still cannot
+be installed** — the stdlib quality gates stay. **npm works**, which is why the
+frontend was feasible.

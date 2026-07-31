@@ -4,7 +4,7 @@ Required by `PRODUCTION_EVOLUTION_PROMPT.md` §1: *"Nothing is allowed to be cos
 but described as real."* Anything simulated, partial, or not-yet-enforced is listed
 here. Updated every phase.
 
-Last updated: Phase 4.
+Last updated: Phase 5-6 (partial).
 
 ---
 
@@ -58,10 +58,11 @@ covered without anyone remembering. There is **no "auth off" switch**: with no
 `API_KEYS` configured the server generates one temporary admin key and prints it
 at startup.
 
-**The bundled `static/index.html` does not yet send a key**, so the demo UI will
-receive 401s until the Phase 6 React rebuild adds key handling. Drive the API
-with `Authorization: Bearer <key>` in the meantime. This is a deliberate
-trade — leaving a bypass so the old UI keeps working would have re-opened B1.
+~~The bundled `static/index.html` does not yet send a key~~ — the new
+`frontend/` SPA handles keys (`ApiKeyGate`), so the Diagnostic Room works again.
+The **old `static/index.html` still does not** and will keep receiving 401s until
+it is retired; it is served alongside the SPA during the page-by-page migration
+§9 prescribes.
 
 ### API keys, not OIDC
 §7 offers "OIDC login for humans, signed API keys or HMAC signatures for webhook
@@ -169,3 +170,54 @@ produce individual signals.**
 Computed at preprocessing, and still not read by the scorer. The Phase 2
 confidence assessment is derived independently from the timeline. Reconciling the
 two belongs with the Phase 5 API restructure.
+
+
+---
+
+## Intervention outcomes (new)
+
+### It measures association, never causation
+`src/domain/intervention.py` reports what followed a manager's action. There is
+no control group and no randomisation — the "treatment" is assigned to whoever
+looked worst — so nothing here is evidence that an action *caused* an outcome.
+Every record carries `association_only: true` on a frozen model so a consumer
+cannot strip it, and the UI leads with the caveat rather than footnoting it.
+
+### Regression to the mean is corrected for, imperfectly
+People are flagged at their most extreme, so they tend to improve regardless.
+The correction estimates each person's own lag-1 persistence and subtracts the
+recovery that predicts. That is far better than raw before/after, and it is
+still a single-parameter model of a messy process: it assumes persistence is
+stable over the window and estimates it from as few as four points. Treat
+"excess recovery" as a rough filter for "was this more than nothing", not as an
+effect size.
+
+### There is deliberately no per-manager view
+No `manager_id` column, no scoring function, and a test that fails if one
+appears. A per-manager effectiveness number turns this into a performance tool
+whose KPI is other people's wellbeing metrics, which creates an immediate
+incentive to lean on whoever's numbers look bad.
+
+### What was asked for and not built
+Determining whether a manager's *words* affected an employee. That requires
+capturing what was said in a private conversation — prohibited by CONTEXT.md
+rule 5, and a categorical escalation from counting tasks to listening to
+meetings. The reasoning is at the top of `src/domain/intervention.py`.
+
+---
+
+## API restructure (Phase 5, partial)
+
+`app.py` is still ~1,250 lines with roughly 28 routes in it. Only the evolution
+routes have moved to `src/api/routers/`. **The Phase 5 exit criterion — "no file
+over 400 lines; `app.py` is composition root only" — is not met.** RFC 9457
+errors and `/api/v1` versioning are in place and apply to the whole app.
+
+## Frontend (Phase 6, partial)
+
+Only the Diagnostic Room is migrated. Console, History and Home are placeholders
+that say so rather than half-built pages. The API client types are hand-written
+in `frontend/src/api/types.ts`; `npm run generate:api` and the
+`openapi-typescript` wiring exist but the generated file is not yet the source of
+truth. No Playwright E2E yet. Styling is plain CSS rather than Tailwind — at one
+page a utility framework would add a build step for no benefit.

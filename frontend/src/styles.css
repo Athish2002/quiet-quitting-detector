@@ -1,0 +1,102 @@
+/* Light, high-contrast, no framework. Tailwind is what §4 names, but the whole
+   surface here is one page of semantic HTML, and a utility framework would add
+   a build step and a class-soup diff for no benefit at this size. Swap in when
+   the remaining pages land and the component count justifies it. */
+:root {
+  --ink: #16202b;
+  --muted: #566577;
+  --line: #d7dee6;
+  --bg: #f7f9fb;
+  --alert: #8c2f1f;
+  --alert-bg: #fdf0ed;
+  --caveat-bg: #fbf6e8;
+  --ok: #1d5c3f;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+}
+
+nav ul { display: flex; gap: 1rem; list-style: none; padding: 1rem; margin: 0; }
+nav a { color: var(--ink); text-decoration: none; padding: 0.35rem 0.6rem; border-radius: 6px; }
+nav a[aria-current="page"] { background: var(--ink); color: #fff; }
+
+/* Visible focus everywhere. Keyboard navigation is a requirement, not polish. */
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 3px solid #1a56a8;
+  outline-offset: 2px;
+}
+
+.page { max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 4rem; }
+.page__intro { color: var(--muted); max-width: 46rem; }
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-block: 1.5rem;
+}
+
+.callout {
+  background: var(--bg);
+  border-left: 4px solid var(--muted);
+  padding: 0.75rem 1rem;
+  margin-block: 1rem;
+}
+.callout--alert { background: var(--alert-bg); border-left-color: var(--alert); color: var(--alert); }
+.callout--caveat { background: var(--caveat-bg); border-left-color: #9a7b1f; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; margin: 0; }
+.stats dt { color: var(--muted); font-size: 0.9rem; }
+.stats dd { margin: 0.15rem 0 0; font-size: 1.5rem; font-weight: 600; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+caption { text-align: left; color: var(--muted); padding-bottom: 0.6rem; }
+th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); }
+tbody th { font-weight: 500; text-transform: capitalize; }
+
+.field { margin-block: 0.85rem; }
+.field label { display: block; font-weight: 500; }
+.field--radio { display: flex; gap: 0.5rem; align-items: baseline; }
+.field--radio label { font-weight: 400; }
+input[type="text"], input[type="number"], input[type="password"], .field input {
+  padding: 0.5rem; border: 1px solid var(--line); border-radius: 6px; min-width: 14rem;
+}
+fieldset { border: 1px solid var(--line); border-radius: 8px; margin-block: 1rem; }
+legend { padding-inline: 0.4rem; font-weight: 500; }
+
+button {
+  background: var(--ink); color: #fff; border: 0; border-radius: 6px;
+  padding: 0.55rem 1rem; font-size: 1rem; cursor: pointer;
+}
+button:disabled { background: var(--muted); cursor: not-allowed; }
+
+.hint { color: var(--muted); font-size: 0.9rem; }
+
+.keybar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; padding: 0.5rem 1.25rem; background: #eef3f8;
+  border-bottom: 1px solid var(--line); font-size: 0.9rem;
+}
+.keybar button { background: none; color: var(--ink); text-decoration: underline; padding: 0; }
+
+.gate { max-width: 32rem; margin: 4rem auto; padding: 1.5rem; background: #fff;
+  border: 1px solid var(--line); border-radius: 10px; }
+
+.badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+  font-size: 0.85rem; border: 1px solid var(--line); }
+.badge--low, .badge--none { background: var(--caveat-bg); border-color: #9a7b1f; }
+.badge--high { background: #eaf5ef; border-color: var(--ok); color: var(--ok); }
+
+.score__value { font-size: 2.4rem; margin: 0; }
+.score__scale { color: var(--muted); font-size: 1.1rem; }
+.score--suppressed .score__caveat { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
+.score__footnote { color: var(--muted); font-size: 0.85rem; }

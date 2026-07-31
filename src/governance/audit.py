@@ -86,6 +86,30 @@ def _connect(db_path: str | None = None):
         conn.close()
 
 
+#: Columns added after the table first shipped. `CREATE TABLE IF NOT EXISTS`
+#: does nothing to an existing table, so without this an audit.db created before
+#: Phase 4 keeps its old shape and EVERY write fails on the missing column --
+#: silently, because record_access() swallows exceptions by design. The log would
+#: simply stop recording, which is the exact failure the module docstring calls a
+#: compliance failure in its own right. Found by running the app, not by a test:
+#: tests use fresh temporary databases and never meet an old one.
+_ADDED_COLUMNS = {
+    "prev_hash": "TEXT",
+    "entry_hash": "TEXT",
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(access_log)")}
+    if not existing:
+        return  # fresh database; the schema script handles it
+
+    for column, sql_type in _ADDED_COLUMNS.items():
+        if column not in existing:
+            logger.warning("Adding missing audit column %s to an existing log.", column)
+            conn.execute(f"ALTER TABLE access_log ADD COLUMN {column} {sql_type}")
+
+
 def _ensure_schema(conn: sqlite3.Connection, path: str) -> None:
     if path in _initialised:
         return
@@ -93,6 +117,7 @@ def _ensure_schema(conn: sqlite3.Connection, path: str) -> None:
         if path in _initialised:
             return
         conn.executescript(_SCHEMA)
+        _migrate(conn)
         conn.commit()
         _initialised.add(path)
 
@@ -151,8 +176,26 @@ def verify_chain(db_path: str | None = None) -> tuple[bool, int | None]:
         return False, None
 
     expected_prev = GENESIS_HASH
+    chain_started = False
+
     for row in rows:
         entry = dict(row)
+
+        # Rows written before hash-chaining existed carry no hash. They are
+        # unverifiable, not evidence of tampering, and are skipped -- but only
+        # while they PRECEDE the chain. Once a chained row has been seen, a
+        # missing hash is somebody removing one, and is reported as a break.
+        if entry.get("entry_hash") is None:
+            if chain_started:
+                return False, entry["id"]
+            continue
+
+        if not chain_started:
+            # The chain begins wherever the first hashed row is; it commits to
+            # GENESIS or to whatever it recorded at the time.
+            expected_prev = entry.get("prev_hash") or GENESIS_HASH
+            chain_started = True
+
         if entry.get("prev_hash") != expected_prev:
             return False, entry["id"]
 
