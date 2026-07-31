@@ -21,6 +21,13 @@ Read this first, update it last. Current state only — history lives in `CHANGE
 - **README overclaim fixed (B11).** Three "six genuinely working sources / not demo
   stubs" claims corrected to match observable behaviour.
 - **Working tree committed** in coherent commits (B12).
+- **Pushed to public GitHub** (`Athish2002/quiet-quitting-detector`, 7 commits).
+  Verified publish-safe first: zero secrets in full history, `.env` never
+  committed, all data synthetic.
+- **Public-repo standards**: README "what this is deliberately not" section,
+  `SECURITY.md`, `CODE_OF_CONDUCT.md` (with a project-specific list of
+  contributions that will be declined), PR template with a privacy-impact
+  checklist, Dependabot.
 
 Carried in from the prior session (now committed): governance package (allowlist,
 audit, purpose, retention, notice), identity resolution + pseudonymization,
@@ -46,6 +53,12 @@ See `docs/LIMITATIONS.md` for the full list. The ones that matter most:
 - **CI Phase-0 scope is lint/type/test only.** The other §8 gates (coverage ratchet,
   gitleaks, import-linter, Docker/trivy, Playwright, eval gate) attach to phases
   that create what they check.
+- **Licence stays MIT.** A use-restricting licence (Hippocratic/PolyForm) is not
+  OSI-approved, so GitHub would not label it open source and most company legal
+  teams auto-block adoption — which defeats the goal of a public contribution. It
+  also would not work in practice: nobody litigates a forked internal HR tool. The
+  real controls are the runtime purpose binding and the allowlist; the README now
+  states plainly that a fork can strip them.
 - **Blocker list corrections** (evidence in session assessment): B8 overstated —
   `.env` is gitignored with zero commits in history, so the gap is *absent secret
   scanning*, not leaked secrets. B11 imprecise — read paths are real, seeding is
