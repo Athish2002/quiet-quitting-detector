@@ -164,7 +164,11 @@ def run_orchestrator(
                             }
                         )
                     risk_data = score_risk(
-                        first_name, signals, w, memory_dir=memory_folder
+                        first_name,
+                        signals,
+                        w,
+                        memory_dir=memory_folder,
+                        timeline=sub_timeline,
                     )
                     briefing = generate_briefing(
                         first_name, signals, risk_data, memory_dir=memory_folder
@@ -193,7 +197,15 @@ def run_orchestrator(
                     )
 
                 # 2. Risk Scorer Agent (save as of week w)
-                risk_data = score_risk(first_name, signals, w, memory_dir=memory_folder)
+                # The timeline travels with the signals so the scorer can judge
+                # how much evidence there actually is (Phase 2, §6.1).
+                risk_data = score_risk(
+                    first_name,
+                    signals,
+                    w,
+                    memory_dir=memory_folder,
+                    timeline=sub_timeline,
+                )
 
                 # 3. Manager Briefing Agent (Only runs for Watch, At Risk, Silent Exit)
                 briefing = generate_briefing(

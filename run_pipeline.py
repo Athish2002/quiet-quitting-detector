@@ -250,7 +250,7 @@ def run() -> None:
 
             # 2. Risk Scorer Agent (save current week memory)
             try:
-                risk_data = score_risk(first_name, signals, w)
+                risk_data = score_risk(first_name, signals, w, timeline=sub_timeline)
             except Exception:
                 risk_data = {
                     "score": 4,

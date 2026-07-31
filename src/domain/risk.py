@@ -32,11 +32,29 @@ HEALTHY_DECAY_WEEKS = 4
 #: Prior elevated weeks needed before recurrence is applied.
 RECURRENCE_MIN_ELEVATED_WEEKS = 2
 
-_SEVERITY_WEIGHT: dict[Severity, float] = {
+SEVERITY_WEIGHT: dict[Severity, float] = {
     Severity.LOW: 1.0,
     Severity.MEDIUM: 2.0,
     Severity.HIGH: 3.5,
 }
+
+
+def signal_contribution(signal: Signal) -> float:
+    """What one signal adds to the risk index.
+
+    The single definition of that arithmetic. `domain.attribution` explains the
+    score using this same function rather than its own copy, so the explanation
+    shown to a manager cannot drift away from the number it claims to explain --
+    which would be worse than offering no explanation at all.
+
+    Wellbeing-only signals contribute exactly zero.
+    """
+    if signal.wellbeing_only:
+        return 0.0
+    # Persistence matters as much as magnitude: a pattern held for many weeks is
+    # more meaningful than a sharp two-week dip.
+    persistence = 0.5 * max(0, len(signal.weeks_detected) - 1)
+    return SEVERITY_WEIGHT[signal.severity] + persistence
 
 
 def classify(score: int) -> str:
@@ -131,17 +149,11 @@ def compute_risk_index(
       * wellbeing-only signals contribute NOTHING to risk; they exist to prompt
         a supportive check-in, never to count against someone
     """
-    scoring_signals = [s for s in signals if not s.wellbeing_only]
-    if not scoring_signals:
+    total = sum(signal_contribution(s) for s in signals)
+    if total <= 0:
         return MIN_SCORE
 
-    weight = sum(_SEVERITY_WEIGHT[s.severity] for s in scoring_signals)
-
-    # Persistence matters as much as magnitude: a pattern held for many weeks is
-    # more meaningful than a sharp two-week dip.
-    persistence = sum(max(0, len(s.weeks_detected) - 1) for s in scoring_signals)
-
-    raw = MIN_SCORE + weight + (0.5 * persistence)
+    raw = MIN_SCORE + total
 
     if history:
         apply, _ = compute_recurrence_bonus(history)

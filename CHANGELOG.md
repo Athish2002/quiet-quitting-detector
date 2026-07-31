@@ -2,6 +2,47 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 2 (complete) — Intelligence I: honest statistics
+
+- **Personal baselines are now distributions, not a single week.** `median` for
+  the centre, and for spread the larger of MAD and the median successive
+  difference. Week 1 was one observation: anyone whose first week was unusually
+  productive had their personal best used as their baseline, so every ordinary
+  week afterwards read as decline.
+- **Effect size replaces the fixed percentage cut-offs.** A deviation must be
+  both unusual *for that person* and materially large. Either test alone has a
+  failure mode that harms somebody: effect size alone flags a rock-steady person
+  for a trivial wobble; percentage alone flags a naturally variable person for an
+  ordinary week.
+- **CUSUM change-point detection** (`src/domain/changepoint.py`) separates a
+  genuine regime shift from a bad fortnight. The 2+-consecutive-week rule is kept
+  as a floor. A single extreme week can no longer cross the threshold on its own.
+- **A resolved pattern is no longer reported as current risk.** A decline that
+  ended two weeks ago is carried by the history and recurrence machinery; this
+  week's assessment describes this week.
+- **Cohort confound removal** (`src/domain/cohort.py`) as a fairness correction
+  only: one shared number per week, never a per-person comparison, only downward
+  moves, and structurally unable to create a signal. A test fails if any
+  ranking-shaped function appears in the module.
+- **Uncertainty is first-class** (`src/domain/uncertainty.py`): `confidence`,
+  `score_range` and `insufficient_data` travel with every score, and low
+  confidence is stated in the rationale rather than only in a field a consumer
+  might not read. `score_range` is a heuristic band, **not** a confidence
+  interval — named and documented accordingly.
+- **Per-metric attribution** (`src/domain/attribution.py`) derived from the same
+  weights the score uses, so the explanation cannot drift from the number.
+- `score_risk()` and the `RiskScorer` Protocol accept the timeline; the CLI and
+  orchestrator pass it.
+- **Evidence, not claims**: `scripts/phase2_before_after.py` runs both methods on
+  the same fixtures and generates `docs/PHASE2_BEFORE_AFTER.md`. Headline result —
+  a rough fortnight followed by full recovery went from **three confirmed signals
+  to none**, while genuine sustained and abrupt declines are still caught.
+- The before/after script caught a Phase 2 regression before it shipped: MAD over
+  three alternating values collapses to ~1, and the first draft flagged a
+  naturally variable worker. That is why `build_baseline` takes the larger of the
+  two spread estimates.
+- `src/domain` is at **100%** line coverage (756/756) against the 95% gate.
+
 ## Phase 1 (complete) — extract the domain
 
 - Add agent `Protocol`s (`src/domain/protocols.py`) and deterministic fakes

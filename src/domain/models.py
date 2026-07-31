@@ -127,6 +127,73 @@ class HistoryRecord(BaseModel):
         return self.classification.strip().casefold() == "healthy"
 
 
+class Confidence(StrEnum):
+    """How much weight the evidence can actually carry.
+
+    This is not decoration. A manager shown "6/10, At Risk" acts on it; a manager
+    shown "6/10, but we have two weeks of patchy data" asks a question instead.
+    The second conversation is the one this system exists to cause.
+    """
+
+    NONE = "none"  # nothing usable -- do not present a number at all
+    LOW = "low"  # too few observations, or too much missing data
+    MODERATE = "moderate"
+    HIGH = "high"
+
+
+class MetricBaseline(BaseModel):
+    """One metric's normal range for one person, as a distribution.
+
+    `centre` is the median and `spread` the median absolute deviation, both over
+    that person's own history and nobody else's.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    centre: float
+    spread: float = Field(ge=0)
+    observations: int = Field(ge=0)
+    #: False when there were too few weeks for the distribution to mean much.
+    #: The baseline is still returned -- the caller must lower confidence rather
+    #: than pretend the question is unanswerable.
+    is_distributional: bool = False
+
+
+class Deviation(BaseModel):
+    """One metric's departure from one person's own normal, in one week."""
+
+    model_config = ConfigDict(frozen=True)
+
+    metric: str
+    week: int = Field(ge=1)
+    observed: float
+    baseline_centre: float
+    #: Magnitude in units of the person's own variability, never negative.
+    effect_size: float = Field(ge=0)
+    #: The same departure as a plain proportion, for prose a manager can picture.
+    relative_change: float
+    significant: bool = False
+
+
+class Attribution(BaseModel):
+    """How much one metric contributed to the score, and which way.
+
+    Required by 6.1's counterfactual layer: a briefing has to be able to say WHY,
+    and a wrong call has to be debuggable. A score with no attribution is an
+    accusation with no evidence attached.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    metric: str
+    #: Share of the total risk contribution, 0-1. Shares sum to 1 when any
+    #: contribution exists.
+    contribution: float = Field(ge=0, le=1)
+    effect_size: float = Field(ge=0)
+    direction: str = ""
+    weeks: tuple[int, ...] = ()
+
+
 class RiskAssessment(BaseModel):
     """The outcome of scoring one week."""
 
@@ -140,3 +207,13 @@ class RiskAssessment(BaseModel):
     #: True when the evidence is too thin to be confident -- consumers must
     #: soften the briefing rather than present a number built on almost nothing.
     insufficient_data: bool = False
+
+    confidence: Confidence = Confidence.MODERATE
+    #: Heuristic plausible range for the score, NOT a frequentist confidence
+    #: interval -- it is derived from how much evidence there is, not from a
+    #: sampling distribution. Named and documented this way on purpose: calling
+    #: a rule-of-thumb band a "95% CI" would be the exact kind of borrowed
+    #: authority this system must not trade on. See docs/LIMITATIONS.md.
+    score_range: tuple[int, int] | None = None
+    #: Ranked per-metric contributions, largest first.
+    attributions: tuple[Attribution, ...] = ()

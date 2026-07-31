@@ -24,7 +24,7 @@ from google.adk.models import Gemini
 
 from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
-from src.domain.models import HistoryRecord, Severity, Signal
+from src.domain.models import HistoryRecord, Severity, Signal, WeekMetrics
 from src.domain.protocols import RiskScorer
 from src.domain.risk import (
     AT_RISK_THRESHOLD,
@@ -262,6 +262,23 @@ def _to_signal_models(signals: list[dict]) -> list[Signal]:
     return models
 
 
+def _to_week_models(timeline: list[dict]) -> list[WeekMetrics]:
+    """Adapt legacy timeline rows so a scorer can judge how much evidence exists.
+
+    Shared shape with the trend detector's adapter; both drop unknown keys, so a
+    prohibited column surviving in a legacy CSV still cannot reach the domain.
+    """
+    weeks: list[WeekMetrics] = []
+    for row in timeline:
+        if row.get("week") is None:
+            continue
+        try:
+            weeks.append(WeekMetrics.model_validate(row))
+        except Exception:
+            logger.warning("Skipping malformed timeline row.")
+    return weeks
+
+
 def _to_history_models(history: list[dict]) -> list[HistoryRecord]:
     """Same tolerant adaptation for stored weeks. Malformed records are skipped."""
     records: list[HistoryRecord] = []
@@ -409,6 +426,7 @@ def score_risk(
     week_number: int,
     memory_dir: str | None = None,
     scorer: RiskScorer | None = None,
+    timeline: list[dict] | None = None,
 ) -> dict:
     """Calculates risk score and classification, loading history and saving current to data\\memory\\.
 
@@ -476,11 +494,18 @@ def score_risk(
                 _to_signal_models(signals),
                 week_number,
                 _to_history_models(history),
+                _to_week_models(timeline) if timeline else None,
             )
             result = {
                 "score": assessment.score,
                 "classification": assessment.classification,
                 "rationale": assessment.rationale,
+                # Phase 2: uncertainty and attribution travel WITH the score.
+                # Separating them is how a caveated finding becomes an
+                # uncaveated number one layer later (6.1).
+                "confidence": assessment.confidence.value,
+                "score_range": list(assessment.score_range or ()),
+                "attributions": [a.model_dump() for a in assessment.attributions],
             }
             if assessment.insufficient_data:
                 result["insufficient_data"] = True

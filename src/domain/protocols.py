@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from src.domain.models import HistoryRecord, RiskAssessment, Signal
+from src.domain.models import HistoryRecord, RiskAssessment, Signal, WeekMetrics
 
 
 @runtime_checkable
@@ -44,6 +44,12 @@ class RiskScorer(Protocol):
     The returned score is PRE-recurrence: the caller applies the recurrence
     bonus and healthy-streak decay from `domain.risk`, so that rule has one
     implementation regardless of who did the scoring.
+
+    `timeline` is optional and carries the weeks the signals were derived from.
+    It exists so an implementation can judge how much evidence there actually is
+    -- a score built on two patchy weeks and a score built on ten solid ones must
+    not be presented to a manager the same way (6.1). Implementations that cannot
+    use it must still accept it.
     """
 
     def score(
@@ -52,4 +58,5 @@ class RiskScorer(Protocol):
         signals: list[Signal],
         week_number: int,
         history: list[HistoryRecord],
+        timeline: list[WeekMetrics] | None = None,
     ) -> RiskAssessment: ...

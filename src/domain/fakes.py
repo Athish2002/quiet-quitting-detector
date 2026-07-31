@@ -12,8 +12,16 @@
 
 from __future__ import annotations
 
-from src.domain.models import HistoryRecord, RiskAssessment, Signal
+from src.domain.attribution import attribute, leading_metric
+from src.domain.models import (
+    Confidence,
+    HistoryRecord,
+    RiskAssessment,
+    Signal,
+    WeekMetrics,
+)
 from src.domain.risk import classify, compute_risk_index
+from src.domain.uncertainty import assess_from_timeline, score_range
 
 
 class FakeTrendEnricher:
@@ -53,9 +61,13 @@ class FakeRiskScorer:
         signals: list[Signal],
         week_number: int,
         history: list[HistoryRecord],
+        timeline: list[WeekMetrics] | None = None,
     ) -> RiskAssessment:
         score = compute_risk_index(signals)
         classification = classify(score)
+        attributions = attribute(signals)
+
+        confidence = assess_from_timeline(timeline) if timeline else Confidence.LOW
 
         scoring = [s for s in signals if not s.wellbeing_only]
         if scoring:
@@ -64,15 +76,33 @@ class FakeRiskScorer:
                 f"Week {week_number}: {len(scoring)} confirmed pattern(s) "
                 f"against {first_name}'s own baseline ({named})."
             )
+            driver = leading_metric(attributions)
+            if driver:
+                rationale += f" Largest contributor: {driver}."
         else:
             rationale = (
                 f"Week {week_number}: no pattern persisted for two or more "
                 f"consecutive weeks against {first_name}'s own baseline."
             )
 
+        # Low confidence is stated in the rationale, not just carried in a field
+        # a consumer might not read. A number a manager acts on has to arrive
+        # with its own caveat attached (6.1).
+        if confidence in (Confidence.NONE, Confidence.LOW):
+            rationale += (
+                " Confidence is low -- there is not yet enough of "
+                f"{first_name}'s own history for this to be more than a "
+                "prompt to check in."
+            )
+
         return RiskAssessment(
             score=score,
             classification=classification,
             rationale=rationale,
-            insufficient_data=not signals and not history,
+            insufficient_data=(
+                confidence is Confidence.NONE or (not signals and not history)
+            ),
+            confidence=confidence,
+            score_range=score_range(score, confidence),
+            attributions=attributions,
         )
