@@ -204,3 +204,22 @@ tools/a2a-inspector/
 
 # Quiet Quitting memory files
 data/memory/*.json
+data/realtime/
+data/realtime_memory/
+data/simulator_memory/
+data/engagement.db
+data/s3_bucket/
+data/audit_log.jsonl
+data/settings.json
+engagement_report.txt
+realtime_engagement_report.txt
+
+# Per-run API counters: pure runtime state, regenerated on demand. Tracking it
+# meant every pipeline run showed up as a repo modification and produced noisy
+# merge conflicts between branches.
+api_metrics.json
+.api_metrics_*.tmp
+data/audit.db
+data/audit.db-journal
+data/identity_map.json
+data/identity_map.json.tmp
