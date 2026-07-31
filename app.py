@@ -51,6 +51,7 @@ from src.data_layer.preprocessing import preprocess_employee_records
 from src.data_layer.s3_store import bucket_stats, fetch_object
 from src.data_layer.sql_store import db_stats, seed_sample_corporate_batch
 from src.orchestrator_agent import run_orchestrator
+from src.security import IdempotencyStore, KeyRing, SecurityMiddleware
 
 # Initialize the natural language metric extraction agent
 extractor_agent = Agent(
@@ -100,6 +101,42 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 (§7) -- authentication and authorisation. Closes blocker B1.
+#
+# Registered as middleware rather than as per-route dependencies on purpose: a
+# decorator protects the routes somebody remembered to decorate, and B1 exists
+# because `POST /api/memory/clear` was not one of them. See src/security/policy.py.
+#
+# Middleware runs bottom-up in FastAPI, so this is added AFTER the no-cache
+# middleware below in source order but executes BEFORE it -- an unauthenticated
+# request is rejected without the route ever being reached.
+# ---------------------------------------------------------------------------
+_keyring = KeyRing()
+app.add_middleware(SecurityMiddleware, keyring=_keyring)
+logging.getLogger(__name__).warning(_keyring.startup_banner())
+
+#: Idempotency for ingest. A webhook sender that times out and retries -- which
+#: is what every webhook sender does -- would otherwise append a second copy of
+#: a week, silently doubling one person's metrics.
+_idempotency = IdempotencyStore()
+
+
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    """Liveness probe. Public, and says nothing about any employee."""
+    return {"status": "ok"}
+
+
+@app.get("/readyz", include_in_schema=False)
+def readyz():
+    """Readiness probe. Reports whether auth is running on a generated key."""
+    return {
+        "status": "ok",
+        "auth": "ephemeral-key" if _keyring.is_ephemeral else "configured",
+    }
 
 
 @app.middleware("http")
@@ -1132,12 +1169,25 @@ class WebhookIngestInput(BaseModel):
 
 
 @app.post("/api/ingest/webhook")
-def ingest_webhook(data: WebhookIngestInput):
+def ingest_webhook(data: WebhookIngestInput, request: Request):
     """Accepts a structured JSON payload of employee metric records -- the
     integration point for an external HR system, a Zapier/Slack bot, or any
     service that can POST JSON -- and merges them into the target week by
     employee name. A record may set its own week_number to override the
-    payload-level default, so one webhook call can span multiple weeks."""
+    payload-level default, so one webhook call can span multiple weeks.
+
+    Phase 4 (§7): authenticated by HMAC body signature in the security
+    middleware, and made idempotent here. A sender that times out and retries --
+    which is what every webhook sender eventually does -- would otherwise append
+    a second copy of the week. Nobody sees an error: one person's metrics
+    silently double, which reads as an employee whose output suddenly improved.
+    """
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if idempotency_key:
+        previous = _idempotency.seen(idempotency_key)
+        if previous is not None:
+            return {**previous, "idempotent_replay": True}
+
     try:
         by_week: dict[int, list[list]] = {}
         for r in data.records:
@@ -1165,10 +1215,13 @@ def ingest_webhook(data: WebhookIngestInput):
             else f"{len(by_week)} weeks ({', '.join(str(w) for w in sorted(by_week))})"
         )
         log_event("ingest", "webhook", f"{total_rows} record(s) across {weeks_msg}.")
-        return {
+        result = {
             "success": True,
             "message": f"Webhook ingested {total_rows} record(s) across {weeks_msg}.",
         }
+        if idempotency_key:
+            _idempotency.remember(idempotency_key, result)
+        return result
     except HTTPException:
         raise
     except Exception as e:

@@ -4,7 +4,7 @@ Required by `PRODUCTION_EVOLUTION_PROMPT.md` §1: *"Nothing is allowed to be cos
 but described as real."* Anything simulated, partial, or not-yet-enforced is listed
 here. Updated every phase.
 
-Last updated: Phase 2.
+Last updated: Phase 4.
 
 ---
 
@@ -28,8 +28,8 @@ first flagged this. `README.md` was corrected in Phase 0.
 ### Synthetic data is not labelled at row level
 §5 requires every synthetic record tagged `origin='synthetic'`, a persistent UI
 banner, and a production guard (`ALLOW_SYNTHETIC_DATA`). **None of this exists
-yet.** `POST /api/mock-data` is unauthenticated and unlabelled. Scheduled for the
-synthetic-data work in a later phase.
+yet.** `POST /api/mock-data` is now admin-authenticated (Phase 4) but still
+unlabelled. Scheduled for the synthetic-data work in a later phase.
 
 ---
 
@@ -50,8 +50,53 @@ defaults to `key_by_surrogate=False` so the demo UI keeps showing names. Must fl
 to `True` before any real personal data. `IDENTITY_SALT` must also be set — without
 it a development salt is used and the pseudonyms are brute-forceable.
 
-### No authentication (B1)
-Every route is public, including `POST /api/memory/clear`. Phase 4.
+### ~~No authentication (B1)~~ — FIXED in Phase 4
+Every route now requires authentication, enforced by default-deny middleware
+(`src/security/`) rather than per-route decorators. `tests/unit/test_security.py`
+derives the route list from the live application, so a route added later is
+covered without anyone remembering. There is **no "auth off" switch**: with no
+`API_KEYS` configured the server generates one temporary admin key and prints it
+at startup.
+
+**The bundled `static/index.html` does not yet send a key**, so the demo UI will
+receive 401s until the Phase 6 React rebuild adds key handling. Drive the API
+with `Authorization: Bearer <key>` in the meantime. This is a deliberate
+trade — leaving a bypass so the old UI keeps working would have re-opened B1.
+
+### API keys, not OIDC
+§7 offers "OIDC login for humans, signed API keys or HMAC signatures for webhook
+ingest — pick one and do it properly". Signed API keys were chosen: OIDC needs an
+identity provider, a redirect flow, session handling and a frontend that does not
+exist until Phase 6, and half an OIDC integration protects nothing. Roles are
+`viewer` / `manager` / `admin`; webhook ingest authenticates by HMAC over the raw
+body. Migration path: `Principal` is what the rest of the codebase depends on, so
+an OIDC exchange later produces the same object from a token instead of a header.
+
+### Rate limiting is in-process
+`src/security/limits.py` holds counters in memory. With more than one worker each
+holds its own, so the effective limit multiplies by the worker count. Redis is the
+fix and belongs with O1.
+
+### Idempotency covers webhook ingest only
+`POST /api/ingest/webhook` honours `Idempotency-Key`. The upload, raw-paste, DB
+and S3 ingest paths do not yet, so a retry there can still duplicate a week.
+
+### CSP still allows `unsafe-inline`
+The bundled UI is one 2,499-line HTML file with inline styles and scripts, so the
+Content-Security-Policy cannot forbid inline execution without breaking it. A CSP
+with `unsafe-inline` stops far less than it appears to. Fixed by the Phase 6
+rebuild, which moves scripts and styles into separate files.
+
+### Deferred from §7, explicitly
+- **Subject-access export and delete-by-employee**: `export_subject_access_request()`
+  exists in `governance/audit.py` but is not exposed on a route and there is no
+  delete-by-employee operation.
+- **Scheduled retention purge**: `governance/retention.py` enforces the policy
+  when called; nothing calls it on a schedule.
+- **Key rotation**: keys are static environment configuration. There is no
+  rotation, expiry, or revocation short of redeploying.
+- **Full compliance tooling**: DPIA, records of processing, and breach procedures
+  are out of scope for this project.
 
 ### Integration tests excluded from CI
 `tests/integration/` requires a live LLM provider and GCP credentials, so it is
@@ -60,10 +105,10 @@ call a real LLM"). Run locally with `pytest -m integration`. These tests current
 **fail** in this environment for that reason — they were not weakened or deleted.
 
 ### CI gate coverage is partial
-CI runs lint, format, types, unit tests, the `domain` dependency contract, and the
-≥95% `domain` coverage gate. Still to come with the phases that create what they
-check: the ≥80% overall coverage ratchet, `gitleaks`, Docker/trivy, Playwright,
-and the agent eval gate.
+CI runs lint, format, types, unit tests, `gitleaks`, the `domain` dependency
+contract, the ≥95% `domain` coverage gate, and the agent eval suite (blocking).
+Still to come with the phases that create what they check: the ≥80% overall
+coverage ratchet, Docker/trivy, and Playwright.
 
 ### Two quality gates are in-repo, not the reference tools
 The development environment has **no package-index access**, so `hypothesis`,

@@ -37,6 +37,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks needs history to scan past commits, not just the tip.
+          fetch-depth: 0
+
+      - name: Secret scan
+        # §7 / §8.6. B8 was originally logged as "secrets in-repo"; the audit
+        # found `.env` gitignored with zero commits in history, so the real gap
+        # was the ABSENCE of scanning. This closes it, and keeps it closed for
+        # commits nobody reviews as carefully.
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5

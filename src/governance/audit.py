@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import sqlite3
@@ -38,7 +39,16 @@ CREATE TABLE IF NOT EXISTS access_log (
     purpose     TEXT    NOT NULL,
     resource    TEXT,
     outcome     TEXT    NOT NULL,
-    detail      TEXT
+    detail      TEXT,
+    -- Phase 4 (7): hash chain. Each row commits to its own contents AND to the
+    -- previous row's hash, so removing or editing an entry breaks every hash
+    -- after it. The DB triggers below already block UPDATE and DELETE, but a
+    -- trigger only protects the log from someone using this connection --
+    -- anyone with the file can rewrite it. The chain makes that DETECTABLE,
+    -- which is what "tamper-evident" actually means and what the triggers
+    -- alone cannot give.
+    prev_hash   TEXT,
+    entry_hash  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_access_subject ON access_log(subject_id);
 CREATE INDEX IF NOT EXISTS idx_access_actor   ON access_log(actor);
@@ -87,6 +97,84 @@ def _ensure_schema(conn: sqlite3.Connection, path: str) -> None:
         _initialised.add(path)
 
 
+#: First link in the chain. A fixed, published value: the point of the chain is
+#: detecting modification, not secrecy, and a secret seed would only mean the
+#: log could not be verified by the person it is about.
+GENESIS_HASH = "0" * 64
+
+
+def _entry_hash(
+    prev_hash: str,
+    ts: str,
+    actor: str,
+    action: str,
+    subject_id: str | None,
+    purpose: str,
+    resource: str | None,
+    outcome: str,
+    detail: str | None,
+) -> str:
+    """SHA-256 over the previous hash and this entry's fields.
+
+    Field separator is \\x1f (unit separator), which cannot occur in the values,
+    so two different entries cannot produce the same digest by concatenating
+    differently -- "ab" + "c" and "a" + "bc" would otherwise collide.
+    """
+    payload = "\x1f".join(
+        [
+            prev_hash,
+            ts,
+            actor,
+            action,
+            subject_id or "",
+            purpose,
+            resource or "",
+            outcome,
+            detail or "",
+        ]
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def verify_chain(db_path: str | None = None) -> tuple[bool, int | None]:
+    """Recompute the whole chain. Returns (intact, first_broken_row_id).
+
+    This is the control that makes the audit log evidence rather than a record.
+    Without it, "append-only" holds only against code using this module; anyone
+    with the database file can edit a row and nothing would ever say so.
+    """
+    try:
+        with _connect(db_path) as conn:
+            rows = conn.execute("SELECT * FROM access_log ORDER BY id ASC").fetchall()
+    except Exception:
+        logger.error("Audit verification failed to read the log.", exc_info=True)
+        return False, None
+
+    expected_prev = GENESIS_HASH
+    for row in rows:
+        entry = dict(row)
+        if entry.get("prev_hash") != expected_prev:
+            return False, entry["id"]
+
+        recomputed = _entry_hash(
+            expected_prev,
+            entry["ts"],
+            entry["actor"],
+            entry["action"],
+            entry["subject_id"],
+            entry["purpose"],
+            entry["resource"],
+            entry["outcome"],
+            entry["detail"],
+        )
+        if recomputed != entry.get("entry_hash"):
+            return False, entry["id"]
+
+        expected_prev = recomputed
+
+    return True, None
+
+
 def record_access(
     *,
     actor: str,
@@ -108,12 +196,31 @@ def record_access(
     """
     try:
         with _connect(db_path) as conn:
+            row = conn.execute(
+                "SELECT entry_hash FROM access_log ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+            prev_hash = (row["entry_hash"] if row else None) or GENESIS_HASH
+
+            ts = datetime.now(UTC).isoformat()
+            entry_hash = _entry_hash(
+                prev_hash,
+                ts,
+                actor,
+                action,
+                subject_id,
+                purpose,
+                resource,
+                outcome,
+                detail,
+            )
+
             conn.execute(
                 "INSERT INTO access_log "
-                "(ts, actor, action, subject_id, purpose, resource, outcome, detail) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "(ts, actor, action, subject_id, purpose, resource, outcome, detail, "
+                " prev_hash, entry_hash) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
-                    datetime.now(UTC).isoformat(),
+                    ts,
                     actor,
                     action,
                     subject_id,
@@ -121,6 +228,8 @@ def record_access(
                     resource,
                     outcome,
                     detail,
+                    prev_hash,
+                    entry_hash,
                 ),
             )
     except Exception:

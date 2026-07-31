@@ -2,6 +2,45 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 4 (complete) — security baseline
+
+- **Blocker B1 closed.** Every route requires authentication, enforced by
+  default-deny middleware (`src/security/`), not per-route decorators. B1 exists
+  because `POST /api/memory/clear` wiped all data unauthenticated — not because
+  anyone decided it should be open, but because nothing forced the question.
+  A new route is protected the moment it exists; making it public is a visible
+  edit to `policy.py`.
+- **Signed API keys, not OIDC**, with a written rationale and migration path.
+  Roles `viewer` / `manager` / `admin`; only hashes are stored; comparison is
+  constant-time and does not return early. Webhook ingest authenticates by HMAC
+  over the raw body, so a captured request cannot be replayed with new contents.
+- **No "auth off" switch.** With no `API_KEYS` set the server generates one
+  ephemeral admin key and prints it loudly at startup. A bypass flag for local
+  convenience is exactly the flag that ends up set in a deployment.
+- **Rate limiting** per identity *and* per IP, with a tighter budget on
+  LLM-triggering routes — an unauthenticated flood against `/api/run` would
+  previously have burned the project's API quota and its owner's money. Sliding
+  window, so a caller cannot send two full budgets across a boundary.
+- **Body size cap** checked before the body is read; **idempotency keys** on
+  webhook ingest, because a sender that times out and retries would otherwise
+  silently double one person's metrics.
+- **Security headers + CSP** on every response, including error responses.
+- **Audit log is now hash-chained** with `verify_chain()`. The append-only
+  triggers only protect the log from code using this module; anyone with the
+  file can rewrite it. The chain makes that detectable, which is what
+  "tamper-evident" actually means.
+- **`gitleaks` in CI** with full history. B8 was logged as "secrets in-repo";
+  the audit found `.env` gitignored with zero commits in history, so the real
+  gap was the absence of scanning.
+- Security suite derives the mutating-route list from the live app, so a route
+  added later is covered without anyone remembering to add it.
+- Found by the new tests: `IdempotencyStore` evicted before inserting, so it
+  could sit one entry over its cap. "Bounded" that is off by one is not bounded.
+- **Known consequence**: the bundled `static/index.html` does not send a key and
+  will now receive 401s until the Phase 6 rebuild. Recorded in
+  `docs/LIMITATIONS.md` — leaving a bypass so the old UI kept working would have
+  re-opened B1.
+
 ## Phase 3 (complete) — Intelligence II: agent evolution
 
 - **Manager feedback capture** (`src/domain/feedback.py`, `src/evolution/feedback_store.py`,

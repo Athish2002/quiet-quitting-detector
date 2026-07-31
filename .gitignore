@@ -223,3 +223,9 @@ data/audit.db
 data/audit.db-journal
 data/identity_map.json
 data/identity_map.json.tmp
+
+# Phase 3/4 runtime state: manager feedback, model registry, idempotency.
+# Feedback is data about real people's briefings and must never be committed.
+data/feedback.db
+data/feedback.db-journal
+data/models/
