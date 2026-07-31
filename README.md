@@ -8,6 +8,43 @@ Built with **Google's Agent Development Kit (ADK)**, **FastAPI**, and **scikit-l
 
 ---
 
+## What this is, and what it is deliberately not
+
+This tool exists to surface **where support is needed**. It is not a performance
+system, and it is built so that using it as one is hard rather than merely
+discouraged.
+
+**It must never be used to inform:** termination, dismissal, redundancy selection,
+performance improvement plans, disciplinary process, compensation or bonus
+decisions, promotion denial, or stack-ranking. It must never be shown to an
+employee as a score about them.
+
+Those are not guidelines in a document — the API **refuses them in code**
+(`src/governance/purpose.py`). A request naming one of those purposes is rejected
+and the attempt is written to the audit log.
+
+Supporting that, by design:
+
+| Control | What it does |
+|---|---|
+| Default-deny allowlist (`config/data_allowlist.json`) | Only enumerated fields can ever be persisted. Everything else is dropped at ingest. |
+| Prohibited by category | No health or sickness data, no message content or sentiment, no keystroke/screen telemetry, no location, no protected characteristics, no salary. Matched by pattern, so a new source cannot sneak one in. |
+| No performance metrics in scoring | Task-quality/accuracy is excluded outright. Mixing performance into a wellbeing tool is the fastest route to it becoming punitive. |
+| Personal baselines only | Every signal is a deviation from **that individual's own** history. Nobody is ever ranked against a colleague. |
+| Wellbeing-only signals | After-hours activity can prompt a workload check-in but is structurally barred from *raising* anyone's risk. |
+| Benign explanations required | Every signal ships with the innocent explanations that fit it equally well, shown to the manager alongside the flag. |
+| Audit log | Append-only, DB-enforced. Every access records who, what, and the stated reason. |
+
+**Licensed MIT.** That permits a fork to strip these controls, and no license
+realistically prevents that. If you are adapting this: the guardrails are the
+point of the project, not overhead around it. Removing them leaves you with
+workplace surveillance.
+
+See `docs/NOTICE.md` (the plain-language employee notice, generated from the
+allowlist so it cannot drift), `docs/legal-go-no-go.md`, and `docs/LIMITATIONS.md`.
+
+---
+
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Multi-Agent Architecture](#multi-agent-architecture)
