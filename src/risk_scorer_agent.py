@@ -24,6 +24,28 @@ from google.adk.models import Gemini
 
 from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
+from src.domain.models import HistoryRecord
+from src.domain.risk import (
+    AT_RISK_THRESHOLD,
+    HEALTHY_DECAY_WEEKS,
+    SILENT_EXIT_THRESHOLD,
+    WATCH_THRESHOLD,
+    apply_recurrence_bonus,
+    next_healthy_streak,
+)
+from src.domain.risk import classify as _classify
+from src.domain.risk import compute_recurrence_bonus as _domain_recurrence
+
+# Re-exported for backwards compatibility: these bands lived here before the
+# domain extraction and external callers may still import them from this module.
+__all__ = [
+    "AT_RISK_THRESHOLD",
+    "HEALTHY_DECAY_WEEKS",
+    "SILENT_EXIT_THRESHOLD",
+    "WATCH_THRESHOLD",
+    "risk_scorer_agent",
+    "score_risk",
+]
 
 load_dotenv(override=True)
 
@@ -62,11 +84,10 @@ risk_scorer_agent = Agent(
 )
 
 # ---------------------------------------------------------------------------
-# Score boundaries
+# Score bands, recurrence decay and classification now live in
+# src/domain/risk.py -- pure and shared. Re-exported here so existing imports
+# and tests keep working unchanged.
 # ---------------------------------------------------------------------------
-WATCH_THRESHOLD = 4  # >= 4 is Watch or above
-AT_RISK_THRESHOLD = 6
-SILENT_EXIT_THRESHOLD = 8
 
 # ---------------------------------------------------------------------------
 # Memory / lookback configuration
@@ -75,9 +96,6 @@ SILENT_EXIT_THRESHOLD = 8
 # Files whose mtime is older than this window are silently ignored.
 MAX_HISTORY_WEEKS = 12
 MAX_HISTORY_SECONDS = MAX_HISTORY_WEEKS * 7 * 24 * 3600
-
-# [Fix 3] Number of consecutive Healthy weeks required to clear the recurrence bonus.
-HEALTHY_DECAY_WEEKS = 4
 
 # Required fields every memory record must contain (integrity check).   [Fix 2]
 REQUIRED_MEMORY_FIELDS = {"score", "classification", "rationale"}
@@ -97,20 +115,6 @@ def _anon_session_id(first_name_lower: str, suffix: str) -> str:
     """
     hash12 = hashlib.sha256(first_name_lower.encode()).hexdigest()[:12]
     return f"session_employee_{hash12}_{suffix}"
-
-
-# ---------------------------------------------------------------------------
-# Helper: classify score
-# ---------------------------------------------------------------------------
-def _classify(score: int) -> str:
-    """Map a numeric score to the classification label."""
-    if score >= SILENT_EXIT_THRESHOLD:
-        return "Silent Exit"
-    if score >= AT_RISK_THRESHOLD:
-        return "At Risk"
-    if score >= WATCH_THRESHOLD:
-        return "Watch"
-    return "Healthy"
 
 
 # ---------------------------------------------------------------------------
@@ -210,45 +214,18 @@ def _load_employee_history(
 # Helper: recurrence bonus with decay                                     [Fix 3]
 # ---------------------------------------------------------------------------
 def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
-    """Determine whether the recurrence bonus applies and the current healthy streak.
+    """Adapter over the pure domain rule. Kept for the existing call sites.
 
-    The bonus (+1) is applied when >= 2 of the loaded history records are
-    Watch-or-above AND the employee has NOT accumulated HEALTHY_DECAY_WEEKS
-    consecutive Healthy weeks that would clear the bonus.
-
-    Returns:
-        (apply_bonus: bool, current_healthy_streak: int)
+    Records that fail validation are skipped rather than crashing the scorer --
+    a corrupt memory file must not stop an evaluation.
     """
-    if not history:
-        return False, 0
-
-    # Walk history from newest to oldest to count the current healthy streak.
-    sorted_history = list(
-        history
-    )  # already sorted chronologically by week number in _load_employee_history
-    current_healthy_streak = 0
-    for record in reversed(sorted_history):
-        classification = record.get("classification", "").strip().upper()
-        if classification == "HEALTHY":
-            stored_streak = record.get("healthy_streak", 0)
-            current_healthy_streak = max(current_healthy_streak + 1, stored_streak)
-        else:
-            break  # streak is broken at the first non-Healthy record from the end
-
-    # If the employee has been Healthy for HEALTHY_DECAY_WEEKS consecutive weeks,
-    # the recurrence bonus is cleared.                                    [Fix 3]
-    if current_healthy_streak >= HEALTHY_DECAY_WEEKS:
-        return False, current_healthy_streak
-
-    # Count how many prior weeks were Watch-or-above.
-    elevated_weeks = sum(
-        1
-        for r in sorted_history
-        if r.get("classification", "").strip().upper()
-        in {"WATCH", "AT RISK", "SILENT EXIT"}
-    )
-    apply_bonus = elevated_weeks >= 2
-    return apply_bonus, current_healthy_streak
+    records: list[HistoryRecord] = []
+    for raw in history:
+        try:
+            records.append(HistoryRecord.model_validate(raw))
+        except Exception:
+            logger.warning("Skipping malformed history record in recurrence check.")
+    return _domain_recurrence(records)
 
 
 def _nearest_neighbor_fallback(
@@ -409,7 +386,7 @@ def score_risk(
     )
 
     # Step 2 ---------------------------------------------------------------
-    apply_recurrence_bonus, current_healthy_streak = _compute_recurrence_bonus(history)
+    should_apply_recurrence, current_healthy_streak = _compute_recurrence_bonus(history)
 
     # Step 3: Build the LLM prompt -- first name only, behavioral signals only.
     prompt = f"Employee First Name: {first_name}\n"  # Rule 1: first name only
@@ -428,7 +405,7 @@ def score_risk(
         ]
         prompt += f"Historical Risk Records ({len(history)} week(s) within {MAX_HISTORY_WEEKS}-week window):\n"
         prompt += json.dumps(history_summary, indent=2) + "\n"
-        if apply_recurrence_bonus:
+        if should_apply_recurrence:
             prompt += (
                 "Note: A recurrence adjustment of +1 will be applied to your score "
                 "post-evaluation because this employee has been Watch or above for "
@@ -462,9 +439,9 @@ def score_risk(
         result = json.loads(clean_text)
 
         # Step 4: Apply recurrence bonus (+1), capped at 10.            [Fix 3]
-        if apply_recurrence_bonus:
+        if should_apply_recurrence:
             original_score = int(result.get("score", 1))
-            adjusted_score = min(original_score + 1, 10)
+            adjusted_score = apply_recurrence_bonus(original_score, apply=True)
             result["score"] = adjusted_score
             result["classification"] = _classify(adjusted_score)
             result["rationale"] = (
@@ -474,8 +451,9 @@ def score_risk(
             )
 
         # Step 5: Determine the new healthy streak for this week.       [Fix 3]
-        is_now_healthy = result.get("classification", "").strip().upper() == "HEALTHY"
-        new_healthy_streak = (current_healthy_streak + 1) if is_now_healthy else 0
+        new_healthy_streak = next_healthy_streak(
+            result.get("classification", ""), current_healthy_streak
+        )
         result["healthy_streak"] = new_healthy_streak  # stored in memory JSON
 
         # Save to memory ----------------------------------------------------

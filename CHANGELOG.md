@@ -2,6 +2,24 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 1 (in progress) — extract the domain
+
+- Add `src/domain/`: pure decision logic with Pydantic v2 models, no I/O, no LLM,
+  no framework imports. `models.py`, `signals.py`, `risk.py`.
+- Move signal detection out of `trend_detector_agent.py` and the score bands,
+  recurrence bonus and healthy-streak decay out of `risk_scorer_agent.py`. Both
+  agents now delegate; their public signatures are unchanged so every existing
+  caller and test is untouched.
+- Add `compute_risk_index()` — a deterministic scorer that did not previously
+  exist, since the LLM produces the score today. Written additively and **not
+  wired in**, so this phase changes no behaviour.
+- Fix a shadowing bug caught by `ty`: the local `apply_recurrence_bonus` bool
+  shadowed the imported function of the same name, which would have raised
+  `TypeError` at runtime.
+
+*Still open in Phase 1: property tests, import-linter contract, domain coverage
+gate, agent Protocols + deterministic fake, and the parity proof.*
+
 ## Phase 0 — Close the governance bypass
 
 - Point `run_pipeline.py` at the shared `preprocess_employee_records` instead of

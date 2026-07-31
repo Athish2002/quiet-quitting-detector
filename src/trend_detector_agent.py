@@ -53,199 +53,57 @@ trend_detector_agent = Agent(
 )
 
 # ---------------------------------------------------------------------------
-# Thresholds used for programmatic signal detection
+# Detection logic now lives in src/domain/signals.py -- pure, framework-free and
+# shared by both entrypoints. This module keeps only the LLM enrichment step,
+# which turns confirmed signals into supportive prose. Re-exported names below
+# preserve the previous import surface for existing callers and tests.
 # ---------------------------------------------------------------------------
-TASK_DROP_PCT_MEDIUM = 0.20  # >= 20% drop from baseline -> medium severity
-TASK_DROP_PCT_HIGH = 0.40  # >= 40% drop from baseline -> high severity
-RESPONSE_TIME_PCT = 0.50  # > 50% increase from baseline -> signal
-# Personal-deviation thresholds. Absolute cut-offs were removed in Phase 0:
-# they compared people to a population norm, which flags part-time schedules,
-# phased returns from leave, and non-US timezones as disengagement.
-AFTER_HOURS_DEVIATION = 2  # logins above the individual's OWN baseline
-HOURS_DEVIATION_PCT = 0.25  # +/- 25% from the individual's OWN baseline
+from src.domain.models import WeekMetrics  # noqa: E402
+from src.domain.signals import (  # noqa: E402
+    AFTER_HOURS_DEVIATION,
+    CONSECUTIVE_WEEKS_REQUIRED,
+    HOURS_DEVIATION_PCT,
+    RESPONSE_TIME_PCT,
+    TASK_DROP_PCT_HIGH,
+    TASK_DROP_PCT_MEDIUM,
+    confirm_signals,
+    find_baseline,
+)
+
+__all__ = [
+    "AFTER_HOURS_DEVIATION",
+    "CONSECUTIVE_WEEKS_REQUIRED",
+    "HOURS_DEVIATION_PCT",
+    "RESPONSE_TIME_PCT",
+    "TASK_DROP_PCT_HIGH",
+    "TASK_DROP_PCT_MEDIUM",
+    "detect_trends",
+    "trend_detector_agent",
+]
 
 
-def _get_baseline(full_timeline: list[dict]) -> dict | None:
-    """Return the week-1 record, or None if it is missing/null.
+def _to_week_models(full_timeline: list[dict]) -> list[WeekMetrics]:
+    """Adapt legacy dict rows to the typed domain model.
 
-    Rule 4: If week 1 data is missing we cannot baseline -- handled by caller.
+    Unknown keys are ignored by the model config, so a prohibited column left in
+    a legacy CSV cannot reach the domain layer even if it survived ingest.
     """
-    for week in full_timeline:
-        if week.get("week") == 1 and not week.get("data_missing"):
-            return week
-    return None
-
-
-def _detect_raw_flags(
-    full_timeline: list[dict], baseline: dict
-) -> dict[int, list[str]]:
-    """Return a mapping of {week_number: [signal_names_active_that_week]}.
-
-    Comparisons are always against the employee's own week-1 baseline, not a
-    global average.  [CONTEXT Rule 3 -- validate data exists before reading]
-    """
-    week_flags: dict[int, list[str]] = {}
-
-    baseline_tasks = baseline.get("completed_tasks")
-    baseline_response = baseline.get("response_time")
-    baseline_after_hours = baseline.get("after_hours_logins")
-    baseline_hours = baseline.get("weekly_hours")
-
-    for week in full_timeline:
-        week_num = week.get("week")
-        if week.get("data_missing") or week_num == 1:
-            # Rule 4: Missing data is a gap, not disengagement -- skip silently
-            week_flags[week_num] = []
+    weeks: list[WeekMetrics] = []
+    for row in full_timeline:
+        week_num = row.get("week")
+        if week_num is None:
             continue
-
-        flags: list[str] = []
-
-        # --- Signal 1: Declining Task Completion ---
-        tasks = week.get("completed_tasks")
-        if tasks is not None and baseline_tasks is not None and baseline_tasks > 0:
-            drop_pct = (baseline_tasks - tasks) / baseline_tasks
-            if drop_pct >= TASK_DROP_PCT_MEDIUM:  # 20 %+ drop vs own baseline
-                flags.append("Declining Task Completion")
-
-        # --- Signal 2: Response Time Spike ---
-        resp = week.get("response_time")
-        if resp is not None and baseline_response is not None and baseline_response > 0:
-            increase_pct = (resp - baseline_response) / baseline_response
-            if increase_pct > RESPONSE_TIME_PCT:  # > 50 % above own baseline
-                flags.append("Response Time Spike")
-
-        # --- Signal 3: Sustained Workload Elevation (wellbeing only) ---
-        # after_hours_logins is `wellbeing_only` in the allowlist: it may
-        # prompt a workload check-in but must never raise retention risk.
-        # An absolute threshold here penalised non-US timezones and caregivers
-        # working after a school run, so it is now a personal deviation.
-        after_hours = week.get("after_hours_logins")
-        if (
-            after_hours is not None
-            and baseline_after_hours is not None
-            and after_hours > baseline_after_hours + AFTER_HOURS_DEVIATION
-        ):
-            flags.append("Sustained Workload Elevation")
-
-        # --- Signal 4: Working-Hours Deviation ---
-        # Expressed against the individual's own baseline rather than the
-        # former absolute <30 / >50 bounds, which flagged approved part-time
-        # and phased-return-from-leave schedules as disengagement.
-        hours = week.get("weekly_hours")
-        if hours is not None and baseline_hours:
-            delta_ratio = (hours - baseline_hours) / baseline_hours
-            if delta_ratio <= -HOURS_DEVIATION_PCT:
-                flags.append("Reduced Working Hours")
-            elif delta_ratio >= HOURS_DEVIATION_PCT:
-                flags.append("Sustained Workload Elevation")
-
-        # Signals removed in Phase 0 -- prohibited by config/data_allowlist.json,
-        # not merely unused: "Increasing Sick Days" (health data, GDPR Art. 9 /
-        # ADA), "Quality Degradation" (performance metric), and "Withdrawn
-        # Communication" (emotion inference, EU AI Act Art. 5).
-
-        week_flags[week_num] = flags
-
-    return week_flags
-
-
-def _require_consecutive(
-    week_flags: dict[int, list[str]], all_weeks: list[int]
-) -> dict[str, list[int]]:
-    """Keep only signals that appear in 2 or more CONSECUTIVE weeks.
-
-    A single bad week is not a pattern.
-    Returns {signal_name: [week_numbers_where_active]}.
-    """
-    # Collect every unique signal name observed
-    all_signal_names: set[str] = set()
-    for flags in week_flags.values():
-        all_signal_names.update(flags)
-
-    confirmed: dict[str, list[int]] = {}
-
-    for signal in all_signal_names:
-        # Build the ordered list of weeks where this signal fired
-        active_weeks = sorted(w for w, flags in week_flags.items() if signal in flags)
-
-        # Find consecutive runs of length >= 2
-        confirmed_weeks: list[int] = []
-        i = 0
-        while i < len(active_weeks):
-            # Start a run from active_weeks[i]
-            run = [active_weeks[i]]
-            j = i + 1
-            while j < len(active_weeks) and active_weeks[j] == active_weeks[j - 1] + 1:
-                run.append(active_weeks[j])
-                j += 1
-            if len(run) >= 2:  # Only a pattern if 2+ consecutive weeks
-                confirmed_weeks.extend(run)
-            i = j
-
-        if confirmed_weeks:
-            confirmed[signal] = sorted(set(confirmed_weeks))
-
-    return confirmed
-
-
-def _assign_severity(
-    signal_name: str,
-    weeks_detected: list[int],
-    full_timeline: list[dict],
-    baseline: dict,
-) -> str:
-    """Assign a severity level based on the magnitude of the worst week observed."""
-    if signal_name == "Declining Task Completion":
-        baseline_tasks = baseline.get("completed_tasks") or 0
-        worst_drop = 0.0
-        for week in full_timeline:
-            if week.get("week") in weeks_detected and not week.get("data_missing"):
-                tasks = week.get("completed_tasks")
-                if tasks is not None and baseline_tasks > 0:
-                    drop = (baseline_tasks - tasks) / baseline_tasks
-                    worst_drop = max(worst_drop, drop)
-        if worst_drop >= TASK_DROP_PCT_HIGH:
-            return "high"
-        elif worst_drop >= TASK_DROP_PCT_MEDIUM:
-            return "medium"
-        return "low"
-
-    if signal_name == "Response Time Spike":
-        baseline_resp = baseline.get("response_time") or 0.0
-        worst_increase = 0.0
-        for week in full_timeline:
-            if week.get("week") in weeks_detected and not week.get("data_missing"):
-                resp = week.get("response_time")
-                if resp is not None and baseline_resp > 0:
-                    inc = (resp - baseline_resp) / baseline_resp
-                    worst_increase = max(worst_increase, inc)
-        if worst_increase >= 1.0:  # 100 %+ increase
-            return "high"
-        elif worst_increase >= 0.5:  # 50-99 %
-            return "medium"
-        return "low"
-
-    baseline_hours = baseline.get("weekly_hours") or 0
-
-    if signal_name == "Reduced Working Hours":
-        worst_hours = min(
-            (w.get("weekly_hours") or baseline_hours)
-            for w in full_timeline
-            if w.get("week") in weeks_detected
+        weeks.append(
+            WeekMetrics(
+                week=week_num,
+                completed_tasks=row.get("completed_tasks"),
+                response_time=row.get("response_time"),
+                after_hours_logins=row.get("after_hours_logins"),
+                weekly_hours=row.get("weekly_hours"),
+                data_missing=bool(row.get("data_missing", False)),
+            )
         )
-        if not baseline_hours:
-            return "medium"
-        drop = (baseline_hours - worst_hours) / baseline_hours
-        return "high" if drop >= 0.50 else "medium" if drop >= 0.25 else "low"
-
-    if signal_name == "Sustained Workload Elevation":
-        # Capped at "medium" by design. This is a wellbeing prompt -- a nudge to
-        # check on workload -- and must not escalate into a high-severity
-        # retention flag, which is how "works long hours" becomes a mark against
-        # someone rather than a reason to help them.
-        return "medium"
-
-    return "medium"  # fallback
+    return weeks
 
 
 def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
@@ -261,14 +119,12 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
     if not data:
         return []
 
-    # Sort chronologically
-    full_timeline = sorted(data, key=lambda w: w.get("week", 0))
-    all_weeks = [w["week"] for w in full_timeline]
+    # Detection is delegated to src/domain/signals.py -- pure, shared, and the
+    # only implementation, so the CLI and API cannot drift apart (blocker B6).
+    weeks = _to_week_models(sorted(data, key=lambda w: w.get("week", 0)))
 
-    # Establish the week-1 baseline for this specific employee
-    baseline = _get_baseline(full_timeline)
-    if baseline is None:
-        # Rule 4: Week-1 data is missing -- note gap, do not assume disengagement
+    if find_baseline(weeks) is None:
+        # Rule 3: week-1 data missing -- report the gap, never infer disengagement.
         return [
             {
                 "signal_name": "Baseline Week Missing",
@@ -277,28 +133,18 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
             }
         ]
 
-    # Detect which signals fired each week
-    week_flags = _detect_raw_flags(full_timeline, baseline)
-
-    # Keep only signals active for 2+ consecutive weeks -- single bad week is not a pattern
-    confirmed = _require_consecutive(week_flags, all_weeks)
-
-    if not confirmed:
+    confirmed_signals = confirm_signals(weeks)
+    if not confirmed_signals:
         return []  # No persistent patterns detected
 
-    # Build structured output list
-    raw_signals = []
-    for signal_name, weeks_detected in confirmed.items():
-        severity = _assign_severity(
-            signal_name, weeks_detected, full_timeline, baseline
-        )
-        raw_signals.append(
-            {
-                "signal_name": signal_name,
-                "weeks_detected": weeks_detected,
-                "severity": severity,
-            }
-        )
+    raw_signals = [
+        {
+            "signal_name": sig.signal_name,
+            "weeks_detected": list(sig.weeks_detected),
+            "severity": sig.severity.value,
+        }
+        for sig in confirmed_signals
+    ]
 
     # Enrich descriptions via the LLM agent
     prompt = (
