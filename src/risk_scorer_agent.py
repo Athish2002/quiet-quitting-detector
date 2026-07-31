@@ -24,7 +24,8 @@ from google.adk.models import Gemini
 
 from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import run_agent_sync
-from src.domain.models import HistoryRecord
+from src.domain.models import HistoryRecord, Severity, Signal
+from src.domain.protocols import RiskScorer
 from src.domain.risk import (
     AT_RISK_THRESHOLD,
     HEALTHY_DECAY_WEEKS,
@@ -51,6 +52,15 @@ load_dotenv(override=True)
 
 # Module-level logger -- never includes first names in messages.
 logger = logging.getLogger(__name__)
+
+#: Test/parity seam. When set, scoring goes through this object instead of the
+#: LLM. Left None in every production path -- see src/domain/protocols.py.
+DEFAULT_SCORER: RiskScorer | None = None
+
+#: Pseudo-signal the orchestrator appends when a week's data is absent. It must
+#: never contribute to risk (CONTEXT.md rule 3: a gap is a gap, not evidence),
+#: so it is carried as wellbeing-only and the risk index ignores it.
+MISSING_DATA_SIGNAL = "MISSING_DATA_GAP"
 
 SYSTEM_INSTRUCTION = """
 You are a Quiet-Quitting Risk Scorer Agent.
@@ -219,13 +229,48 @@ def _compute_recurrence_bonus(history: list[dict]) -> tuple[bool, int]:
     Records that fail validation are skipped rather than crashing the scorer --
     a corrupt memory file must not stop an evaluation.
     """
+    return _domain_recurrence(_to_history_models(history))
+
+
+def _to_signal_models(signals: list[dict]) -> list[Signal]:
+    """Adapt the legacy signal dicts to typed models for a Protocol scorer.
+
+    Two shapes exist on the wire: detector output keyed `signal_name`, and the
+    orchestrator's gap marker keyed `signal`. Unparseable entries are dropped
+    rather than guessed at -- inventing a signal is the one failure mode this
+    system must not have.
+    """
+    models: list[Signal] = []
+    for raw in signals:
+        name = raw.get("signal_name") or raw.get("signal")
+        if not name:
+            continue
+        try:
+            severity = Severity(str(raw.get("severity", "medium")).lower())
+        except ValueError:
+            severity = Severity.MEDIUM
+        weeks = raw.get("weeks_detected") or []
+        models.append(
+            Signal(
+                signal_name=str(name),
+                weeks_detected=tuple(int(w) for w in weeks if isinstance(w, int)),
+                severity=severity,
+                wellbeing_only=str(name) == MISSING_DATA_SIGNAL,
+                details=str(raw.get("details", "")),
+            )
+        )
+    return models
+
+
+def _to_history_models(history: list[dict]) -> list[HistoryRecord]:
+    """Same tolerant adaptation for stored weeks. Malformed records are skipped."""
     records: list[HistoryRecord] = []
     for raw in history:
         try:
             records.append(HistoryRecord.model_validate(raw))
         except Exception:
-            logger.warning("Skipping malformed history record in recurrence check.")
-    return _domain_recurrence(records)
+            logger.warning("Skipping malformed history record.")
+    return records
 
 
 def _nearest_neighbor_fallback(
@@ -363,6 +408,7 @@ def score_risk(
     signals: list[dict],
     week_number: int,
     memory_dir: str | None = None,
+    scorer: RiskScorer | None = None,
 ) -> dict:
     """Calculates risk score and classification, loading history and saving current to data\\memory\\.
 
@@ -418,25 +464,45 @@ def score_risk(
 
     prompt += "\nEvaluate the risk of disengagement and return the JSON object."
 
+    active_scorer = scorer or DEFAULT_SCORER
+
     try:
-        response_text = run_agent_sync(
-            risk_scorer_agent,
-            user_id="orchestrator",
-            # [Fix 1] Anonymised session ID -- first name is hashed, never plain-text.
-            session_id=_anon_session_id(first_name_lower, "risk"),
-            prompt=prompt,
-        )
+        if active_scorer is not None:
+            # Deterministic path. Steps 4 and 5 below still run unchanged, so the
+            # recurrence and decay rules have exactly one implementation whether
+            # the number came from a model or from domain.risk.
+            assessment = active_scorer.score(
+                first_name,
+                _to_signal_models(signals),
+                week_number,
+                _to_history_models(history),
+            )
+            result = {
+                "score": assessment.score,
+                "classification": assessment.classification,
+                "rationale": assessment.rationale,
+            }
+            if assessment.insufficient_data:
+                result["insufficient_data"] = True
+        else:
+            response_text = run_agent_sync(
+                risk_scorer_agent,
+                user_id="orchestrator",
+                # [Fix 1] Anonymised session ID -- first name is hashed, never plain-text.
+                session_id=_anon_session_id(first_name_lower, "risk"),
+                prompt=prompt,
+            )
 
-        clean_text = response_text.strip()
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        if clean_text.startswith("```"):
-            clean_text = clean_text[3:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-        clean_text = clean_text.strip()
+            clean_text = response_text.strip()
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            if clean_text.startswith("```"):
+                clean_text = clean_text[3:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
+            clean_text = clean_text.strip()
 
-        result = json.loads(clean_text)
+            result = json.loads(clean_text)
 
         # Step 4: Apply recurrence bonus (+1), capped at 10.            [Fix 3]
         if should_apply_recurrence:
@@ -445,14 +511,14 @@ def score_risk(
             result["score"] = adjusted_score
             result["classification"] = _classify(adjusted_score)
             result["rationale"] = (
-                result.get("rationale", "")
+                str(result.get("rationale", ""))
                 + f" [Recurrence adjustment applied: score increased from "
                 f"{original_score} to {adjusted_score}.]"
             )
 
         # Step 5: Determine the new healthy streak for this week.       [Fix 3]
         new_healthy_streak = next_healthy_streak(
-            result.get("classification", ""), current_healthy_streak
+            str(result.get("classification", "")), current_healthy_streak
         )
         result["healthy_streak"] = new_healthy_streak  # stored in memory JSON
 

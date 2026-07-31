@@ -58,7 +58,8 @@ trend_detector_agent = Agent(
 # which turns confirmed signals into supportive prose. Re-exported names below
 # preserve the previous import surface for existing callers and tests.
 # ---------------------------------------------------------------------------
-from src.domain.models import WeekMetrics  # noqa: E402
+from src.domain.models import Signal, WeekMetrics  # noqa: E402
+from src.domain.protocols import TrendEnricher  # noqa: E402
 from src.domain.signals import (  # noqa: E402
     AFTER_HOURS_DEVIATION,
     CONSECUTIVE_WEEKS_REQUIRED,
@@ -80,6 +81,10 @@ __all__ = [
     "detect_trends",
     "trend_detector_agent",
 ]
+
+#: Test/parity seam. When set, enrichment goes through this object instead of
+#: the LLM. Left None in every production path -- see src/domain/protocols.py.
+DEFAULT_ENRICHER: TrendEnricher | None = None
 
 
 def _to_week_models(full_timeline: list[dict]) -> list[WeekMetrics]:
@@ -106,7 +111,23 @@ def _to_week_models(full_timeline: list[dict]) -> list[WeekMetrics]:
     return weeks
 
 
-def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
+def _as_dict(signal: Signal) -> dict:
+    """Legacy wire format. Kept until Phase 5 moves callers onto the models."""
+    row = {
+        "signal_name": signal.signal_name,
+        "weeks_detected": list(signal.weeks_detected),
+        "severity": signal.severity.value,
+    }
+    if signal.details:
+        row["details"] = signal.details
+    return row
+
+
+def detect_trends(
+    employee_name: str,
+    data: list[dict],
+    enricher: TrendEnricher | None = None,
+) -> list[dict]:
     """Analyzes the employee's multi-week data and returns confirmed signals.
 
     The function uses pure Python logic for deterministic signal detection, then
@@ -137,14 +158,17 @@ def detect_trends(employee_name: str, data: list[dict]) -> list[dict]:
     if not confirmed_signals:
         return []  # No persistent patterns detected
 
-    raw_signals = [
-        {
-            "signal_name": sig.signal_name,
-            "weeks_detected": list(sig.weeks_detected),
-            "severity": sig.severity.value,
-        }
-        for sig in confirmed_signals
-    ]
+    raw_signals = [_as_dict(sig) for sig in confirmed_signals]
+
+    # A deterministic enricher short-circuits the LLM entirely. This is the seam
+    # that makes both entrypoints reproducible (6.3) -- no network, no retries,
+    # no variance between two runs on the same fixture.
+    active_enricher = enricher or DEFAULT_ENRICHER
+    if active_enricher is not None:
+        return [
+            _as_dict(sig)
+            for sig in active_enricher.enrich(first_name, confirmed_signals)
+        ]
 
     # Enrich descriptions via the LLM agent
     prompt = (

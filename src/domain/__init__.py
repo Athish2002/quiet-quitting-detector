@@ -9,6 +9,7 @@
 # An import-linter contract enforces the boundary in CI, because a rule this
 # easy to break silently will be broken within a month otherwise.
 
+from src.domain.fakes import FakeRiskScorer, FakeTrendEnricher
 from src.domain.models import (
     Baseline,
     HistoryRecord,
@@ -17,6 +18,7 @@ from src.domain.models import (
     Signal,
     WeekMetrics,
 )
+from src.domain.protocols import RiskScorer, TrendEnricher
 from src.domain.risk import (
     AT_RISK_THRESHOLD,
     HEALTHY_DECAY_WEEKS,
@@ -44,10 +46,14 @@ __all__ = [
     "SILENT_EXIT_THRESHOLD",
     "WATCH_THRESHOLD",
     "Baseline",
+    "FakeRiskScorer",
+    "FakeTrendEnricher",
     "HistoryRecord",
     "RiskAssessment",
+    "RiskScorer",
     "Severity",
     "Signal",
+    "TrendEnricher",
     "WeekMetrics",
     "apply_recurrence_bonus",
     "assign_severity",

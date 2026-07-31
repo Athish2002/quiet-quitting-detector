@@ -102,6 +102,9 @@ class Signal(BaseModel):
     severity: Severity = Severity.MEDIUM
     #: Wellbeing signals may prompt a check-in but must never raise risk.
     wellbeing_only: bool = False
+    #: Supportive prose added by an enricher. Never used in any calculation --
+    #: scoring must not depend on what a language model happened to write.
+    details: str = ""
 
 
 class HistoryRecord(BaseModel):

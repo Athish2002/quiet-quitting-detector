@@ -1,9 +1,18 @@
 name: CI
 
-# Phase 0 scope (PRODUCTION_EVOLUTION_PROMPT.md §9): lint + types + tests.
-# The remaining §8 gates (coverage ratchet, frontend, Docker/trivy, Playwright,
-# gitleaks, import-linter, agent evals) land with the phases that create the
-# things they check -- a gate on a package that does not exist yet is theatre.
+# Phase 0-1 scope (PRODUCTION_EVOLUTION_PROMPT.md §9): lint, types, tests, the
+# §4 dependency contract, and the ≥95% coverage gate on src/domain.
+#
+# The dependency contract and the coverage gate are implemented in-repo on the
+# standard library (tests/unit/test_domain_boundary.py and
+# scripts/domain_coverage.py) rather than with import-linter and pytest-cov,
+# because the development environment has no package-index access and a gate
+# that cannot be installed is a gate that never runs. Both are drop-in
+# replaceable if that changes.
+#
+# The remaining §8 gates (frontend, Docker/trivy, Playwright, gitleaks, agent
+# evals) land with the phases that create the things they check -- a gate on a
+# package that does not exist yet is theatre.
 
 on:
   push:
@@ -52,3 +61,7 @@ jobs:
         # Integration tests are excluded deliberately: they require a live LLM
         # provider and GCP credentials. §6.3 -- "CI must never call a real LLM".
         run: uv run pytest -m "not integration" -q
+
+      - name: Domain coverage gate (>=95%)
+        # §8.3. Ratchet the --min upward, never down.
+        run: uv run python scripts/domain_coverage.py --min 95

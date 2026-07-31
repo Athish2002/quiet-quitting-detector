@@ -59,13 +59,27 @@ def healthy_streak_from(history: list[HistoryRecord]) -> int:
     """Count consecutive Healthy weeks ending at the most recent record.
 
     `history` must be in chronological order.
+
+    The stored `healthy_streak` on the LAST record is consulted once, as a floor:
+    the lookback window (MAX_HISTORY_WEEKS) can truncate healthy weeks that really
+    happened, and a recovery should not be forgotten just because it aged out.
+
+    It is deliberately not consulted per-record. Doing so double-counted -- each
+    older record's own counter was added on top of the run already walked, so two
+    genuine healthy weeks reported three, and the bonus decayed after three weeks
+    instead of the four HEALTHY_DECAY_WEEKS specifies. A decay rule that does not
+    match its own documentation cannot be explained to the person it was applied
+    to, which is the standard this system has to meet.
     """
     streak = 0
     for record in reversed(history):
-        if record.is_healthy:
-            streak = max(streak + 1, record.healthy_streak)
-        else:
+        if not record.is_healthy:
             break
+        streak += 1
+
+    if streak and history:
+        streak = max(streak, history[-1].healthy_streak)
+
     return streak
 
 

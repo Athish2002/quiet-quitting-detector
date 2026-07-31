@@ -2,7 +2,38 @@
 
 Notable changes per unit of work. Newest first.
 
-## Phase 1 (in progress) — extract the domain
+## Phase 1 (complete) — extract the domain
+
+- Add agent `Protocol`s (`src/domain/protocols.py`) and deterministic fakes
+  (`src/domain/fakes.py`). `detect_trends()` and `score_risk()` gained optional
+  injection points; every production path still defaults to the LLM.
+- Add the parity proof (`tests/unit/test_pipeline_parity.py`): the CLI and the
+  API path are run over the same fixture with the fakes injected and their
+  stored evaluations compared week by week. Blocker B6 now fails a test.
+- Add property tests (`tests/unit/test_domain_properties.py`): bounds,
+  monotonicity, idempotence, decay, the 2+-consecutive-week rule, and the
+  fairness property that detection is invariant to an employee's absolute level.
+- Add the §4 dependency contract (`tests/unit/test_domain_boundary.py`) and the
+  §8.3 coverage gate (`scripts/domain_coverage.py`), both wired into CI.
+  `src/domain` is at **100%** line coverage against a 95% gate.
+- **Fix: `healthy_streak_from()` double-counted.** It added each history
+  record's own stored `healthy_streak` on top of the run it had already walked,
+  so two genuine healthy weeks reported three and the recurrence bonus decayed
+  after 3 weeks instead of the documented `HEALTHY_DECAY_WEEKS = 4`. Found by
+  the decay property test. **This changes scores**: recovering employees now
+  carry the +1 recurrence adjustment for one week longer, which is what the
+  documented rule always said.
+- **Fix: `src/__init__.py` eagerly imported the whole agent stack.** A plain
+  `from .agent import app` meant importing the deliberately pure `src.domain`
+  first pulled in `google.adk`, `google.genai`, `fastapi`, `starlette` and
+  `dotenv`. Now exported lazily via PEP 562; the boundary test fails if it
+  regresses.
+- No new dependencies. `hypothesis`, `pytest-cov` and `import-linter` are the
+  reference tools for the three gates above but cannot be installed here (no
+  package-index access), so each is implemented on the standard library —
+  seeded generators, `ast`, and `trace` respectively.
+
+## Phase 1 (earlier work)
 
 - Add `src/domain/`: pure decision logic with Pydantic v2 models, no I/O, no LLM,
   no framework imports. `models.py`, `signals.py`, `risk.py`.
@@ -17,8 +48,6 @@ Notable changes per unit of work. Newest first.
   shadowed the imported function of the same name, which would have raised
   `TypeError` at runtime.
 
-*Still open in Phase 1: property tests, import-linter contract, domain coverage
-gate, agent Protocols + deterministic fake, and the parity proof.*
 
 ## Phase 0 — Close the governance bypass
 
