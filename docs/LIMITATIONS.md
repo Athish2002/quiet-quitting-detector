@@ -35,28 +35,14 @@ synthetic-data work in a later phase.
 
 ## Known gaps (not yet enforced)
 
-### `run_pipeline.py` bypasses the governance layer — **compliance-relevant**
-The CLI entrypoint has its own inline CSV parsing (lines ~120–148). It does **not**
-call `preprocess_employee_records`, `normalize_row_to_canonical`, or
-`filter_record`, so on that path:
+### ~~`run_pipeline.py` bypassed the governance layer~~ — FIXED
+The CLI now calls the same `preprocess_employee_records` the API uses, so the
+allowlist, identity resolution and missing-value semantics apply to both
+entrypoints. `tests/unit/test_entrypoint_parity.py` fails if the duplication
+returns. Prohibited columns were also removed from `data/weekly/*.csv`, the mock
+generator, the simulator input model, the webhook model, and the LLM extractor
+prompt (which previously *instructed* Gemini to extract sickness data).
 
-- `sick_days` (health data) is still read into memory — contrary to `CONTEXT.md`
-  rule 6 and `config/data_allowlist.json`
-- identity is still keyed on first name, so distinct people merge and one person
-  splits across spelling variants
-- a missing metric still defaults to `0`, fabricating a disengagement signal
-
-The API path (`app.py`) enforces all three correctly. This is blocker **B6**
-(duplicated logic) manifesting as a governance hole. **It is fixed by Phase 1**,
-whose exit criterion is that both entrypoints call the same `domain/` package and
-produce identical output. Until then, treat `run_pipeline.py` output as
-non-compliant and do not run it against real data.
-
-### Prohibited columns still present in stored CSVs
-`data/weekly/*.csv` still carry `sick_days`, `task_accuracy`, and `sentiment`
-columns, and `app.py`'s mock generator still writes them. The API read path drops
-them at ingest, so they do not reach scoring — but they are still persisted.
-Removal is bundled with the Phase 1 domain extraction.
 
 ### Pseudonymization exists but is not the default
 `identity.py` produces salted surrogate IDs, but `preprocess_employee_records`

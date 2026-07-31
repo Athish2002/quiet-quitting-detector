@@ -21,18 +21,29 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from src.app_utils.names import first_name_of
 from src.data_layer.ingestion import parse_week_number
+from src.data_layer.preprocessing import preprocess_employee_records
 
 load_dotenv(override=True)
 if "GEMINI_API_KEY" in os.environ:
     os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
 
-# ---------------------------------------------------------------------------
-# Force UTF-8 stdout so Unicode characters don't crash on Windows cp1252
-# ---------------------------------------------------------------------------
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+def _force_utf8_stdio() -> None:
+    """Force UTF-8 stdout so Unicode doesn't crash on Windows cp1252.
+
+    Called from __main__ only. Doing this at import time replaced the streams
+    for anything that merely imported this module -- which broke pytest's
+    output capture, and is a side effect no import should have.
+    """
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name)
+        buffer = getattr(stream, "buffer", None)
+        if buffer is not None:
+            setattr(
+                sys, name, io.TextIOWrapper(buffer, encoding="utf-8", errors="replace")
+            )
+
 
 # ---------------------------------------------------------------------------
 # Silence chatty library loggers -- keep only our own INFO+ output.
@@ -86,68 +97,32 @@ def _load_all_weeks(weekly_folder: str = "data/weekly") -> tuple[dict, int]:
         print("[ERROR] No CSV files found in data/weekly/")
         sys.exit(1)
 
-    employee_records: dict[str, list[dict]] = {}
+    # Delegates to the SAME preprocessing the API path uses. This entrypoint
+    # previously carried its own inline copy of the parsing, which meant every
+    # governance control -- the default-deny allowlist, identity resolution and
+    # missing-value semantics -- applied only to `app.py`. Concretely, the
+    # duplicate still read `sick_days` (health data, prohibited by
+    # config/data_allowlist.json and CONTEXT.md rule 6), still keyed records on
+    # first name (merging distinct people and splitting one person across
+    # spelling variants), and still defaulted an absent metric to 0, which is
+    # indistinguishable from total disengagement.
+    #
+    # One shared path is the only way those controls hold: a second copy is a
+    # second place for them to silently not apply.
+    raw_rows: list[dict] = []
     max_week = 0
 
     for file_path in csv_files:
-        filename = os.path.basename(file_path)
-        week_num = parse_week_number(filename)
+        week_num = parse_week_number(os.path.basename(file_path))
         max_week = max(max_week, week_num)
-
         with open(file_path, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                raw_name = (
-                    row.get("employee_name")
-                    or row.get("name")
-                    or row.get("first_name")
-                    or "Unknown"
-                )
-                first_name = first_name_of(raw_name)
+            for row in csv.DictReader(f):
+                row["__week_number__"] = week_num
+                row["__source_file__"] = os.path.basename(file_path)
+                raw_rows.append(row)
 
-                # Safely parse metrics directly
-                completed_tasks = 0
-                try:
-                    val = row.get("tasks_completed") or row.get("completed_tasks")
-                    if val:
-                        completed_tasks = int(val)
-                except ValueError:
-                    pass
-
-                response_time = 0.0
-                try:
-                    val = row.get("avg_response_time_hours") or row.get("response_time")
-                    if val:
-                        response_time = float(val)
-                except ValueError:
-                    pass
-
-                after_hours_logins = 0
-                try:
-                    val = row.get("after_hours_logins")
-                    if val:
-                        after_hours_logins = int(val)
-                except ValueError:
-                    pass
-
-                sick_days = 0
-                try:
-                    val = row.get("sick_days")
-                    if val:
-                        sick_days = int(val)
-                except ValueError:
-                    pass
-
-                metrics = {
-                    "week": week_num,
-                    "completed_tasks": completed_tasks,
-                    "response_time": response_time,
-                    "after_hours_logins": after_hours_logins,
-                    "sick_days": sick_days,
-                }
-                employee_records.setdefault(first_name, []).append(metrics)
-
-    return employee_records, max_week
+    employee_records, detected_max = preprocess_employee_records(raw_rows)
+    return employee_records, max(max_week, detected_max)
 
 
 # ---------------------------------------------------------------------------
@@ -199,7 +174,7 @@ def run() -> None:
                         "completed_tasks": None,
                         "response_time": None,
                         "after_hours_logins": None,
-                        "sick_days": None,
+                        "weekly_hours": None,
                         "data_missing": True,
                     }
                 )
@@ -210,11 +185,17 @@ def run() -> None:
             if rec.get("data_missing"):
                 print(f"    Week {rec['week']}: [DATA MISSING]")
             else:
+                # Metrics are Optional now: an absent value stays None rather
+                # than being defaulted to 0, so it must render as "n/a" instead
+                # of crashing the format spec -- and, more importantly, instead
+                # of being displayed as a real zero.
+                def _fmt(value, spec: str = "") -> str:
+                    return "n/a" if value is None else format(value, spec)
+
                 print(
-                    f"    Week {rec['week']}: tasks={rec['completed_tasks']:>2}  "
-                    f"response={rec['response_time']:.2f}h  "
-                    f"after_hours={rec['after_hours_logins']}  "
-                    f"sick={rec['sick_days']}"
+                    f"    Week {rec['week']}: tasks={_fmt(rec['completed_tasks'], '>2')}  "
+                    f"response={_fmt(rec['response_time'], '.2f')}h  "
+                    f"after_hours={_fmt(rec['after_hours_logins'])}"
                 )
 
         # ==================================================================
@@ -568,4 +549,5 @@ def run() -> None:
 
 
 if __name__ == "__main__":
+    _force_utf8_stdio()
     run()

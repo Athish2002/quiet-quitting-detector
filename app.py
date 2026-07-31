@@ -39,6 +39,7 @@ from src.app_utils.names import first_name_of
 from src.app_utils.runner_helper import METRICS_FILE, get_model_status, run_agent_sync
 from src.app_utils.settings import get_settings, is_local_only_mode, set_local_only_mode
 from src.data_layer.ingestion import (
+    CANONICAL_HEADER,
     MAX_WEEK,
     MIN_WEEK,
     group_rows_by_week,
@@ -63,19 +64,18 @@ extractor_agent = Agent(
       "tasks_completed": 10,
       "avg_response_time_hours": 1.5,
       "after_hours_logins": 2,
-      "sick_days": 1,
-      "weekly_hours": 40,
-      "task_accuracy": 95,
-      "sentiment": "Neutral"
+      "weekly_hours": 40
     }
 
     Guidelines to widen matching and fuzzy logic mapping:
-    - If a metric is not mentioned in the text, estimate a reasonable default value or leave it blank (e.g. 0 for sick days, 40 for weekly hours, 95 for accuracy, "Neutral" for sentiment).
+    - If a metric is not mentioned in the text, OMIT the key entirely. Never invent a
+      value: a fabricated number is indistinguishable downstream from a real measurement.
+    - NEVER extract sickness, absence, leave reasons, health, mood, sentiment, tone, or
+      any performance/quality rating, even if the text mentions them. These are
+      prohibited by config/data_allowlist.json and must not appear in your output.
     - Map synonyms and behavioral descriptions flexibly:
-      * "holiday", "absences", "leaves", "days off", "vacation" -> map to "sick_days"
       * "worked X hours", "spent X hours", "only for X hours" -> map to "weekly_hours"
       * "worked everyday", "night logins", "late logins", "after-hours" -> map to "after_hours_logins"
-      * "accuracy", "quality", "score", "performance accuracy" -> map to "task_accuracy"
       * "latency", "response", "delay", "avg response", "response speed" -> map to "avg_response_time_hours"
     - Only output valid JSON. Do not write explanations or conversational text.
     """,
@@ -570,18 +570,11 @@ def generate_mock_data():
             csv_path = os.path.join(WEEKLY_DIR, f"week{w}.csv")
             with open(csv_path, "w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(
-                    [
-                        "employee_name",
-                        "tasks_completed",
-                        "avg_response_time_hours",
-                        "after_hours_logins",
-                        "sick_days",
-                        "weekly_hours",
-                        "task_accuracy",
-                        "sentiment",
-                    ]
-                )
+                # Emit exactly the canonical schema. Previously this wrote
+                # sick_days / task_accuracy / sentiment, so the generator kept
+                # re-creating prohibited columns on disk even after they were
+                # removed from the allowlist.
+                writer.writerow(CANONICAL_HEADER)
                 for emp in employees:
                     profile = emp_profiles[emp]
                     if profile == "Silent Exit":
@@ -591,14 +584,7 @@ def generate_mock_data():
                             max(0.5, 0.4 + w * 1.2 + random.uniform(-0.4, 0.6)), 2
                         )
                         after = random.randint(1, max(1, w))
-                        sick = random.randint(0, max(0, w - 2))
                         hours = max(35, 45 - (w * 2) + random.randint(-2, 2))
-                        acc = max(70, 98 - (w * 5) + random.randint(-5, 5))
-                        sent = (
-                            random.choice(["Negative", "Neutral"])
-                            if w > 2
-                            else "Neutral"
-                        )
                     elif profile == "At Risk":
                         # Moderate disengagement trend
                         tasks = max(2, 10 - int(w * 1.5) + random.randint(-2, 1))
@@ -606,49 +592,32 @@ def generate_mock_data():
                             max(0.4, 0.5 + w * 0.6 + random.uniform(-0.2, 0.4)), 2
                         )
                         after = random.randint(0, max(1, w - 1))
-                        sick = random.randint(0, 1)
                         hours = max(38, 48 - (w * 1.5) + random.randint(-3, 3))
-                        acc = max(75, 95 - (w * 3) + random.randint(-3, 3))
-                        sent = random.choice(["Neutral", "Negative"])
                     elif profile == "Watch":
                         # Short decline with week 4 recovery
                         if w == 3:
                             tasks = random.randint(4, 6)
                             resp = round(random.uniform(1.5, 2.5), 2)
                             after = random.randint(1, 2)
-                            sick = random.randint(0, 1)
                             hours = random.randint(50, 60)
-                            acc = random.randint(80, 85)
-                            sent = "Negative"
                         elif w == 4:
                             tasks = random.randint(8, 10)  # Recovery
                             resp = round(random.uniform(0.5, 1.2), 2)
                             after = 0
-                            sick = 0
                             hours = random.randint(40, 42)
-                            acc = random.randint(92, 98)
-                            sent = "Positive"
                         else:
                             tasks = max(5, 10 - w + random.randint(-1, 0))
                             resp = round(0.5 + w * 0.3 + random.uniform(-0.1, 0.2), 2)
                             after = 0
-                            sick = 0
                             hours = random.randint(42, 48)
-                            acc = random.randint(88, 95)
-                            sent = "Neutral"
                     else:
                         # Healthy stable baseline
                         tasks = random.randint(8, 11)
                         resp = round(max(0.2, 0.4 + random.uniform(-0.15, 0.2)), 2)
                         after = random.choice([0, 0, 1])
-                        sick = 0
                         hours = random.randint(38, 42)
-                        acc = random.randint(94, 100)
-                        sent = random.choice(["Positive", "Neutral"])
 
-                    writer.writerow(
-                        [emp, int(tasks), resp, after, sick, int(hours), int(acc), sent]
-                    )
+                    writer.writerow([emp, int(tasks), resp, after, int(hours)])
 
                     # Write mock memory files for weeks 1-3 so history renders in the UI
                     if w < 4:
@@ -671,7 +640,7 @@ def generate_mock_data():
                             rat_val = f"Operational baseline assessment. Stable tasks volume ({int(tasks)} completed) and standard latency."
                         elif sc <= 4:
                             cls_val = "Watch"
-                            rat_val = f"Early indicator check. Elevated response time ({resp}h) or marginal decrease in task accuracy ({int(acc)}%)."
+                            rat_val = f"Early indicator check. Elevated response time ({resp}h) against this employee's own baseline."
                         elif sc <= 7:
                             cls_val = "At Risk"
                             rat_val = f"Disengagement warning. Persistent declines in task performance and low weekly hours ({int(hours)}h)."
@@ -790,12 +759,12 @@ class CustomEvaluatorInput(BaseModel):
     tasks_completed: int = Field(ge=0, le=1000)
     avg_response_time: float = Field(ge=0, le=1000)
     after_hours_logins: int = Field(ge=0, le=100)
-    sick_days: int = Field(ge=0, le=7)
     previous_classification: str = Field(default="Healthy", max_length=50)
     consecutive_weeks_elevated: int = Field(default=0, ge=0, le=1000)
     weekly_hours: int = Field(default=40, ge=0, le=168)
-    task_accuracy: int = Field(default=95, ge=0, le=100)
-    sentiment: str = Field(default="Neutral", max_length=50)
+    # sick_days / task_accuracy / sentiment intentionally absent -- prohibited
+    # by config/data_allowlist.json. Accepting them here would let the
+    # simulator reintroduce health data through the API.
 
 
 @app.post("/api/score/custom")
@@ -852,20 +821,14 @@ def score_custom_employee(data: CustomEvaluatorInput):
             "completed_tasks": 10,
             "response_time": 0.5,
             "after_hours_logins": 0,
-            "sick_days": 0,
             "weekly_hours": 40,
-            "task_accuracy": 95,
-            "sentiment": "Neutral",
         }
         current = {
             "week": data.week_number,
             "completed_tasks": data.tasks_completed,
             "response_time": data.avg_response_time,
             "after_hours_logins": data.after_hours_logins,
-            "sick_days": data.sick_days,
             "weekly_hours": data.weekly_hours,
-            "task_accuracy": data.task_accuracy,
-            "sentiment": data.sentiment,
         }
 
         # Run Trend Detector
@@ -1054,24 +1017,11 @@ def ingest_natural_language(data: NaturalLanguageInput):
         tasks = int(extracted.get("tasks_completed", 0))
         resp = float(extracted.get("avg_response_time_hours", 0.0))
         after = int(extracted.get("after_hours_logins", 0))
-        sick = int(extracted.get("sick_days", 0))
         hours = int(extracted.get("weekly_hours", random.randint(35, 45)))
-        acc = int(extracted.get("task_accuracy", random.randint(85, 100)))
-        sent = (
-            str(
-                extracted.get(
-                    "sentiment", random.choice(["Positive", "Neutral", "Negative"])
-                )
-            )
-            .strip()
-            .capitalize()
-        )
 
         os.makedirs(REALTIME_DIR, exist_ok=True)
         file_path = os.path.join(REALTIME_DIR, f"week{data.week_number}.csv")
-        merge_rows_into_weekly_csv(
-            file_path, [[name, tasks, resp, after, sick, hours, acc, sent]]
-        )
+        merge_rows_into_weekly_csv(file_path, [[name, tasks, resp, after, hours]])
 
         log_event(
             "ingest",
@@ -1086,10 +1036,7 @@ def ingest_natural_language(data: NaturalLanguageInput):
                 "tasks_completed": tasks,
                 "avg_response_time": resp,
                 "after_hours_logins": after,
-                "sick_days": sick,
                 "weekly_hours": hours,
-                "task_accuracy": acc,
-                "sentiment": sent,
             },
         }
     except Exception as e:
@@ -1173,10 +1120,10 @@ class WebhookMetricRecord(BaseModel):
     tasks_completed: int = Field(default=0, ge=0, le=1000)
     avg_response_time_hours: float = Field(default=0.0, ge=0, le=1000)
     after_hours_logins: int = Field(default=0, ge=0, le=100)
-    sick_days: int = Field(default=0, ge=0, le=7)
+    # sick_days / task_accuracy / sentiment intentionally absent -- prohibited
+    # by config/data_allowlist.json (health data, performance metric, emotion
+    # inference). A webhook must not be able to reintroduce them.
     weekly_hours: int = Field(default=40, ge=0, le=168)
-    task_accuracy: int = Field(default=95, ge=0, le=100)
-    sentiment: str = Field(default="Neutral", max_length=50)
 
 
 class WebhookIngestInput(BaseModel):
@@ -1201,10 +1148,7 @@ def ingest_webhook(data: WebhookIngestInput):
                     r.tasks_completed,
                     r.avg_response_time_hours,
                     r.after_hours_logins,
-                    r.sick_days,
                     r.weekly_hours,
-                    r.task_accuracy,
-                    r.sentiment,
                 ]
             )
 

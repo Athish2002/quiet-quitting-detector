@@ -31,22 +31,18 @@ locked/atomic API metrics, multi-provider LLM fallback (Gemini → Groq → Olla
 
 See `docs/LIMITATIONS.md` for the full list. The ones that matter most:
 
-1. **`run_pipeline.py` bypasses governance** — still reads `sick_days` (health
-   data), still keys identity on first name, still defaults missing to `0`. This is
-   B6 (duplicated logic) manifesting as a compliance hole. **Do not run it against
-   real data.** Fixed by Phase 1's exit criterion.
-2. Prohibited columns still written to `data/weekly/*.csv` by the mock generator.
-3. `key_by_surrogate=False` by default — pseudonymization exists but is off.
-4. No authentication on any route (B1) — Phase 4.
-5. Scoring is still single-point threshold logic; `low_confidence` is computed but
+1. `key_by_surrogate=False` by default — pseudonymization exists but is off.
+2. No authentication on any route (B1) — Phase 4.
+3. Scoring is still single-point threshold logic; `low_confidence` is computed but
    not consumed. Phase 2.
 
 ## Decisions made
 
-- **Phase 0 did not fix the `run_pipeline.py` hole.** §9 requires Phase 0 to be
-  "no behaviour change", and the correct fix is Phase 1's domain extraction, which
-  deletes the duplicate rather than patching it. Documented in `LIMITATIONS.md`
-  instead of hidden. *Revisit if real data is introduced sooner than Phase 1.*
+- **The `run_pipeline.py` governance bypass was closed** once real data was
+  confirmed as anticipated. That was the stated trigger: the "defer to Phase 1"
+  reasoning held only while all data was synthetic. Prohibited fields are now gone
+  from both entrypoints, the stored CSVs, the mock generator, the simulator and
+  webhook models, and the LLM extractor prompt.
 - **CI Phase-0 scope is lint/type/test only.** The other §8 gates (coverage ratchet,
   gitleaks, import-linter, Docker/trivy, Playwright, eval gate) attach to phases
   that create what they check.

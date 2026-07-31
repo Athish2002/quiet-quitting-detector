@@ -2,6 +2,21 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 0 — Close the governance bypass
+
+- Point `run_pipeline.py` at the shared `preprocess_employee_records` instead of
+  its own inline CSV parser. The CLI previously bypassed every governance control:
+  it read `sick_days` (health data), keyed identity on first name, and defaulted
+  missing metrics to `0`.
+- Remove prohibited columns from `data/weekly/*.csv` and `data/realtime/*.csv`,
+  the mock generator, the simulator input model, and the webhook input model.
+- Stop the LLM extractor prompt from instructing Gemini to extract sickness,
+  absence, mood and quality ratings; it is now told explicitly never to emit them,
+  and to omit a key rather than invent a value.
+- Move `sys.stdout` UTF-8 rewrapping in `run_pipeline.py` behind `__main__` — an
+  import-time side effect that replaced the streams for anything importing it.
+- Add `tests/unit/test_entrypoint_parity.py` so the duplication cannot return.
+
 ## Phase 0 — Stabilise
 
 - Add CI (`.github/workflows/ci.yml`): ruff check, ruff format, `ty`, unit tests on
