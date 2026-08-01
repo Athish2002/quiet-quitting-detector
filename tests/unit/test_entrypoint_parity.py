@@ -133,10 +133,13 @@ def test_mock_generator_emits_only_canonical_columns():
     """The generator previously re-created prohibited columns on every run."""
     import inspect
 
-    import app
+    from src.api.routers import simulator
     from src.data_layer.ingestion import CANONICAL_HEADER
 
-    source = inspect.getsource(app.generate_mock_data)
+    # Moved out of app.py by the Phase 5 restructure. Inspecting the whole
+    # module rather than one function: the generator is several helpers now, and
+    # a prohibited column could be reintroduced in any of them.
+    source = inspect.getsource(simulator)
     for banned in PROHIBITED:
         assert f'"{banned}"' not in source, f"mock generator still writes {banned}"
     assert "CANONICAL_HEADER" in source

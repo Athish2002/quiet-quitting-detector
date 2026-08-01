@@ -68,6 +68,22 @@ MANAGER_PATTERNS = (
 HMAC_PATHS = frozenset({"/api/ingest/webhook"})
 
 
+#: `/api/v1/...` and `/api/...` address the same resource, so they must resolve
+#: to the same permission. Without this, adding the versioned mount silently
+#: downgraded `GET /api/v1/models` from ADMIN to VIEWER -- the patterns below
+#: simply stopped matching, and a route fell through to the safe-method default.
+#:
+#: This is exactly the B1 failure shape in miniature: nothing decided the route
+#: should be less protected, a path just stopped matching a list. Normalising
+#: here means a future `/api/v2` inherits every rule rather than starting open.
+_VERSION_PREFIX = re.compile(r"^/api/v\d+(?=/)")
+
+
+def canonical_path(path: str) -> str:
+    """Strip an API version segment so policy matches one canonical form."""
+    return _VERSION_PREFIX.sub("/api", path)
+
+
 def is_public(path: str) -> bool:
     if path in PUBLIC_PATHS:
         return True
@@ -77,7 +93,7 @@ def is_public(path: str) -> bool:
 
 
 def uses_hmac(path: str) -> bool:
-    return path in HMAC_PATHS
+    return canonical_path(path) in HMAC_PATHS
 
 
 def required_role(method: str, path: str) -> Role:
@@ -88,15 +104,17 @@ def required_role(method: str, path: str) -> Role:
     and how they were evaluated is operational detail, not something every
     viewer needs.
     """
+    resolved = canonical_path(path)
+
     for pattern in ADMIN_PATTERNS:
-        if pattern.match(path):
+        if pattern.match(resolved):
             return Role.ADMIN
 
     if method.upper() in SAFE_METHODS:
         return Role.VIEWER
 
     for pattern in MANAGER_PATTERNS:
-        if pattern.match(path):
+        if pattern.match(resolved):
             return Role.MANAGER
 
     # Default-deny for anything mutating that nobody classified. A new POST

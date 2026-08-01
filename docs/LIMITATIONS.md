@@ -4,7 +4,7 @@ Required by `PRODUCTION_EVOLUTION_PROMPT.md` §1: *"Nothing is allowed to be cos
 but described as real."* Anything simulated, partial, or not-yet-enforced is listed
 here. Updated every phase.
 
-Last updated: Phase 5-6 (partial).
+Last updated: Phase 5 complete, Phase 6 partial.
 
 ---
 
@@ -206,12 +206,24 @@ meetings. The reasoning is at the top of `src/domain/intervention.py`.
 
 ---
 
-## API restructure (Phase 5, partial)
+## API restructure (Phase 5, complete)
 
-`app.py` is still ~1,250 lines with roughly 28 routes in it. Only the evolution
-routes have moved to `src/api/routers/`. **The Phase 5 exit criterion — "no file
-over 400 lines; `app.py` is composition root only" — is not met.** RFC 9457
-errors and `/api/v1` versioning are in place and apply to the whole app.
+`app.py` is a 155-line composition root; all routes live in `src/api/routers/`.
+Enforced by `tests/unit/test_structure.py`.
+
+**Two legacy files are still over 400 lines** and sit on an explicit exception
+list that can only shrink (a test fails if either grows):
+
+| File | Lines | Why it is still there |
+|---|---|---|
+| `src/risk_scorer_agent.py` | 612 | Prompt, provider chain, nearest-neighbour matcher and local-ML predictor in one module. The fallback tiers want their own. |
+| `run_pipeline.py` | 553 | CLI presentation. Wants a `src/cli/` package separating rendering from driving. |
+| `src/app_utils/runner_helper.py` | 493 | Monkey-patches the GenAI client constructor (B9). Wants the patching split from the chain. |
+
+**Config is still not a validated `Settings` model.** §4 wants every setting read
+through a Pydantic model that fails fast on bad values; `src/api/paths.py` is
+plain constants and env vars are read ad hoc across modules. Doing it half would
+leave two config mechanisms instead of one.
 
 ## Frontend (Phase 6, partial)
 

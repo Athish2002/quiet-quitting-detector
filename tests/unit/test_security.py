@@ -91,20 +91,39 @@ def _no_side_effects(monkeypatch, tmp_path):
         if hasattr(module, "run_agent_sync"):
             monkeypatch.setattr(module, "run_agent_sync", _no_llm)
 
-    monkeypatch.setattr(
-        app_module, "run_orchestrator", lambda *a, **k: "stubbed", raising=False
-    )
-    for name in (
-        "MEMORY_DIR",
-        "WEEKLY_DIR",
-        "REALTIME_DIR",
-        "REALTIME_MEMORY_DIR",
-        "SIMULATOR_MEMORY_DIR",
+    # Patched where it is USED, not where it is defined. After the Phase 5
+    # restructure `run_orchestrator` lives in the pipeline router; patching
+    # `app` still "succeeded" silently with raising=False and left the rate-limit
+    # test spawning real pipeline threads against real data.
+    from src.api.routers import pipeline as pipeline_router
+
+    monkeypatch.setattr(pipeline_router, "run_orchestrator", lambda *a, **k: "stubbed")
+
+    # Point every writable directory at tmp_path. Patched on the modules that
+    # read them, since they are imported by value at module load.
+    from src.api import paths as api_paths
+    from src.api.routers import employees, ingest, maintenance, simulator
+
+    for module in (
+        api_paths,
+        pipeline_router,
+        employees,
+        ingest,
+        maintenance,
+        simulator,
+        app_module,
     ):
-        if hasattr(app_module, name):
-            target = tmp_path / name.lower()
-            target.mkdir(parents=True, exist_ok=True)
-            monkeypatch.setattr(app_module, name, str(target))
+        for name in (
+            "MEMORY_DIR",
+            "WEEKLY_DIR",
+            "REALTIME_DIR",
+            "REALTIME_MEMORY_DIR",
+            "SIMULATOR_MEMORY_DIR",
+        ):
+            if hasattr(module, name):
+                target = tmp_path / name.lower()
+                target.mkdir(parents=True, exist_ok=True)
+                monkeypatch.setattr(module, name, str(target))
 
 
 def _mutating_routes(client) -> list[tuple[str, str]]:
@@ -246,6 +265,54 @@ def test_ingest_and_llm_routes_require_a_manager():
     assert required_role("POST", "/api/ingest/upload") is Role.MANAGER
     assert required_role("POST", "/api/run") is Role.MANAGER
     assert required_role("POST", "/api/feedback") is Role.MANAGER
+
+
+def test_a_version_prefix_never_changes_a_permission():
+    """Regression: mounting the routers at /api/v1 silently downgraded
+    `GET /api/v1/models` from ADMIN to VIEWER, because the policy patterns
+    simply stopped matching and the route fell through to the safe-method
+    default.
+
+    That is the B1 failure shape in miniature -- nothing decided the route
+    should be less protected, a path just stopped matching a list. This checks
+    every route the app exposes, under every version prefix, so a future
+    /api/v2 cannot reintroduce it.
+    """
+    paths = [
+        "/api/models",
+        "/api/memory/clear",
+        "/api/history/clear",
+        "/api/mock-data",
+        "/api/settings",
+        "/api/feedback",
+        "/api/interventions",
+        "/api/interventions/outcomes",
+        "/api/calibration",
+        "/api/ingest/upload",
+        "/api/ingest/webhook",
+        "/api/run",
+        "/api/employees",
+        "/api/something-new",
+    ]
+    for path in paths:
+        for method in ("GET", "POST", "DELETE"):
+            unversioned = required_role(method, path)
+            for version in ("v1", "v2", "v17"):
+                versioned = required_role(
+                    method, path.replace("/api", f"/api/{version}", 1)
+                )
+                assert versioned is unversioned, (
+                    f"{method} {path} is {unversioned.name} unversioned but "
+                    f"{versioned.name} under /{version}"
+                )
+
+
+def test_hmac_routing_survives_the_version_prefix():
+    from src.security.policy import uses_hmac
+
+    assert uses_hmac("/api/ingest/webhook") is True
+    assert uses_hmac("/api/v1/ingest/webhook") is True
+    assert uses_hmac("/api/v1/ingest/upload") is False
 
 
 def test_the_public_surface_is_tiny():
@@ -557,3 +624,38 @@ def test_a_refused_request_is_written_to_the_audit_log(client, tmp_path, monkeyp
     assert any(e["outcome"] == "denied" for e in entries), (
         "an unauthenticated attempt on a destructive route left no audit trail"
     )
+
+
+def test_every_refusal_is_an_rfc9457_problem_document(client):
+    """The errors a caller is most likely to meet must not be the only ones with
+    a different shape.
+
+    Middleware runs before the exception handlers, so 401/403/413/429 build
+    their own problem documents. When they returned plain `{"detail": ...}` the
+    frontend client -- which reads `title` -- silently fell back to a generic
+    message on every auth failure.
+    """
+    responses = {
+        401: client.get("/api/employees"),
+        403: client.post(
+            "/api/memory/clear", headers={"Authorization": f"Bearer {VIEWER_KEY}"}
+        ),
+    }
+    for expected_status, response in responses.items():
+        assert response.status_code == expected_status
+        assert response.headers["content-type"].startswith("application/problem+json")
+        body = response.json()
+        assert body["status"] == expected_status
+        assert body["title"]
+        assert body["type"].startswith("https://")
+
+
+def test_versioned_and_unversioned_paths_agree_on_the_live_app(client):
+    """Same resource, same answer, whichever prefix is used."""
+    for path in ("/api/models", "/api/v1/models"):
+        anonymous = client.get(path)
+        viewer = client.get(path, headers={"Authorization": f"Bearer {VIEWER_KEY}"})
+        admin = client.get(path, headers={"Authorization": f"Bearer {ADMIN_KEY}"})
+        assert anonymous.status_code == 401, path
+        assert viewer.status_code == 403, path
+        assert admin.status_code == 200, path

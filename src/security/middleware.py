@@ -20,6 +20,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from src.api.errors import problem
 from src.security.identity import KeyRing, Principal, Role, verify_webhook_signature
 from src.security.limits import (
     EXPENSIVE_LIMIT,
@@ -57,18 +58,21 @@ SECURITY_HEADERS = {
 }
 
 
-def _unauthorised(detail: str = "Authentication required.") -> JSONResponse:
-    return JSONResponse(
-        status_code=401,
-        content={"detail": detail},
+def _unauthorised() -> JSONResponse:
+    # RFC 9457, matching every other error in the app. Middleware runs before
+    # the exception handlers, so these have to build the problem document
+    # themselves -- and if they did not, the refusals a caller is MOST likely to
+    # meet would be the only responses with a different shape, which defeats the
+    # point of having one.
+    return problem(
+        401,
+        "Authentication required.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
 
 def _forbidden() -> JSONResponse:
-    return JSONResponse(
-        status_code=403, content={"detail": "Insufficient permissions."}
-    )
+    return problem(403, "Insufficient permissions.")
 
 
 def _client_ip(request: Request) -> str:
@@ -98,11 +102,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # than authenticating and then discovering it.
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
-            return _with_headers(
-                JSONResponse(
-                    status_code=413, content={"detail": "Request body too large."}
-                )
-            )
+            return _with_headers(problem(413, "Request body too large."))
 
         principal = self.keyring.authenticate(_bearer(request))
 
@@ -131,9 +131,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             allowed, retry_after = limiter.check(bucket)
             if not allowed:
                 return _with_headers(
-                    JSONResponse(
-                        status_code=429,
-                        content={"detail": "Rate limit exceeded."},
+                    problem(
+                        429,
+                        "Rate limit exceeded.",
                         headers={"Retry-After": str(retry_after)},
                     )
                 )

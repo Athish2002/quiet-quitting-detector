@@ -2,27 +2,38 @@
 
 Read this first, update it last. Current state only — history lives in `CHANGELOG.md`.
 
-**Current phase: Phases 0–4 complete. Phases 5 and 6 are PARTIAL — neither exit
-criterion is met. Read the two sections below before assuming otherwise.**
+**Current phase: Phases 0–5 complete. Phase 6 is PARTIAL — one page of four.**
 
-Everything committed is green: `ruff`, `ruff format`, `ty`, **386 unit tests**, the
-`domain` dependency contract, the `domain` coverage gate (**99.36%**, 1251/1259,
+Everything committed is green: `ruff`, `ruff format`, `ty`, **394 unit tests**, the
+`domain` dependency contract, the `domain` coverage gate (**99.37%**, 1255/1263,
 against a 95% floor), the agent eval suite (9 accuracy + 6 safety, blocking), and
 the frontend's `tsc --noEmit` + 9 vitest tests including a `jest-axe` check.
 Clean tree.
 
 ---
 
-## Phase 5 — API restructure (PARTIAL, exit criterion NOT met)
+## Phase 5 — API restructure (complete)
 
-Done: RFC 9457 problem+json errors app-wide (`src/api/errors.py`), `/api/v1`
-versioning, `scripts/export_openapi.py`, and the first extracted router
-(`src/api/routers/evolution.py`).
+**Blocker B4 is closed.** `app.py` is a **155-line composition root**; all 33
+routes live in eight routers under `src/api/routers/`. RFC 9457 problem+json on
+every error including the middleware refusals, `/api/v1` versioning with the bare
+`/api` kept as a hidden alias, and `scripts/export_openapi.py` so the frontend
+types cannot drift from what is served.
 
-**Not done: `app.py` is still ~1,250 lines with roughly 28 routes in it.** The
-criterion is "no file over 400 lines; `app.py` is composition root only". The
-remaining routes need moving into routers by resource — mechanical, but a
-session's work on its own.
+`tests/unit/test_structure.py` keeps it that way: no file over 400 lines,
+`app.py` has no route handlers, every router is mounted. Three legacy files are
+on an explicit exception list **that can only shrink** — a test fails if any of
+them grows.
+
+Two bugs found while doing it, both mine from the previous commit:
+- **`/api/v1` silently downgraded permissions.** `GET /api/v1/models` fell from
+  ADMIN to VIEWER because the policy patterns stopped matching. That is the B1
+  failure shape exactly — nothing decided the route should be less protected, a
+  path stopped matching a list.
+- **The security suite had stopped being hermetic.** Its fixture patched
+  `app.run_orchestrator` with `raising=False`; the restructure moved that name,
+  the patch silently did nothing, and the rate-limit test was spawning real
+  pipeline threads against real data.
 
 ## Phase 6 — frontend (PARTIAL, one page of four)
 
@@ -139,11 +150,11 @@ Full list in `docs/LIMITATIONS.md`. The ones that matter:
    Must flip to `True`, with `IDENTITY_SALT` set, before real data.
 3. **Rate limiting is in-process** — multi-worker deployments multiply the
    effective limit by the worker count. Redis fixes it; that is O1.
-4. **Idempotency covers webhook ingest only.** Upload, raw paste, DB and S3 can
+4. **Idempotency covers raw paste, upload and webhook.** DB and S3 ingest can
    still duplicate a week on retry.
 5. **Cohort correction is not wired into either entrypoint.** It works and is
-   tested, but computing shifts needs a pass over all employees before scoring
-   any of them — still blocked on finishing the Phase 5 restructure.
+   tested; wiring it needs a cohort-wide pass before per-employee scoring, which
+   the pipeline router can now host.
 6. **CSP allows `unsafe-inline`** because the old UI is one HTML file with
    inline scripts. Tightened once that file is retired.
 7. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
@@ -181,17 +192,19 @@ Full list in `docs/LIMITATIONS.md`. The ones that matter:
 
 ## Next session
 
-**Finish Phase 5.** Move the remaining ~28 routes out of `app.py` into
-`src/api/routers/` by resource: health/metrics, pipeline, employees, reports,
-memory, ingest, scoring. Thin handlers only.
-*Exit: no file over 400 lines; `app.py` is composition root only.*
+**Phase 6, one page per session**: Console → History → Home. Then retire
+`static/index.html`, tighten the CSP (it only needs `unsafe-inline` because of
+that file), and add Playwright.
 
-Fold in while restructuring, both currently blocked on it:
-- the **cohort correction** (needs a cohort-wide pass before per-employee scoring)
-- **idempotency** on the ingest routes other than the webhook
+Also now unblocked by the restructure, and worth folding in:
+- **the cohort correction** — needs a cohort-wide pass before per-employee
+  scoring, which the pipeline router is now the right place for
+- **the generated API client** — `scripts/export_openapi.py` and
+  `npm run generate:api` both exist; wire the generated types in as the source of
+  truth so a backend change breaks `tsc`
 
-**Then Phase 6, one page per session**: Console → History → Home, then retire
-`static/index.html` and add Playwright.
+Note: idempotency now covers raw-paste, upload and webhook ingest. DB and S3 still
+do not.
 
 Note on the environment: PyPI is reachable but `uv` is firewall-blocked from
 binding a socket and the venv has no `pip`, so **Python dependencies still cannot

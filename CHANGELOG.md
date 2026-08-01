@@ -2,7 +2,45 @@
 
 Notable changes per unit of work. Newest first.
 
-## Intervention outcomes + Phases 5-6 (partial)
+## Phase 5 (complete) — API restructure
+
+- **Blocker B4 closed.** `app.py` went from ~1,250 lines and 30+ inline routes to
+  a **155-line composition root**: build the app, install middleware and error
+  handlers, mount routers, serve static. Nothing else.
+- Eight routers under `src/api/routers/` — system, pipeline, employees, reports,
+  maintenance, ingest, simulator, evolution. Every handler is thin.
+- `src/api/paths.py` holds the directory constants both the routers and the
+  composition root need, so neither has to import the other.
+- **Fixed a security regression I introduced last commit.** Mounting routers at
+  `/api/v1` silently downgraded `GET /api/v1/models` from ADMIN to VIEWER — the
+  policy patterns just stopped matching and the route fell through to the
+  safe-method default. That is the B1 failure shape in miniature: nothing
+  decided the route should be less protected, a path stopped matching a list.
+  `canonical_path()` normalises the version segment, and a test checks every
+  route under every prefix.
+- **All refusals are now RFC 9457.** Middleware runs before the exception
+  handlers, so 401/403/413/429 were the only responses still returning plain
+  `{"detail": ...}` — meaning the errors a caller meets most often were the only
+  ones with a different shape, and the frontend client fell back to a generic
+  message on every auth failure.
+- **Fixed: the security suite had stopped being hermetic.** Its fixture patched
+  `app.run_orchestrator`, which the restructure moved; with `raising=False` that
+  silently did nothing and the rate-limit test spawned real pipeline threads
+  against real data. Now patched where it is used, with every writable directory
+  redirected to `tmp_path`.
+- Duplication removed: the main and realtime employee handlers were two
+  near-identical 60-line copies; they are one function parameterised by
+  directory. A divergence would have meant two tabs of the same dashboard
+  disagreeing about the same person.
+- `src/domain/signals.py` split — the superseded threshold method moved to
+  `threshold_signals.py`, so the module that is actually called holds only the
+  method in use.
+- `tests/unit/test_structure.py` enforces the exit criterion: no file over 400
+  lines, `app.py` has no route handlers, every router is mounted. Two legacy
+  files remain over the limit on an explicit exception list **that can only
+  shrink** — a test fails if either grows.
+
+## Intervention outcomes + Phase 6 (partial)
 
 ### New: does manager action appear to help?
 - `src/domain/intervention.py` records what KIND of action a manager took (closed

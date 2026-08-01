@@ -39,12 +39,8 @@ from src.domain.risk import (
 )
 from src.domain.signals import (
     CONSECUTIVE_WEEKS_REQUIRED,
-    assign_severity,
     build_personal_baselines,
-    confirm_consecutive,
     confirm_signals,
-    confirm_signals_threshold,
-    detect_week_flags,
     find_baseline,
 )
 from src.domain.statistics import (
@@ -54,6 +50,12 @@ from src.domain.statistics import (
     effect_size,
     is_significant,
     robust_z,
+)
+from src.domain.threshold_signals import (
+    assign_severity,
+    confirm_consecutive,
+    confirm_signals_threshold,
+    detect_week_flags,
 )
 from src.domain.uncertainty import (
     assess_confidence,
