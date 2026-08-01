@@ -659,3 +659,30 @@ def test_versioned_and_unversioned_paths_agree_on_the_live_app(client):
         assert anonymous.status_code == 401, path
         assert viewer.status_code == 403, path
         assert admin.status_code == 200, path
+
+
+def test_reads_get_a_budget_that_ordinary_use_does_not_exhaust(client):
+    """A single operator loading a few pages must not trip the limiter.
+
+    One 30-per-minute bucket for everything looked prudent and broke the
+    dashboard: three or four calls per page, plus run-progress polling, exceeded
+    it in normal use. A read limit low enough to break the product does not buy
+    security -- it buys a tool people work around.
+    """
+    from src.security.limits import DEFAULT_LIMIT, READ_LIMIT
+
+    assert READ_LIMIT > DEFAULT_LIMIT * 5
+
+    headers = {"Authorization": f"Bearer {VIEWER_KEY}"}
+    statuses = {
+        client.get("/api/history", headers=headers).status_code for _ in range(60)
+    }
+    assert 429 not in statuses, "sixty reads tripped the limiter"
+
+
+def test_llm_triggering_routes_keep_a_tight_budget():
+    """The limit that protects the API quota is unchanged and stays small."""
+    from src.security.limits import EXPENSIVE_LIMIT, READ_LIMIT
+
+    assert EXPENSIVE_LIMIT <= 10
+    assert EXPENSIVE_LIMIT < READ_LIMIT

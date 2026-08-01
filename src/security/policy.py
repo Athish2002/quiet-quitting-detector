@@ -39,8 +39,9 @@ PUBLIC_PATHS = frozenset(
     }
 )
 
-#: Static assets, matched by prefix.
-PUBLIC_PREFIXES = ("/static/", "/assets/")
+#: Vite emits hashed bundles under /assets/. Nothing else is served
+#: unauthenticated, and the bundle reveals nothing about any employee.
+PUBLIC_PREFIXES = ("/assets/",)
 
 #: Extensions the bundled single-page UI needs before a key can be entered.
 PUBLIC_SUFFIXES = (".html", ".css", ".js", ".png", ".jpg", ".svg", ".ico", ".woff2")
@@ -84,12 +85,36 @@ def canonical_path(path: str) -> str:
     return _VERSION_PREFIX.sub("/api", path)
 
 
+#: Everything the API serves lives under this prefix. Nothing else does.
+API_PREFIX = "/api"
+
+
+def is_app_shell(path: str) -> bool:
+    """Whether this is a client-side route rather than an API call.
+
+    The SPA uses history routing, so `/console` and `/history` are addresses the
+    browser can be pointed at directly but are not files on disk. Without this
+    every deep link and every page refresh returned 401 -- the document request
+    carries no Authorization header, because the key lives in sessionStorage and
+    is only attached by `fetch`.
+
+    Serving the shell to an anonymous request is safe and is not a hole: the
+    shell is the same bundle for everybody and contains no data. It renders the
+    key prompt, and every actual request it then makes is authenticated.
+    `test_nothing_outside_the_api_prefix_serves_data` fails if a route that is
+    NOT the shell ever appears outside /api.
+    """
+    return not path.startswith(API_PREFIX)
+
+
 def is_public(path: str) -> bool:
     if path in PUBLIC_PATHS:
         return True
     if path.startswith(PUBLIC_PREFIXES):
         return True
-    return path.endswith(PUBLIC_SUFFIXES)
+    if path.endswith(PUBLIC_SUFFIXES):
+        return True
+    return is_app_shell(path)
 
 
 def uses_hmac(path: str) -> bool:

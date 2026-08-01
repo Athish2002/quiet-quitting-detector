@@ -100,3 +100,79 @@ button:disabled { background: var(--muted); cursor: not-allowed; }
 .score__scale { color: var(--muted); font-size: 1.1rem; }
 .score--suppressed .score__caveat { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
 .score__footnote { color: var(--muted); font-size: 0.85rem; }
+
+/* --- Phase 6: the remaining three pages ---------------------------------- */
+
+/* Keyboard users should not tab through the nav on every page. Visible only
+   when focused, but genuinely visible then -- an off-screen skip link that
+   never appears is worse than none, because it looks handled. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 6px 0;
+  z-index: 10;
+}
+.skip-link:focus {
+  left: 0;
+  top: 0;
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1.25rem; }
+.confirm { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.95rem; }
+button.danger { background: var(--alert); }
+
+textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+/* Classification is spelled out in text, never carried by colour alone
+   (WCAG 1.4.1) -- the colour is a secondary cue for people who can use it. */
+.pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); font-size: 0.9rem; }
+.pill--healthy { background: #eaf5ef; border-color: var(--ok); color: var(--ok); }
+.pill--watch { background: var(--caveat-bg); border-color: #9a7b1f; }
+.pill--at-risk { background: #fbeee8; border-color: #a2542b; color: #7d3d1c; }
+.pill--silent-exit { background: var(--alert-bg); border-color: var(--alert); color: var(--alert); }
+.pill__score { font-weight: 600; }
+.pill__caveat { font-style: italic; }
+
+.result { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.briefing { white-space: pre-wrap; background: var(--bg); padding: 0.9rem; border-radius: 6px; font-size: 0.9rem; }
+
+.trajectory { margin-block: 1.25rem; }
+.trajectory h3 { margin-bottom: 0.4rem; }
+.sparkline { display: flex; gap: 0.9rem; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; align-items: flex-end; }
+.sparkline li { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+.sparkline__label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.bar { width: 26px; border-radius: 3px 3px 0 0; background: var(--muted); }
+.bar--healthy { background: var(--ok); }
+.bar--watch { background: #9a7b1f; }
+.bar--at-risk { background: #a2542b; }
+.bar--silent-exit { background: var(--alert); }
+
+.row--failed { background: var(--alert-bg); }
+
+.panel--stance { border-left: 4px solid var(--ink); }
+.stance { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.5rem; }
+.stance h3 { margin-bottom: 0.4rem; }
+.stance ul { margin: 0; padding-left: 1.1rem; }
+.stance li { margin-block: 0.35rem; }
+
+.cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.cards li { border: 1px solid var(--line); border-radius: 8px; padding: 0.9rem 1rem; }
+.cards a { font-weight: 600; color: var(--ink); }
+.cards p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.9rem; }
+
+header { border-bottom: 1px solid var(--line); background: #fff; }
+
+@media (max-width: 40rem) {
+  .stats { grid-template-columns: 1fr 1fr; }
+  table { font-size: 0.9rem; }
+}

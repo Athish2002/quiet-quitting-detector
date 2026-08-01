@@ -4,7 +4,7 @@ Required by `PRODUCTION_EVOLUTION_PROMPT.md` §1: *"Nothing is allowed to be cos
 but described as real."* Anything simulated, partial, or not-yet-enforced is listed
 here. Updated every phase.
 
-Last updated: Phase 5 complete, Phase 6 partial.
+Last updated: Phases 0-6 complete.
 
 ---
 
@@ -58,11 +58,8 @@ covered without anyone remembering. There is **no "auth off" switch**: with no
 `API_KEYS` configured the server generates one temporary admin key and prints it
 at startup.
 
-~~The bundled `static/index.html` does not yet send a key~~ — the new
-`frontend/` SPA handles keys (`ApiKeyGate`), so the Diagnostic Room works again.
-The **old `static/index.html` still does not** and will keep receiving 401s until
-it is retired; it is served alongside the SPA during the page-by-page migration
-§9 prescribes.
+The `frontend/` SPA handles keys (`ApiKeyGate`) and all four pages are migrated.
+The legacy `static/index.html` was retired in Phase 6.
 
 ### API keys, not OIDC
 §7 offers "OIDC login for humans, signed API keys or HMAC signatures for webhook
@@ -78,15 +75,21 @@ an OIDC exchange later produces the same object from a token instead of a header
 holds its own, so the effective limit multiplies by the worker count. Redis is the
 fix and belongs with O1.
 
-### Idempotency covers webhook ingest only
-`POST /api/ingest/webhook` honours `Idempotency-Key`. The upload, raw-paste, DB
-and S3 ingest paths do not yet, so a retry there can still duplicate a week.
+### Idempotency covers three of five ingest paths
+Raw paste, upload and webhook honour `Idempotency-Key`. The DB and S3 sync paths
+do not, so a retry there can still duplicate a week.
 
-### CSP still allows `unsafe-inline`
-The bundled UI is one 2,499-line HTML file with inline styles and scripts, so the
-Content-Security-Policy cannot forbid inline execution without breaking it. A CSP
-with `unsafe-inline` stops far less than it appears to. Fixed by the Phase 6
-rebuild, which moves scripts and styles into separate files.
+### Rate limits are three fixed numbers
+300/min for reads, 30/min for writes, 6/min for LLM-triggering routes. The single
+30/min bucket that preceded them broke ordinary dashboard use — found by the E2E
+suite, where a different test failed on each run. They are still guesses tuned to
+one operator, not measured against real traffic.
+
+### CSP allows inline STYLE, not inline script
+`script-src 'self'` since Phase 6 retired the inline-script dashboard.
+`style-src` still allows `'unsafe-inline'` because React sets element styles
+directly (sparkline bar heights); removing it needs a nonce plumbed through every
+render. Injected CSS is a far narrower problem than injected script.
 
 ### Deferred from §7, explicitly
 - **Subject-access export and delete-by-employee**: `export_subject_access_request()`
@@ -105,11 +108,12 @@ marked `@pytest.mark.integration` and deselected in CI per §6.3 ("CI must never
 call a real LLM"). Run locally with `pytest -m integration`. These tests currently
 **fail** in this environment for that reason — they were not weakened or deleted.
 
-### CI gate coverage is partial
+### CI gate coverage
 CI runs lint, format, types, unit tests, `gitleaks`, the `domain` dependency
-contract, the ≥95% `domain` coverage gate, and the agent eval suite (blocking).
-Still to come with the phases that create what they check: the ≥80% overall
-coverage ratchet, Docker/trivy, and Playwright.
+contract, the ≥95% `domain` coverage gate, the blocking agent eval suite, the
+frontend (`tsc` strict + vitest + axe), and Playwright E2E against the composed
+stack. **Still missing**: the ≥80% overall coverage ratchet (only `domain` is
+gated) and the Docker build + `trivy` scan.
 
 ### Two quality gates are in-repo, not the reference tools
 The development environment has **no package-index access**, so `hypothesis`,
@@ -225,11 +229,25 @@ through a Pydantic model that fails fast on bad values; `src/api/paths.py` is
 plain constants and env vars are read ad hoc across modules. Doing it half would
 leave two config mechanisms instead of one.
 
-## Frontend (Phase 6, partial)
+## Frontend (Phase 6, complete)
 
-Only the Diagnostic Room is migrated. Console, History and Home are placeholders
-that say so rather than half-built pages. The API client types are hand-written
-in `frontend/src/api/types.ts`; `npm run generate:api` and the
-`openapi-typescript` wiring exist but the generated file is not yet the source of
-truth. No Playwright E2E yet. Styling is plain CSS rather than Tailwind — at one
-page a utility framework would add a build step for no benefit.
+All four pages migrated; `static/index.html` retired; Playwright E2E runs against
+the composed stack in CI; `tsc` strict and axe both clean.
+
+### Generated types cover requests, not responses
+`schema.ts` is generated from the running app's OpenAPI, so **paths, methods and
+request bodies** fail `tsc` when the backend changes them. Response *fields* are
+not covered: the handlers are annotated `-> dict`, so the schema types their
+responses as an open object. Closing that means adding `response_model=` to every
+handler — worth doing, not yet done. The response interfaces in
+`frontend/src/api/types.ts` are hand-written until then.
+
+### Styling is plain CSS, not Tailwind
+§4 names Tailwind. At four pages of semantic HTML a utility framework adds a
+build step and a class-soup diff for no benefit. Revisit when the component count
+justifies it.
+
+### The build output is not committed
+`frontend/dist` is gitignored, so a fresh clone serves a "build the interface"
+message until `npm --prefix frontend run build` has run. Normal for an SPA, and
+stated rather than left to be discovered.

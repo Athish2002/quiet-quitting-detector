@@ -26,9 +26,11 @@ from src.security.limits import (
     EXPENSIVE_LIMIT,
     EXPENSIVE_WINDOW_SECONDS,
     MAX_BODY_BYTES,
+    READ_LIMIT,
+    READ_WINDOW_SECONDS,
     RateLimiter,
 )
-from src.security.policy import is_public, required_role, uses_hmac
+from src.security.policy import SAFE_METHODS, is_public, required_role, uses_hmac
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +43,22 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Cross-Origin-Opener-Policy": "same-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-    # The bundled UI is one HTML file with inline styles and scripts, so
-    # 'unsafe-inline' is required until the Phase 6 React rebuild moves them into
-    # separate files. Recorded in docs/LIMITATIONS.md rather than left to be
-    # discovered -- a CSP with 'unsafe-inline' stops far less than it appears to.
+    # Phase 6 retired the legacy single-file dashboard, which is what forced
+    # 'unsafe-inline' -- it carried 2,000 lines of inline script. The Vite build
+    # emits external files, so script-src is now 'self' only, and a CSP without
+    # 'unsafe-inline' is the difference between a header that stops injected
+    # script and one that mostly does not.
+    #
+    # style-src still allows inline: React sets element styles directly (the
+    # sparkline bar heights), and the alternative is a nonce plumbed through
+    # every render. Injected CSS is a far narrower problem than injected script.
     "Content-Security-Policy": (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "connect-src 'self'; "
+        "object-src 'none'; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'"
@@ -89,6 +97,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.keyring = keyring or KeyRing()
         self.general = RateLimiter()
+        self.reads = RateLimiter(READ_LIMIT, READ_WINDOW_SECONDS)
         self.expensive = RateLimiter(EXPENSIVE_LIMIT, EXPENSIVE_WINDOW_SECONDS)
 
     async def dispatch(self, request: Request, call_next):
@@ -122,9 +131,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             _audit_denial(path, method, principal.key_id, _client_ip(request))
             return _with_headers(_forbidden())
 
-        limiter = (
-            self.expensive if path.startswith(_EXPENSIVE_PREFIXES) else self.general
-        )
+        # Three budgets, because the costs are three different things: a model
+        # call, a write, and a file read. One number for all of them is either
+        # too loose for the first or too tight for the last.
+        if path.startswith(_EXPENSIVE_PREFIXES):
+            limiter = self.expensive
+        elif method in SAFE_METHODS:
+            limiter = self.reads
+        else:
+            limiter = self.general
         # Limited on identity AND source address: per-IP alone is defeated by a
         # proxy, per-identity alone by never authenticating.
         for bucket in (f"key:{principal.key_id}", f"ip:{_client_ip(request)}"):

@@ -239,3 +239,7 @@ openapi.json
 # Phase 5 intervention store: data about real people's briefings.
 data/interventions.db
 data/interventions.db-journal
+
+# Playwright run artefacts.
+frontend/test-results/
+frontend/playwright-report/

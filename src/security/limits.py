@@ -23,9 +23,24 @@ import threading
 import time
 from collections import deque
 
-#: Requests per window, per identity, on LLM-triggering and ingest routes.
+#: Budget for state-changing requests, per identity and per IP.
 DEFAULT_LIMIT = 30
 DEFAULT_WINDOW_SECONDS = 60
+
+#: Budget for reads. Much higher, and deliberately so.
+#:
+#: One 30-per-minute bucket for everything looked prudent and was wrong: the
+#: dashboard makes three or four calls per page, and polls run progress while a
+#: pipeline is going. A single operator clicking through four pages tripped a
+#: 429 -- found by the Playwright suite, where a different test failed on each
+#: run until the cause was traced here rather than dismissed as flake.
+#:
+#: Reads are cheap: a file read and some arithmetic, no model call. The limit
+#: that protects the API quota and the owner's money is EXPENSIVE_LIMIT below,
+#: and that one stays tight. A read limit low enough to break ordinary use does
+#: not buy security, it buys a tool people work around.
+READ_LIMIT = 300
+READ_WINDOW_SECONDS = 60
 
 #: Tighter budget for routes that call a model or run the pipeline.
 EXPENSIVE_LIMIT = 6

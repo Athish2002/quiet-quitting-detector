@@ -108,9 +108,19 @@ def test_app_py_is_a_composition_root():
         )
     ]
 
-    assert len(decorated) <= 3, (
+    # Named rather than counted: a count lets a real handler slip in as long as
+    # something else is removed. Each of these is assembly -- headers, a probe,
+    # and the SPA shell -- with no domain logic in it.
+    ALLOWED = {
+        "add_no_cache_headers",
+        "readyz",
+        "spa_shell",
+        "index_fallback",
+    }
+    unexpected = sorted(set(decorated) - ALLOWED)
+    assert not unexpected, (
         "app.py has grown route handlers again -- these belong in "
-        f"src/api/routers/: {decorated}"
+        f"src/api/routers/: {unexpected}"
     )
 
 
@@ -132,3 +142,41 @@ def test_every_router_is_mounted():
     source = (ROOT / "app.py").read_text(encoding="utf-8")
     missing = [name for name in router_modules if name not in source]
     assert not missing, f"router modules exist but are never mounted: {missing}"
+
+
+def test_nothing_outside_the_api_prefix_serves_data():
+    """`is_public()` treats every non-/api path as the SPA shell, so a route
+    added outside /api would be served to anonymous callers.
+
+    That is safe only while the sole thing outside /api is the static bundle and
+    the probes. If a data route ever appears there it must be caught here rather
+    than discovered by someone reading employee records without a key.
+    """
+    import app as app_module
+    from src.security.policy import API_PREFIX
+
+    ALLOWED_NON_API = {
+        "/",
+        "/healthz",
+        "/readyz",
+        "/favicon.ico",
+        "/openapi.json",
+        "/docs",
+        "/redoc",
+        "/docs/oauth2-redirect",
+        "/{spa_path:path}",
+        "/assets",
+        "/assets/{path:path}",
+    }
+
+    offenders = [
+        path
+        for route in app_module.app.routes
+        if (path := getattr(route, "path", ""))
+        and not path.startswith(API_PREFIX)
+        and path not in ALLOWED_NON_API
+    ]
+    assert not offenders, (
+        "these routes sit outside /api and are therefore served without "
+        f"authentication: {offenders}"
+    )

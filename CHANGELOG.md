@@ -2,6 +2,48 @@
 
 Notable changes per unit of work. Newest first.
 
+## Phase 6 (complete) — frontend rebuild
+
+- **All four pages migrated** in §9's order: Diagnostic Room, Console, History,
+  Home. React 18 + TypeScript strict + Vite + TanStack Query + React Router.
+- **The legacy `static/index.html` is retired.** 2,499 lines that had been
+  non-functional since Phase 4 — it sent no API key, so every request it made
+  returned 401. Rollback is git (`1d3ff75` and every commit since).
+- **CSP no longer allows inline script.** The old file carried ~2,000 lines of
+  inline JavaScript, which is what forced `unsafe-inline`; the Vite build emits
+  external files. `style-src` still allows inline because React sets element
+  styles directly — injected CSS is a far narrower problem than injected script.
+- **Playwright E2E against the composed stack** — the FastAPI server serving the
+  *built* bundle with the security middleware in place, not the dev server. That
+  distinction caught a real bug (below). Wired into CI as its own job.
+- **Types generated from the OpenAPI schema.** `scripts/export_openapi.py` →
+  `npm run generate:api` → `schema.ts`. Paths, methods and request bodies are
+  now checked against the backend; response shapes are not yet, because handlers
+  return bare `dict` — recorded in `docs/LIMITATIONS.md`.
+- 23 vitest tests including `jest-axe` on every page, plus 9 Playwright specs.
+
+### What the interface refuses to do
+- The registry is alphabetical and **has no sort control** — a test asserts no
+  column header is a button. Sorting people by risk is the feature that turns a
+  wellbeing tool into a leaderboard.
+- At low confidence **the score is not rendered at all**, on every surface. "7/10"
+  in large type with a small grey caveat communicates only the first.
+- Home reports a *count* of flagged people, never a list of names.
+- The clearable event log is visibly separated from the access audit trail,
+  which nothing in the UI can touch.
+- Destructive actions ask first.
+
+### Two bugs found by running it
+- **Deep links and refreshes returned 401.** The SPA uses history routing, so
+  `/console` is not a file; it fell through to the security middleware, and a
+  document request carries no Authorization header. Fixed with a shell fallback
+  plus a test that fails if a data route ever appears outside `/api`.
+- **The rate limit broke normal use.** One 30/min bucket for everything: the
+  dashboard makes 3–4 calls per page and polls run progress, so a single
+  operator tripped a 429. Found because a *different* E2E test failed on each
+  run. Reads now have their own 300/min budget; the tight 6/min limit that
+  protects the API quota is unchanged.
+
 ## Phase 5 (complete) — API restructure
 
 - **Blocker B4 closed.** `app.py` went from ~1,250 lines and 30+ inline routes to

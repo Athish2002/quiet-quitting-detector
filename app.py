@@ -27,7 +27,7 @@ load_dotenv(find_dotenv(usecwd=True), override=False)
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.api import errors as api_errors
@@ -132,11 +132,50 @@ def readyz() -> dict:
 
 
 # --- Static bundle ----------------------------------------------------------
-# The legacy single-file dashboard. It does not send an API key and therefore
-# receives 401s from every route; the React SPA in `frontend/` replaces it page
-# by page (§9), and this mount is removed when that migration finishes.
-if os.path.exists("static"):
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# The built React SPA. The legacy 2,499-line `static/index.html` was retired in
+# Phase 6: all four of its pages are migrated, and it had been non-functional
+# since Phase 4 anyway -- it sent no API key, so every request it made returned
+# 401. Its removal is what let the CSP drop 'unsafe-inline'.
+#
+# `frontend/dist` is a build artefact and is gitignored, so a fresh clone has no
+# UI until `npm --prefix frontend run build` has run. That is normal for an SPA
+# and the fallback below says so rather than serving a blank page.
+SPA_DIST = os.path.join("frontend", "dist")
+
+if os.path.exists(SPA_DIST):
+    # Hashed bundles are served directly; everything else falls back to the
+    # shell. The SPA uses history routing, so `/console` is an address the
+    # browser can be pointed at but is not a file -- without the fallback every
+    # deep link and every refresh 404s (and, behind the security middleware,
+    # 401s, since a document request carries no Authorization header).
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(SPA_DIST, "assets")),
+        name="assets",
+    )
+
+    _INDEX = os.path.join(SPA_DIST, "index.html")
+
+    @app.get("/{spa_path:path}", include_in_schema=False)
+    def spa_shell(spa_path: str) -> FileResponse:
+        """Serve the app shell for any client-side route.
+
+        Registered last, so every API router has already claimed its paths. A
+        request for an unknown /api path still reaches FastAPI's own 404 because
+        the routers are matched first.
+        """
+        # Containment check: `spa_path` comes from the URL, so a `../` would
+        # otherwise read outside the bundle.
+        root = os.path.abspath(SPA_DIST)
+        candidate = os.path.abspath(os.path.join(root, spa_path))
+        if (
+            spa_path
+            and (candidate == root or candidate.startswith(root + os.sep))
+            and os.path.isfile(candidate)
+        ):
+            return FileResponse(candidate)
+        return FileResponse(_INDEX)
+
 else:
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
@@ -144,7 +183,9 @@ else:
         return (
             "<html><body style='font-family:system-ui;text-align:center;"
             "padding-top:100px'><h1>Quiet-Quitting Detector</h1>"
-            "<p>API is running. The dashboard is served from <code>static/</code>.</p>"
+            "<p>The API is running. Build the interface with "
+            "<code>npm --prefix frontend run build</code>, or run "
+            "<code>npm --prefix frontend run dev</code> for development.</p>"
             "</body></html>"
         )
 

@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate:api": "openapi-typescript ../openapi.json -o src/api/schema.ts"
+    "generate:api": "openapi-typescript ../openapi.json -o src/api/schema.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",
@@ -20,6 +21,7 @@
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",

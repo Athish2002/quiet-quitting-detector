@@ -2,13 +2,15 @@
 
 Read this first, update it last. Current state only — history lives in `CHANGELOG.md`.
 
-**Current phase: Phases 0–5 complete. Phase 6 is PARTIAL — one page of four.**
+**Current phase: Phases 0–6 all complete.** The required track of
+`PRODUCTION_EVOLUTION_PROMPT.md` §9 is done. What remains is the optional track
+(O1–O4) and the gaps listed below.
 
-Everything committed is green: `ruff`, `ruff format`, `ty`, **394 unit tests**, the
-`domain` dependency contract, the `domain` coverage gate (**99.37%**, 1255/1263,
-against a 95% floor), the agent eval suite (9 accuracy + 6 safety, blocking), and
-the frontend's `tsc --noEmit` + 9 vitest tests including a `jest-axe` check.
-Clean tree.
+Everything committed is green: `ruff`, `ruff format`, `ty`, **397 unit tests**, the
+`domain` dependency contract, the `domain` coverage gate (**99.37%**, against a
+95% floor), the agent eval suite (9 accuracy + 6 safety, blocking), the frontend's
+`tsc --noEmit` strict + **23 vitest tests** with `jest-axe` on every page, and
+**9 Playwright E2E specs** against the composed stack. Clean tree.
 
 ---
 
@@ -35,20 +37,31 @@ Two bugs found while doing it, both mine from the previous commit:
   the patch silently did nothing, and the rate-limit test was spawning real
   pipeline threads against real data.
 
-## Phase 6 — frontend (PARTIAL, one page of four)
+## Phase 6 — frontend rebuild (complete)
 
-`frontend/` is React 18 + TS strict + Vite + TanStack Query + Router, installed
-and passing. **The Diagnostic Room is migrated; Console, History and Home are
-placeholders that say so.** §9 prescribes exactly this pace — "migrate page by
-page, one page per session, running alongside `static/index.html` until parity is
-proven".
+All four pages migrated in §9's order. `static/index.html` retired — 2,499 lines
+that had been non-functional since Phase 4 anyway, since it sent no API key.
+Retiring it is what let the CSP drop `unsafe-inline` from `script-src`.
 
-**The UI works again.** Phase 4 left it receiving 401s; `ApiKeyGate` now prompts
-for a key, and a 401 clears the stored key and re-prompts rather than hanging.
-Verified end to end against the running backend.
+Run it with:
 
-Still to do: the other three pages, the generated API client as source of truth
-(`npm run generate:api` exists but types are hand-written), Playwright E2E.
+```bash
+npm --prefix frontend run build
+```
+
+then start the server; or `npm --prefix frontend run dev` for hot reload against
+a proxied backend. `frontend/dist` is gitignored, so a fresh clone shows a
+"build the interface" message until that runs.
+
+**Two bugs the E2E suite found, both invisible to unit tests:**
+- **Deep links returned 401.** History routing means `/console` is not a file, so
+  it fell through to the security middleware and a document request carries no
+  Authorization header. Every refresh was broken.
+- **The rate limit broke normal use.** One 30/min bucket for everything; the
+  dashboard makes 3–4 calls per page and polls run progress. A *different* E2E
+  test failed on each run until the cause was traced here rather than dismissed
+  as flake. Reads now have their own budget; the 6/min limit protecting the API
+  quota is unchanged.
 
 ## New: intervention outcomes
 
@@ -192,19 +205,21 @@ Full list in `docs/LIMITATIONS.md`. The ones that matter:
 
 ## Next session
 
-**Phase 6, one page per session**: Console → History → Home. Then retire
-`static/index.html`, tighten the CSP (it only needs `unsafe-inline` because of
-that file), and add Playwright.
+The required track is finished. In rough order of value:
 
-Also now unblocked by the restructure, and worth folding in:
-- **the cohort correction** — needs a cohort-wide pass before per-employee
-  scoring, which the pipeline router is now the right place for
-- **the generated API client** — `scripts/export_openapi.py` and
-  `npm run generate:api` both exist; wire the generated types in as the source of
-  truth so a backend change breaks `tsc`
-
-Note: idempotency now covers raw-paste, upload and webhook ingest. DB and S3 still
-do not.
+1. **Push.** Nothing has gone to GitHub since Phase 0 — eight commits sit on
+   local `main`.
+2. **`response_model=` on the handlers.** The generated types cover paths,
+   methods and request bodies but not response fields, because handlers return
+   bare `dict`. This is the last piece of "a backend change that breaks the
+   frontend must fail `tsc`".
+3. **Wire the cohort correction into the pipeline.** It works and is tested but
+   is not called; it needs a cohort-wide pass before per-employee scoring, which
+   the pipeline router is now the right place for.
+4. **Split the three oversized legacy files** on the `test_structure.py`
+   exception list.
+5. **Optional track**: O1 Postgres, O2 observability, O3 a verified deployment,
+   O4 load test and runbook.
 
 Note on the environment: PyPI is reachable but `uv` is firewall-blocked from
 binding a socket and the venv has no `pip`, so **Python dependencies still cannot

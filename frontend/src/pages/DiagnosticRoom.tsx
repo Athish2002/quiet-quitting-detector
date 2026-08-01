@@ -17,7 +17,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
+import { ErrorNote } from "../components/ErrorNote";
 import type {
   CalibrationView,
   FeedbackVerdict,
@@ -253,22 +254,5 @@ function FeedbackPanel() {
       ) : null}
       {mutation.error ? <ErrorNote error={mutation.error} /> : null}
     </section>
-  );
-}
-
-function ErrorNote({ error }: { error: unknown }) {
-  // CONTEXT.md rule 4: never show a raw provider error. ApiError already holds
-  // only the server's safe title; anything else becomes a generic message.
-  const message =
-    error instanceof ApiError
-      ? error.message
-      : "Something went wrong. Please try again.";
-  const correlation = error instanceof ApiError ? error.correlationId : undefined;
-
-  return (
-    <p role="alert" className="callout callout--alert">
-      {message}
-      {correlation ? ` (reference ${correlation})` : null}
-    </p>
   );
 }
