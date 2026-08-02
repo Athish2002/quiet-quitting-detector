@@ -175,18 +175,34 @@ jobs:
           echo "API_KEYS=[{\"id\":\"e2e\",\"role\":\"admin\",\"key_sha256\":\"$HASH\"}]" >> "$GITHUB_ENV"
 
       - name: Start the server
+        # The poll used to `break` on success and fall through on failure, so a
+        # server that never started produced a GREEN step and then nine
+        # unreadable E2E failures. A readiness check that cannot fail is not a
+        # readiness check; this one exits non-zero and prints the server log, so
+        # the cause is in the job output rather than inferred from the symptom.
         run: |
-          uv run uvicorn app:app --host 127.0.0.1 --port 8000 &
-          for _ in $(seq 1 30); do
-            curl -sf http://127.0.0.1:8000/healthz && break
+          uv run uvicorn app:app --host 127.0.0.1 --port 8000 > /tmp/server.log 2>&1 &
+          for _ in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:8000/healthz > /dev/null; then
+              echo "server is healthy"
+              exit 0
+            fi
             sleep 1
           done
+          echo "::error::the server never became healthy within 40s"
+          echo "--- server log ---"
+          cat /tmp/server.log || echo "(no log produced -- the process never started)"
+          exit 1
 
       - name: E2E
         run: npm run test:e2e
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:8000
+
+      - name: Server log
+        if: failure()
+        run: cat /tmp/server.log || echo "(no server log)"
 
       - uses: actions/upload-artifact@v4
         if: failure()
