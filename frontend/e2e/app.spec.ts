@@ -15,14 +15,30 @@ test.beforeEach(async ({ page }) => {
   }, API_KEY);
 });
 
-test("the shell loads and asks for a key when there is none", async ({ browser }) => {
-  // A fresh context with no key -- the state a new operator arrives in.
-  const context = await browser.newContext();
-  const page = await context.newPage();
+test("the shell loads and asks for a key when there is none", async ({
+  page,
+  context,
+}) => {
+  // The state a new operator arrives in: no key in session storage.
+  //
+  // This used to build its own context with `browser.newContext()` and close it
+  // by hand. Two problems with that, and the second one bit: a manually created
+  // context does NOT inherit `use.baseURL` from the config, and closing it
+  // inside the test races the SPA's in-flight requests -- which showed up as an
+  // intermittent failure at `context.close()`, the least informative place for
+  // a test to fail.
+  //
+  // The managed fixture is torn down by Playwright after the test, so there is
+  // nothing here to race. The init script below runs after the one in
+  // beforeEach, so it wins.
+  await context.addInitScript(() => {
+    sessionStorage.removeItem("qqd.apiKey");
+  });
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /enter your api key/i })).toBeVisible();
-  await context.close();
+  await expect(
+    page.getByRole("heading", { name: /enter your api key/i }),
+  ).toBeVisible();
 });
 
 test("home states what the system will not do", async ({ page }) => {
@@ -40,9 +56,31 @@ test("the diagnostic room reports calibration honestly", async ({ page }) => {
   await expect(page.getByText(/no control group/i)).toBeVisible();
 });
 
-test("the console lists the cohort and refuses to be a leaderboard", async ({ page }) => {
+test("the console lists the cohort and refuses to be a leaderboard", async ({
+  page,
+  request,
+}) => {
+  // Both assertions below are about how PEOPLE are presented, so both are
+  // vacuous against an empty registry: the caption lives inside the table, and
+  // "no sortable headers" passes trivially when there is no table. A fresh
+  // checkout has an empty data/memory, which is precisely why this test passed
+  // on a developer machine and failed on its first CI run.
+  //
+  // Seeded only when the registry is actually empty. POST /mock-data DELETES
+  // every stored evaluation, and an E2E suite that destroys a developer's local
+  // cohort to test a caption has done more damage than the test is worth.
+  const headers = { Authorization: `Bearer ${API_KEY}` };
+  const existing = await request.get("/api/v1/employees", { headers });
+  if (((await existing.json()) as unknown[]).length === 0) {
+    const seeded = await request.post("/api/v1/mock-data", { headers });
+    expect(seeded.ok()).toBeTruthy();
+  }
+
   await page.goto("/console");
   await expect(page.getByRole("heading", { name: "Console" })).toBeVisible();
+
+  // There are rows, so the caption is rendered and the header check is real.
+  await expect(page.getByRole("row").nth(1)).toBeVisible();
   await expect(page.getByText(/not a ranking/i)).toBeVisible();
 
   // No sortable column headers anywhere in the registry.
