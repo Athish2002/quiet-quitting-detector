@@ -12,11 +12,22 @@ import { axe } from "jest-axe";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setApiKey } from "../api/client";
+import type {
+  CalibrationView,
+  EmployeeSummary,
+  HistoryEvent,
+  ProviderStatus,
+  RunProgress,
+} from "../api/types";
 import { Console } from "./Console";
 import { History } from "./History";
 import { Home } from "./Home";
 
-const employees = [
+// The fixtures are TYPED against the generated response types on purpose. An
+// untyped mock is free to describe a response the API does not send, and this
+// file used to do exactly that -- `event_type` below was a field no handler has
+// ever returned, so the test agreed with the page and both were wrong.
+const employees: EmployeeSummary[] = [
   {
     name: "Ade",
     score: 2,
@@ -40,7 +51,15 @@ const employees = [
     classification: "At Risk",
     rationale: "Declining task completion.",
     latest_week: 6,
-    signals: [{ signal_name: "Declining Task Completion", severity: "high" }],
+    signals: [
+      {
+        signal_name: "Declining Task Completion",
+        signal: null,
+        severity: "high",
+        weeks_detected: [5, 6],
+        details: null,
+      },
+    ],
     // Thin evidence: the score must NOT be rendered.
     confidence: "low",
     score_range: [4, 10],
@@ -54,7 +73,7 @@ const employees = [
   },
 ];
 
-const calibration = {
+const calibration: CalibrationView = {
   active_model_version: "llm-gemini-2.5-flash",
   overall: {
     total: 0,
@@ -79,15 +98,31 @@ const calibration = {
   message: "Only 0 manager verdict(s) recorded.",
 };
 
-const historyEvents = [
+const historyEvents: HistoryEvent[] = [
   {
     timestamp: "2026-07-31T10:00:00Z",
-    event_type: "ingest",
+    action: "ingest",
     source: "csv_paste",
     detail: "6 row(s) across week 6.",
     success: true,
   },
 ];
+
+const progress: RunProgress = {
+  running: false,
+  scope: null,
+  done: 0,
+  total: 0,
+  current: "",
+  error: null,
+};
+
+const providerStatus: ProviderStatus = {
+  fallback_sequence: [],
+  last_successful_model: null,
+  exhausted_models: [],
+  local_only_mode: false,
+};
 
 function stubFetch(overrides: Record<string, unknown> = {}) {
   vi.stubGlobal(
@@ -97,15 +132,8 @@ function stubFetch(overrides: Record<string, unknown> = {}) {
         "/employees": employees,
         "/calibration": calibration,
         "/history": historyEvents,
-        "/run/progress": {
-          running: false,
-          scope: null,
-          done: 0,
-          total: 0,
-          current: null,
-          error: null,
-        },
-        "/models/status": { local_only_mode: false },
+        "/run/progress": progress,
+        "/models/status": providerStatus,
         ...overrides,
       };
       const key = Object.keys(routes).find((path) => url.includes(path));
@@ -223,6 +251,16 @@ describe("History", () => {
       .getAllByRole("button")
       .filter((b) => /clear/i.test(b.textContent ?? ""));
     expect(clearButtons).toHaveLength(1);
+  });
+
+  it("shows what each logged event actually was", async () => {
+    // The assertion whose absence let a real bug live: the page read
+    // `event_type`, the API sends `action`, and every row in this column
+    // rendered an em-dash. Nothing looked broken -- an em-dash is what an
+    // empty cell is supposed to look like.
+    renderPage(<History />);
+    const table = await screen.findByRole("table");
+    expect(within(table).getByText(/ingest \/ csv_paste/)).toBeInTheDocument();
   });
 
   it("says each person is compared only against themselves", async () => {

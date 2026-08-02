@@ -118,10 +118,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Current run progress
-         * @description {running, scope, done, total, current, error}
-         */
+        /** Current run progress */
         get: operations["get_run_progress_api_v1_run_progress_get"];
         put?: never;
         post?: never;
@@ -623,6 +620,10 @@ export interface paths {
          *     A tool that was accurate for six months and has been wrong for three weeks
          *     shows up as drift here rather than being averaged into a comfortable
          *     lifetime figure.
+         *
+         *     Returns the tracker's own view rather than a dict rebuilt from it: the
+         *     rebuild was one hand-copied field list away from disagreeing with the object
+         *     it was copying.
          */
         get: operations["get_calibration_api_v1_calibration_get"];
         put?: never;
@@ -654,6 +655,69 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Ack
+         * @description A mutation that either worked or raised. There is no partial success.
+         */
+        Ack: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+        };
+        /**
+         * ApiCounters
+         * @description Provider calls that succeeded, and ones the provider refused.
+         */
+        ApiCounters: {
+            /**
+             * Success
+             * @default 0
+             */
+            success: number;
+            /**
+             * Rejected
+             * @default 0
+             */
+            rejected: number;
+        };
+        /** AppSettings */
+        AppSettings: {
+            /**
+             * Local Only Mode
+             * @default false
+             */
+            local_only_mode: boolean;
+        };
+        /**
+         * Attribution
+         * @description How much one metric contributed to the score, and which way.
+         *
+         *     Required by 6.1's counterfactual layer: a briefing has to be able to say WHY,
+         *     and a wrong call has to be debuggable. A score with no attribution is an
+         *     accusation with no evidence attached.
+         */
+        Attribution: {
+            /** Metric */
+            metric: string;
+            /** Contribution */
+            contribution: number;
+            /** Effect Size */
+            effect_size: number;
+            /**
+             * Direction
+             * @default
+             */
+            direction: string;
+            /**
+             * Weeks
+             * @default []
+             */
+            weeks: number[];
+        };
         /** Body_ingest_uploaded_csv_api_v1_ingest_upload_post */
         Body_ingest_uploaded_csv_api_v1_ingest_upload_post: {
             /** Week Number */
@@ -661,6 +725,117 @@ export interface components {
             /** File */
             file: string;
         };
+        /**
+         * BriefingView
+         * @description A person's most recent manager briefing, or a note saying there is none.
+         */
+        BriefingView: {
+            /** Found */
+            found: boolean;
+            /**
+             * Briefing
+             * @default
+             */
+            briefing: string;
+            /**
+             * Raw Card
+             * @default
+             */
+            raw_card: string;
+        };
+        /**
+         * BucketStats
+         * @description The local bucket folder, and whether real AWS credentials are present.
+         */
+        BucketStats: {
+            /**
+             * Exists
+             * @default false
+             */
+            exists: boolean;
+            /**
+             * Object Count
+             * @default 0
+             */
+            object_count: number;
+            /** Objects */
+            objects: string[];
+            /**
+             * Aws Credentials Configured
+             * @default false
+             */
+            aws_credentials_configured: boolean;
+        };
+        /**
+         * CalibrationReport
+         * @description Whether the system's confident calls correspond to reality.
+         *
+         *     "A system that quietly becomes miscalibrated is worse than no system" (6.2).
+         *     Worse, specifically, because people act on it: an uncalibrated tool that
+         *     nobody trusts gets ignored, while an uncalibrated tool that everybody trusts
+         *     changes how managers treat their reports.
+         */
+        CalibrationReport: {
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Accurate
+             * @default 0
+             */
+            accurate: number;
+            /**
+             * Not Accurate
+             * @default 0
+             */
+            not_accurate: number;
+            /**
+             * Harmful
+             * @default 0
+             */
+            harmful: number;
+            /** Elevated Precision */
+            elevated_precision?: number | null;
+            /**
+             * Harm Rate
+             * @default 0
+             */
+            harm_rate: number;
+            /** System Fault Rate */
+            system_fault_rate?: number | null;
+        };
+        /**
+         * Classification
+         * @enum {string}
+         */
+        Classification: "Healthy" | "Watch" | "At Risk" | "Silent Exit";
+        /** ClearResult */
+        ClearResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Files Removed
+             * @default 0
+             */
+            files_removed: number;
+        };
+        /**
+         * Confidence
+         * @description How much weight the evidence can actually carry.
+         *
+         *     This is not decoration. A manager shown "6/10, At Risk" acts on it; a manager
+         *     shown "6/10, but we have two weeks of patchy data" asks a question instead.
+         *     The second conversation is the one this system exists to cause.
+         * @enum {string}
+         */
+        Confidence: "none" | "low" | "moderate" | "high";
         /** CustomEvaluatorInput */
         CustomEvaluatorInput: {
             /** Name */
@@ -689,6 +864,39 @@ export interface components {
              */
             weekly_hours: number;
         };
+        /**
+         * DatabaseStats
+         * @description The real local SQLite file. There is no corporate database behind this.
+         */
+        DatabaseStats: {
+            /**
+             * Exists
+             * @default false
+             */
+            exists: boolean;
+            /**
+             * Total Rows
+             * @default 0
+             */
+            total_rows: number;
+            /**
+             * Distinct Tables
+             * @default 0
+             */
+            distinct_tables: number;
+            /**
+             * Distinct Weeks
+             * @default 0
+             */
+            distinct_weeks: number;
+            /**
+             * File Size Bytes
+             * @default 0
+             */
+            file_size_bytes: number;
+            /** Last Ingested At */
+            last_ingested_at: string | null;
+        };
         /** DatabaseSyncInput */
         DatabaseSyncInput: {
             /**
@@ -704,6 +912,197 @@ export interface components {
             /** Target Week */
             target_week: number;
         };
+        /** DatabaseSyncResult */
+        DatabaseSyncResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Idempotent Replay
+             * @default false
+             */
+            idempotent_replay: boolean;
+            /**
+             * Source
+             * @default sqlite
+             */
+            source: string;
+            db_stats: components["schemas"]["DatabaseStats"] | null;
+        };
+        /**
+         * DriftView
+         * @description Lifetime vs recent calibration, and whether the gap needs attention.
+         */
+        DriftView: {
+            overall: components["schemas"]["CalibrationReport"];
+            recent: components["schemas"]["CalibrationReport"];
+            /**
+             * Active Model Version
+             * @default
+             */
+            active_model_version: string;
+            /**
+             * Review Required
+             * @default false
+             */
+            review_required: boolean;
+            /**
+             * Drifting
+             * @default false
+             */
+            drifting: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+        };
+        /**
+         * EmployeeSummary
+         * @description A person's latest evaluation, with their own history attached.
+         *
+         *     `score_range` is deliberately not called a confidence interval, and it is
+         *     absent rather than empty when there is none: an empty array is truthy in
+         *     JavaScript, so the previous `[]` made the UI offer a range with no numbers
+         *     in it.
+         */
+        EmployeeSummary: {
+            /** Name */
+            name: string;
+            /** Score */
+            score: number;
+            classification: components["schemas"]["Classification"];
+            /**
+             * Rationale
+             * @default
+             */
+            rationale: string;
+            /** Latest Week */
+            latest_week: number;
+            /** Signals */
+            signals: components["schemas"]["Signal"][];
+            confidence: components["schemas"]["Confidence"] | null;
+            /** Score Range */
+            score_range: [
+                number,
+                number
+            ] | null;
+            /** Attributions */
+            attributions: components["schemas"]["Attribution"][];
+            /** Model Version */
+            model_version: string | null;
+            /**
+             * Degraded
+             * @default false
+             */
+            degraded: boolean;
+            /** History */
+            history: components["schemas"]["EmployeeWeek"][];
+        };
+        /**
+         * EmployeeWeek
+         * @description One point on a person's own history line.
+         */
+        EmployeeWeek: {
+            /** Week */
+            week: number;
+            /** Score */
+            score: number;
+            classification: components["schemas"]["Classification"];
+        };
+        /**
+         * EventLogEntry
+         * @description One line of the operational event log.
+         *
+         *     The field is `action`. It was `event_type` in the hand-written frontend
+         *     types, which is the drift these models exist to make impossible.
+         */
+        EventLogEntry: {
+            /**
+             * Timestamp
+             * @default
+             */
+            timestamp: string;
+            /**
+             * Action
+             * @default
+             */
+            action: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+        };
+        /** ExhaustedModel */
+        ExhaustedModel: {
+            /** Model */
+            model: string;
+            /**
+             * Cooldown Remaining Seconds
+             * @default 0
+             */
+            cooldown_remaining_seconds: number;
+        };
+        /**
+         * ExtractedMetrics
+         * @description What was read out of a free-text description. Nothing is inferred.
+         */
+        ExtractedMetrics: {
+            /** Name */
+            name: string;
+            /**
+             * Tasks Completed
+             * @default 0
+             */
+            tasks_completed: number;
+            /**
+             * Avg Response Time
+             * @default 0
+             */
+            avg_response_time: number;
+            /**
+             * After Hours Logins
+             * @default 0
+             */
+            after_hours_logins: number;
+            /**
+             * Weekly Hours
+             * @default 40
+             */
+            weekly_hours: number;
+        };
+        /** FeedbackAck */
+        FeedbackAck: {
+            /**
+             * Status
+             * @default recorded
+             * @constant
+             */
+            status: "recorded";
+            /** Week */
+            week: number;
+            verdict: components["schemas"]["FeedbackVerdict"];
+            /**
+             * Model Version
+             * @default
+             */
+            model_version: string;
+        };
         /**
          * FeedbackInput
          * @description A manager's verdict on one briefing.
@@ -718,18 +1117,121 @@ export interface components {
             employee_name: string;
             /** Week */
             week: number;
-            /** Verdict */
-            verdict: string;
+            verdict: components["schemas"]["FeedbackVerdict"];
             /**
              * Reason
              * @default not_stated
              */
             reason: string;
         };
+        /**
+         * FeedbackVerdict
+         * @enum {string}
+         */
+        FeedbackVerdict: "accurate" | "not_accurate" | "harmful";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * IngestResult
+         * @description The outcome of one ingest call, whichever source it came from.
+         */
+        IngestResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Idempotent Replay
+             * @default false
+             */
+            idempotent_replay: boolean;
+        };
+        /** InterventionAck */
+        InterventionAck: {
+            /**
+             * Status
+             * @default recorded
+             * @constant
+             */
+            status: "recorded";
+            /** Week */
+            week: number;
+            intervention: components["schemas"]["InterventionType"];
+        };
+        /**
+         * InterventionAggregate
+         * @description What tends to follow one KIND of action, across many people.
+         */
+        InterventionAggregate: {
+            intervention: components["schemas"]["InterventionType"];
+            /** Sample Size */
+            sample_size: number;
+            /** Median Excess Recovery */
+            median_excess_recovery?: number | null;
+            /**
+             * Improved
+             * @default 0
+             */
+            improved: number;
+            /**
+             * Declined
+             * @default 0
+             */
+            declined: number;
+            /**
+             * No Change
+             * @default 0
+             */
+            no_change: number;
+            /**
+             * Reportable
+             * @default false
+             */
+            reportable: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * InterventionExample
+         * @description One measured outcome, with the sentence a manager should read instead.
+         */
+        InterventionExample: {
+            /** Subject Id */
+            subject_id: string;
+            /** Week */
+            week: number;
+            intervention: components["schemas"]["InterventionType"];
+            /** Metric */
+            metric: string;
+            /** Observed Recovery */
+            observed_recovery: number;
+            /** Expected From Regression */
+            expected_from_regression: number;
+            /** Excess Recovery */
+            excess_recovery: number;
+            /** Post Weeks */
+            post_weeks: number;
+            /** @default low */
+            confidence: components["schemas"]["Confidence"];
+            /**
+             * Association Only
+             * @default true
+             */
+            association_only: boolean;
+            /**
+             * Plain English
+             * @default
+             */
+            plain_english: string;
         };
         /**
          * InterventionInput
@@ -747,6 +1249,117 @@ export interface components {
             /** Intervention */
             intervention: string;
         };
+        /**
+         * InterventionOutcomes
+         * @description Aggregated by TYPE of action, never by manager.
+         */
+        InterventionOutcomes: {
+            /**
+             * Association Only
+             * @default true
+             * @constant
+             */
+            association_only: true;
+            /**
+             * Caveat
+             * @default
+             */
+            caveat: string;
+            /** By Type */
+            by_type: components["schemas"]["InterventionAggregate"][];
+            /**
+             * Measured Outcomes
+             * @default 0
+             */
+            measured_outcomes: number;
+            /** Examples */
+            examples: components["schemas"]["InterventionExample"][];
+        };
+        /**
+         * InterventionType
+         * @description What the manager did. A closed list, for the same reason as
+         *     `FeedbackReason`: a free-text box here would collect the contents of a
+         *     private conversation.
+         * @enum {string}
+         */
+        InterventionType: "check_in" | "workload_adjustment" | "role_or_goal_clarification" | "blocker_removed" | "time_off_encouraged" | "connected_to_support" | "team_or_project_change" | "no_action_taken";
+        /**
+         * InterventionTypes
+         * @description A closed list. Free text here would record a private conversation.
+         */
+        InterventionTypes: {
+            /** Types */
+            types: components["schemas"]["InterventionType"][];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * MockDataInput
+         * @description Optional seed. Omit it for the reproducible default cohort.
+         */
+        MockDataInput: {
+            /** Seed */
+            seed?: number | null;
+        };
+        /**
+         * MockDataResult
+         * @description The seed is returned so a cohort can be reproduced exactly.
+         */
+        MockDataResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /** Seed */
+            seed: number;
+        };
+        /** ModelList */
+        ModelList: {
+            /**
+             * Active
+             * @default
+             */
+            active: string;
+            /** Versions */
+            versions: components["schemas"]["ModelVersion"][];
+        };
+        /**
+         * ModelVersion
+         * @description One registered scoring model and the evidence for trusting it.
+         */
+        ModelVersion: {
+            /** Version */
+            version: string;
+            /** Created At */
+            created_at: string;
+            /**
+             * Trained On Weeks
+             * @default 0
+             */
+            trained_on_weeks: number;
+            /**
+             * Trained On Feedback
+             * @default 0
+             */
+            trained_on_feedback: number;
+            holdout?: components["schemas"]["CalibrationReport"] | null;
+            /**
+             * Holdout Size
+             * @default 0
+             */
+            holdout_size: number;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+        };
         /** NaturalLanguageInput */
         NaturalLanguageInput: {
             /** Week Number */
@@ -754,12 +1367,142 @@ export interface components {
             /** Text Prompt */
             text_prompt: string;
         };
+        /**
+         * NaturalLanguageResult
+         * @description Carries `source` because a rule-based extraction and a model's must not
+         *     be indistinguishable to whoever reads the result.
+         */
+        NaturalLanguageResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "llm" | "local-fallback";
+            extracted: components["schemas"]["ExtractedMetrics"];
+            /**
+             * Idempotent Replay
+             * @default false
+             */
+            idempotent_replay: boolean;
+        };
+        /** ObjectStoreSyncResult */
+        ObjectStoreSyncResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Idempotent Replay
+             * @default false
+             */
+            idempotent_replay: boolean;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+        };
+        /**
+         * ProviderStatus
+         * @description Which models are usable right now, not a cumulative counter.
+         */
+        ProviderStatus: {
+            /** Fallback Sequence */
+            fallback_sequence: string[];
+            /** Last Successful Model */
+            last_successful_model: string | null;
+            /** Exhausted Models */
+            exhausted_models: components["schemas"]["ExhaustedModel"][];
+            /**
+             * Local Only Mode
+             * @default false
+             */
+            local_only_mode: boolean;
+        };
         /** RawCSVInput */
         RawCSVInput: {
             /** Week Number */
             week_number: number;
             /** Csv Content */
             csv_content: string;
+        };
+        /**
+         * RiskData
+         * @description The scorer's own output for a hypothetical week, passed through.
+         *
+         *     Permissive on purpose: this is whatever the active tier produced, and the
+         *     what-if panel renders it rather than reasoning about it.
+         */
+        RiskData: {
+            /** Score */
+            score: number | null;
+            /** Classification */
+            classification: string | null;
+            /** Rationale */
+            rationale: string | null;
+            /** Confidence */
+            confidence: string | null;
+            /** Model Version */
+            model_version: string | null;
+            /** Provenance */
+            provenance: string | null;
+            /**
+             * Degraded
+             * @default false
+             */
+            degraded: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * RunProgress
+         * @description Where the current run has got to. All zeros when nothing is running.
+         */
+        RunProgress: {
+            /** Running */
+            running: boolean;
+            /** Scope */
+            scope: string | null;
+            /**
+             * Done
+             * @default 0
+             */
+            done: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Current
+             * @default
+             */
+            current: string;
+            /** Error */
+            error: string | null;
+        };
+        /**
+         * RunStarted
+         * @description A run was accepted. It has not finished -- poll GET /run/progress.
+         */
+        RunStarted: {
+            /** Success */
+            success: boolean;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Started
+             * @default true
+             */
+            started: boolean;
         };
         /** S3SyncInput */
         S3SyncInput: {
@@ -772,6 +1515,48 @@ export interface components {
         SettingsUpdateInput: {
             /** Local Only Mode */
             local_only_mode: boolean;
+        };
+        /**
+         * Signal
+         * @description One detected behavioural pattern, in the shape it was stored in.
+         *
+         *     Two shapes reach this model and both are real: `signal_name` from the trend
+         *     detector, and `signal` from the orchestrator's MISSING_DATA_GAP marker.
+         *     Neither is required, because a record written by an earlier run may carry
+         *     only the other, and a 500 on the cohort view is a worse outcome than a field
+         *     the UI has to fall back on.
+         */
+        Signal: {
+            /** Signal Name */
+            signal_name: string | null;
+            /** Signal */
+            signal: string | null;
+            /** Severity */
+            severity: string | null;
+            /** Weeks Detected */
+            weeks_detected: number[];
+            /** Details */
+            details: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * SimulationResult
+         * @description A hypothetical employee-week, scored by the real agent chain.
+         */
+        SimulationResult: {
+            /** Success */
+            success: boolean;
+            /** Employee Name */
+            employee_name: string;
+            /** Signals */
+            signals: components["schemas"]["Signal"][];
+            risk_data: components["schemas"]["RiskData"];
+            /**
+             * Briefing
+             * @default
+             */
+            briefing: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -844,9 +1629,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ApiCounters"];
                 };
             };
         };
@@ -866,9 +1649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AppSettings"];
                 };
             };
         };
@@ -892,9 +1673,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AppSettings"];
                 };
             };
             /** @description Validation Error */
@@ -923,9 +1702,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ProviderStatus"];
                 };
             };
         };
@@ -945,9 +1722,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RunStarted"];
                 };
             };
         };
@@ -967,9 +1742,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RunStarted"];
                 };
             };
         };
@@ -989,9 +1762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RunProgress"];
                 };
             };
         };
@@ -1011,9 +1782,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["EmployeeSummary"][];
                 };
             };
         };
@@ -1033,9 +1802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["EmployeeSummary"][];
                 };
             };
         };
@@ -1059,9 +1826,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BriefingView"];
                 };
             };
             /** @description Validation Error */
@@ -1092,9 +1857,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["EventLogEntry"][];
                 };
             };
             /** @description Validation Error */
@@ -1123,9 +1886,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["Ack"];
                 };
             };
         };
@@ -1139,13 +1900,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The report file. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": unknown;
+                    "text/plain": unknown;
                 };
             };
         };
@@ -1159,13 +1921,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The report file. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": unknown;
+                    "text/plain": unknown;
                 };
             };
         };
@@ -1179,13 +1942,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The document. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": unknown;
+                    "text/markdown": unknown;
                 };
             };
         };
@@ -1205,9 +1969,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ClearResult"];
                 };
             };
         };
@@ -1227,9 +1989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ClearResult"];
                 };
             };
         };
@@ -1253,9 +2013,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IngestResult"];
                 };
             };
             /** @description Validation Error */
@@ -1288,9 +2046,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IngestResult"];
                 };
             };
             /** @description Validation Error */
@@ -1323,9 +2079,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["IngestResult"];
                 };
             };
             /** @description Validation Error */
@@ -1358,9 +2112,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DatabaseSyncResult"];
                 };
             };
             /** @description Validation Error */
@@ -1389,9 +2141,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DatabaseStats"];
                 };
             };
         };
@@ -1415,9 +2165,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ObjectStoreSyncResult"];
                 };
             };
             /** @description Validation Error */
@@ -1446,9 +2194,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BucketStats"];
                 };
             };
         };
@@ -1472,9 +2218,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["NaturalLanguageResult"];
                 };
             };
             /** @description Validation Error */
@@ -1507,9 +2251,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SimulationResult"];
                 };
             };
             /** @description Validation Error */
@@ -1530,7 +2272,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MockDataInput"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1538,9 +2284,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["MockDataResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1564,9 +2317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FeedbackAck"];
                 };
             };
             /** @description Validation Error */
@@ -1599,9 +2350,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["InterventionAck"];
                 };
             };
             /** @description Validation Error */
@@ -1630,9 +2379,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["InterventionTypes"];
                 };
             };
         };
@@ -1652,9 +2399,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["InterventionOutcomes"];
                 };
             };
         };
@@ -1674,9 +2419,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DriftView"];
                 };
             };
         };
@@ -1696,9 +2439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ModelList"];
                 };
             };
         };

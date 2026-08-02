@@ -2,6 +2,39 @@
 
 Notable changes per unit of work. Newest first.
 
+## Response models — the generated client now covers responses too
+
+The frontend's types were generated from the backend for paths, methods and
+request bodies only. Every handler was annotated `-> dict`, so the schema
+described each response as an open object and the response shapes lived in a
+hand-written `frontend/src/api/types.ts`.
+
+They had already drifted, and the drift was invisible. `HistoryEvent.event_type`
+was a field no handler has ever returned — the event log writes `action` — so the
+History page rendered an em-dash in the Type column of every row. The unit test
+mocked the same wrong field and passed. An em-dash is what an empty cell is
+supposed to look like, so nothing appeared broken.
+
+- **`src/api/schemas/`** — a `response_model` for all 29 JSON routes, split into
+  `people` (read off disk, so closed sets are coerced rather than rejected: one
+  bad memory file must not blank the cohort view) and `operations` (produced in
+  this process, so strict). The three report routes stream files and declare a
+  media type instead.
+- **`types.ts` now defines nothing.** Every name is an alias onto the generated
+  schema, anchored to the route it comes back from.
+- **CI fails if `schema.ts` is stale.** It is a committed file that is generated,
+  which rots silently; the `check` job regenerates it from the exported schema
+  and diffs.
+- **Test fixtures are typed** against those responses. An untyped mock is free to
+  describe a response the API does not send, which is how the original bug
+  survived — and there is now an assertion that the event type actually renders.
+- **Closed sets reach the schema**: `verdict` is the `FeedbackVerdict` enum rather
+  than a regex, so the frontend's three verdict buttons are checked against the
+  backend's three verdicts.
+- **`score_range` is absent rather than `[]`** when there is no range. An empty
+  array is truthy in JavaScript, so the UI had been offering "a plausible range"
+  with no numbers in it.
+
 ## Phase 6 (complete) — frontend rebuild
 
 - **All four pages migrated** in §9's order: Diagnostic Room, Console, History,
@@ -18,8 +51,7 @@ Notable changes per unit of work. Newest first.
   distinction caught a real bug (below). Wired into CI as its own job.
 - **Types generated from the OpenAPI schema.** `scripts/export_openapi.py` →
   `npm run generate:api` → `schema.ts`. Paths, methods and request bodies are
-  now checked against the backend; response shapes are not yet, because handlers
-  return bare `dict` — recorded in `docs/LIMITATIONS.md`.
+  checked against the backend here; responses followed later (above).
 - 23 vitest tests including `jest-axe` on every page, plus 9 Playwright specs.
 
 ### What the interface refuses to do

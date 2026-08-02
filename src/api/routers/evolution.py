@@ -14,6 +14,14 @@ import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from src.api.schemas import (
+    DriftView,
+    FeedbackAck,
+    InterventionAck,
+    InterventionOutcomes,
+    InterventionTypes,
+    ModelList,
+)
 from src.app_utils.names import first_name_of
 from src.domain.feedback import FeedbackReason, FeedbackRecord, FeedbackVerdict
 from src.domain.intervention import (
@@ -53,7 +61,12 @@ class FeedbackInput(BaseModel):
 
     employee_name: str = Field(min_length=1, max_length=100)
     week: int = Field(ge=MIN_WEEK, le=MAX_WEEK)
-    verdict: str = Field(pattern="^(accurate|not_accurate|harmful)$")
+    #: The enum rather than a pattern, so the closed set reaches the OpenAPI
+    #: schema and the frontend's verdict buttons are checked against it.
+    verdict: FeedbackVerdict
+    #: Deliberately NOT the enum: an unrecognised reason degrades to
+    #: `not_stated` below rather than rejecting a verdict a manager took the
+    #: trouble to give.
     reason: str = "not_stated"
 
 
@@ -86,7 +99,11 @@ def _stored_evaluation(first_name: str, week: int) -> dict:
         ) from exc
 
 
-@router.post("/feedback", summary="Record a manager's verdict on a briefing")
+@router.post(
+    "/feedback",
+    summary="Record a manager's verdict on a briefing",
+    response_model=FeedbackAck,
+)
 def submit_feedback(payload: FeedbackInput) -> dict:
     """The ground-truth signal this system otherwise has no way to obtain."""
     first_name = first_name_of(payload.employee_name).lower()
@@ -103,7 +120,7 @@ def submit_feedback(payload: FeedbackInput) -> dict:
             week=payload.week,
             predicted_score=int(stored.get("score", 1)),
             predicted_classification=str(stored.get("classification", "Healthy")),
-            verdict=FeedbackVerdict(payload.verdict),
+            verdict=payload.verdict,
             reason=reason,
             model_version=str(stored.get("model_version", "unknown")),
         )
@@ -117,7 +134,11 @@ def submit_feedback(payload: FeedbackInput) -> dict:
     }
 
 
-@router.post("/interventions", summary="Record what kind of action a manager took")
+@router.post(
+    "/interventions",
+    summary="Record what kind of action a manager took",
+    response_model=InterventionAck,
+)
 def submit_intervention(payload: InterventionInput) -> dict:
     first_name = first_name_of(payload.employee_name).lower()
     _stored_evaluation(first_name, payload.week)
@@ -144,7 +165,9 @@ def submit_intervention(payload: InterventionInput) -> dict:
 
 
 @router.get(
-    "/interventions/types", summary="The closed list of recordable action types"
+    "/interventions/types",
+    summary="The closed list of recordable action types",
+    response_model=InterventionTypes,
 )
 def intervention_types() -> dict:
     return {
@@ -159,6 +182,7 @@ def intervention_types() -> dict:
 @router.get(
     "/interventions/outcomes",
     summary="What followed each kind of action (association, never causation)",
+    response_model=InterventionOutcomes,
 )
 def intervention_outcomes() -> dict:
     """Aggregate outcomes by intervention TYPE.
@@ -199,10 +223,12 @@ def intervention_outcomes() -> dict:
             "normal regardless of what anyone does, so the figures below report "
             "recovery BEYOND that expectation, not raw before/after change."
         ),
-        "by_type": [a.model_dump(mode="json") for a in aggregate_by_type(outcomes)],
+        # The response model serialises these; dumping them here first would
+        # only be re-validated on the way out.
+        "by_type": aggregate_by_type(outcomes),
         "measured_outcomes": len(outcomes),
         "examples": [
-            {**o.model_dump(mode="json"), "plain_english": describe_outcome(o)}
+            {**o.model_dump(), "plain_english": describe_outcome(o)}
             for o in outcomes[:5]
         ],
     }
@@ -229,30 +255,29 @@ def _timeline_for(first_name: str) -> list[WeekMetrics]:
 
 
 @router.get("/calibration", summary="Is the system actually right?")
-def get_calibration() -> dict:
+def get_calibration() -> DriftView:
     """Lifetime and recent calibration, reported separately.
 
     A tool that was accurate for six months and has been wrong for three weeks
     shows up as drift here rather than being averaged into a comfortable
     lifetime figure.
+
+    Returns the tracker's own view rather than a dict rebuilt from it: the
+    rebuild was one hand-copied field list away from disagreeing with the object
+    it was copying.
     """
     active = ModelRegistry().active_version()
-    view = CalibrationTracker().drift(active_model_version=active)
-
-    return {
-        "active_model_version": active,
-        "overall": view.overall.model_dump(),
-        "recent": view.recent.model_dump(),
-        "drifting": view.drifting,
-        "review_required": view.review_required,
-        "message": view.message,
-    }
+    return CalibrationTracker().drift(active_model_version=active)
 
 
-@router.get("/models", summary="Registered scoring models and which one is live")
+@router.get(
+    "/models",
+    summary="Registered scoring models and which one is live",
+    response_model=ModelList,
+)
 def list_models() -> dict:
     registry = ModelRegistry()
     return {
         "active": registry.active_version(),
-        "versions": [v.model_dump(mode="json") for v in registry.versions()],
+        "versions": registry.versions(),
     }

@@ -8,10 +8,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setApiKey } from "../api/client";
+import type { CalibrationView, InterventionOutcomes } from "../api/types";
 import { ScoreDisplay } from "../components/ConfidenceBadge";
 import { DiagnosticRoom } from "./DiagnosticRoom";
 
-const calibration = {
+// Typed against the generated response types, so a fixture cannot describe a
+// response the API does not send.
+const calibration: CalibrationView = {
   active_model_version: "llm-gemini-2.5-flash",
   overall: {
     total: 3,
@@ -37,7 +40,7 @@ const calibration = {
     "Only 3 manager verdict(s) recorded. Not enough to say whether this system is calibrated -- treat every score as unvalidated.",
 };
 
-const outcomes = {
+const outcomes: InterventionOutcomes = {
   association_only: true as const,
   caveat:
     "These are observational outcomes with no control group. People are flagged at their most extreme and tend to move back toward their own normal regardless of what anyone does.",

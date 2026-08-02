@@ -13,10 +13,11 @@ and `origin/main` are in sync and the tree is clean.
 | `ruff check` / `ruff format --check` | pass |
 | `ty check` | pass |
 | Unit tests | **416 pass** |
+| Generated API client is not stale (CI diffs `schema.ts`) | pass |
 | `domain` dependency contract | pass |
 | `domain` coverage (≥95% floor) | **99.3%** |
 | Agent eval (9 accuracy + 6 safety, blocking) | 15/15 |
-| Frontend `tsc --noEmit` strict + vitest + axe | 23 pass |
+| Frontend `tsc --noEmit` strict + vitest + axe | 24 pass |
 | Playwright E2E vs the composed stack | 9 pass |
 | `gitleaks` over full history | clean |
 
@@ -69,22 +70,20 @@ Each of these is enforced by a test that fails if the refusal is removed:
    Flip to `True` with `IDENTITY_SALT` set before any real data.
 2. **Rate limiting is in-process** — multi-worker deployments multiply the
    effective limit by the worker count. Redis is O1.
-3. **Response types are not generated.** Paths, methods and request bodies come
-   from the OpenAPI schema and break `tsc`; response shapes are hand-written in
-   `frontend/src/api/types.ts` because handlers return bare `dict`. Adding
-   `response_model=` closes it.
-4. **Config is not a validated `Settings` model** (§4). Env vars are read ad hoc.
-5. **Synthetic data is reproducible but unlabelled** — no `origin='synthetic'`
+3. **Config is not a validated `Settings` model** (§4). Env vars are read ad hoc.
+4. **Synthetic data is reproducible but unlabelled** — no `origin='synthetic'`
    row tag, no UI banner, no `ALLOW_SYNTHETIC_DATA` production guard.
-6. **Three legacy files are over the 400-line limit**, on an explicit exception
+5. **Three legacy files are over the 400-line limit**, on an explicit exception
    list in `tests/unit/test_structure.py` that can only shrink:
    `risk_scorer_agent.py`, `run_pipeline.py`, `runner_helper.py`.
-7. **`src/fast_api_app.py` needs GCP credentials to import**, which is why
+6. **`src/fast_api_app.py` needs GCP credentials to import**, which is why
    `tests/integration/test_server_e2e.py` cannot run here.
-8. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
+7. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
    scheduled retention purge, key rotation.
-9. CI still lacks the ≥80% overall coverage ratchet and the Docker + `trivy`
+8. CI still lacks the ≥80% overall coverage ratchet and the Docker + `trivy`
    scan.
+9. **Three report routes are file downloads**, so the generated client types
+   their bodies as `unknown`. No page calls them.
 
 ## Environment constraints (real, and they shape the choices)
 
@@ -103,14 +102,13 @@ Each of these is enforced by a test that fails if the refusal is removed:
 
 Nothing is half-finished; pick whichever is most valuable.
 
-**Highest value for a reviewer:** close gap 3 (`response_model=` on handlers).
-It makes the generated client authoritative end to end and turns "a backend
-change that breaks the frontend fails `tsc`" from mostly-true into true.
+**Highest value for a reviewer:** gap 3 — a validated `Settings` model that
+fails fast on bad config (§4). It is the last place the system trusts input it
+has not checked.
 
 **Then, in rough order:**
-- Gap 4 — a validated `Settings` model that fails fast on bad config (§4).
-- Gap 5 — the §5 synthetic-data work: row tagging, UI banner, production guard.
-- Gap 6 — split `risk_scorer_agent.py` (the fallback tiers want their own
+- Gap 4 — the §5 synthetic-data work: row tagging, UI banner, production guard.
+- Gap 5 — split `risk_scorer_agent.py` (the fallback tiers want their own
   module) and `run_pipeline.py` (rendering split from driving).
 - O1 — Postgres behind the repository interfaces.
 
@@ -128,3 +126,7 @@ change that breaks the frontend fails `tsc`" from mostly-true into true.
   prints at startup, and send `Authorization: Bearer <key>`.
 - `tests/unit/conftest.py` blocks every LLM seam by default. A test that wants
   the provider path must stub it explicitly.
+- **After changing any response model, regenerate the client** or CI fails:
+  `uv run python scripts/export_openapi.py && npm --prefix frontend run generate:api`.
+- Response models live in `src/api/schemas/`, not beside the handlers — one
+  module of them was 419 lines and the 400-line gate is not negotiable.

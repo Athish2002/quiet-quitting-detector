@@ -22,6 +22,13 @@ from src.api.routers._ingest_shared import (
 from src.api.routers._ingest_shared import (
     replay as _replay,
 )
+from src.api.schemas import (
+    BucketStats,
+    DatabaseStats,
+    DatabaseSyncResult,
+    NaturalLanguageResult,
+    ObjectStoreSyncResult,
+)
 from src.app_utils.audit_log import log_event
 from src.app_utils.local_nl_extract import extract_metrics_from_text
 from src.data_layer.ingestion import (
@@ -44,7 +51,11 @@ class DatabaseSyncInput(BaseModel):
     target_week: int = Field(ge=1, le=1000)
 
 
-@router.post("/db", summary="Sync from the local SQLite database")
+@router.post(
+    "/db",
+    summary="Sync from the local SQLite database",
+    response_model=DatabaseSyncResult,
+)
 def ingest_from_db(data: DatabaseSyncInput, request: Request) -> dict:
     """`table_name` is passed as a parameterised value, never interpolated into
     SQL, so it never needs sanitising.
@@ -89,7 +100,9 @@ def ingest_from_db(data: DatabaseSyncInput, request: Request) -> dict:
     )
 
 
-@router.get("/db/status", summary="Local database statistics")
+@router.get(
+    "/db/status", summary="Local database statistics", response_model=DatabaseStats
+)
 def get_db_status() -> dict:
     return db_stats()
 
@@ -106,7 +119,11 @@ _SOURCE_LABELS = {
 }
 
 
-@router.post("/s3", summary="Sync from an object store URI")
+@router.post(
+    "/s3",
+    summary="Sync from an object store URI",
+    response_model=ObjectStoreSyncResult,
+)
 def ingest_from_s3(data: S3SyncInput, request: Request) -> dict:
     """A genuine boto3 GetObject when AWS credentials are present; otherwise a
     real local folder mirroring the S3 key layout. Dropping a CSV there and
@@ -150,7 +167,7 @@ def ingest_from_s3(data: S3SyncInput, request: Request) -> dict:
     )
 
 
-@router.get("/s3/status", summary="Local bucket statistics")
+@router.get("/s3/status", summary="Local bucket statistics", response_model=BucketStats)
 def get_bucket_status() -> dict:
     return bucket_stats()
 
@@ -166,7 +183,11 @@ def extract_json_block(text: str) -> str:
     return text[start : end + 1] if start != -1 and end != -1 else text
 
 
-@router.post("/natural-language", summary="Ingest a free-text description")
+@router.post(
+    "/natural-language",
+    summary="Ingest a free-text description",
+    response_model=NaturalLanguageResult,
+)
 def ingest_natural_language(data: NaturalLanguageInput, request: Request) -> dict:
     """Gemini first, then a local regex extractor.
 

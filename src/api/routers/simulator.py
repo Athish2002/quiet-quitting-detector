@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.api.paths import MEMORY_DIR, SIMULATOR_MEMORY_DIR, WEEKLY_DIR, ensure
+from src.api.schemas import MockDataResult, SimulationResult
 from src.app_utils.audit_log import log_event
 from src.app_utils.names import first_name_of
 from src.data_layer.ingestion import CANONICAL_HEADER, MAX_WEEK, MIN_WEEK
@@ -50,7 +51,11 @@ class CustomEvaluatorInput(BaseModel):
     # reintroduce health data through the API.
 
 
-@router.post("/score/custom", summary="Evaluate one hypothetical employee-week")
+@router.post(
+    "/score/custom",
+    summary="Evaluate one hypothetical employee-week",
+    response_model=SimulationResult,
+)
 def score_custom_employee(data: CustomEvaluatorInput) -> dict:
     """Runs the real agent chain against made-up numbers.
 
@@ -284,7 +289,11 @@ class MockDataInput(BaseModel):
     seed: int | None = Field(default=None, ge=0, le=2**31 - 1)
 
 
-@router.post("/mock-data", summary="Regenerate the synthetic demo cohort")
+@router.post(
+    "/mock-data",
+    summary="Regenerate the synthetic demo cohort",
+    response_model=MockDataResult,
+)
 def generate_mock_data(data: MockDataInput | None = None) -> dict:
     """Writes four weekly CSVs and matching memory files. DESTRUCTIVE.
 

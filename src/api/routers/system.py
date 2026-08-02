@@ -10,6 +10,7 @@ import os
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
+from src.api.schemas import ApiCounters, AppSettings, ProviderStatus
 from src.app_utils.audit_log import log_event
 from src.app_utils.runner_helper import METRICS_FILE, get_model_status
 from src.app_utils.settings import get_settings, is_local_only_mode, set_local_only_mode
@@ -34,7 +35,7 @@ def favicon() -> Response:
     return Response(status_code=204)
 
 
-@router.get("/metrics", summary="API usage counters")
+@router.get("/metrics", summary="API usage counters", response_model=ApiCounters)
 def get_metrics() -> dict:
     """Success vs rejected provider calls.
 
@@ -55,7 +56,9 @@ def get_metrics() -> dict:
     return {"success": 0, "rejected": 0}
 
 
-@router.get("/settings", summary="Persisted application settings")
+@router.get(
+    "/settings", summary="Persisted application settings", response_model=AppSettings
+)
 def get_settings_endpoint() -> dict:
     return get_settings()
 
@@ -64,7 +67,7 @@ class SettingsUpdateInput(BaseModel):
     local_only_mode: bool
 
 
-@router.post("/settings", summary="Toggle Local-Only Mode")
+@router.post("/settings", summary="Toggle Local-Only Mode", response_model=AppSettings)
 def update_settings_endpoint(data: SettingsUpdateInput) -> dict:
     """Local-Only Mode skips every Gemini call and goes straight to the local
     fallback tiers, so quota can be deliberately stopped once rate-limited."""
@@ -77,7 +80,11 @@ def update_settings_endpoint(data: SettingsUpdateInput) -> dict:
     return result
 
 
-@router.get("/models/status", summary="Live provider fallback state")
+@router.get(
+    "/models/status",
+    summary="Live provider fallback state",
+    response_model=ProviderStatus,
+)
 def get_models_status() -> dict:
     """Which models are in cooldown right now, which last succeeded, and whether
     Local-Only Mode is skipping all of them by choice.

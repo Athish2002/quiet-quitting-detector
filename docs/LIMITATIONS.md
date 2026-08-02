@@ -243,13 +243,22 @@ leave two config mechanisms instead of one.
 All four pages migrated; `static/index.html` retired; Playwright E2E runs against
 the composed stack in CI; `tsc` strict and axe both clean.
 
-### Generated types cover requests, not responses
-`schema.ts` is generated from the running app's OpenAPI, so **paths, methods and
-request bodies** fail `tsc` when the backend changes them. Response *fields* are
-not covered: the handlers are annotated `-> dict`, so the schema types their
-responses as an open object. Closing that means adding `response_model=` to every
-handler — worth doing, not yet done. The response interfaces in
-`frontend/src/api/types.ts` are hand-written until then.
+### Three routes are file downloads, not typed responses
+Every JSON handler now carries a `response_model` (`src/api/schemas/`), so paths,
+methods, request bodies **and response fields** are generated from the schema the
+app actually serves — `frontend/src/api/types.ts` names them and defines nothing.
+CI regenerates `schema.ts` and fails if it moved, so the committed client cannot
+lag the API.
+
+The exceptions are `/report/raw`, `/report/realtime` and `/report/threat-model`,
+which stream a file. They declare a media type instead of a model, and their
+bodies are `unknown` to the generated client. No page calls them.
+
+Two nested shapes also generate as optional properties rather than
+present-and-nullable: `CalibrationReport.elevated_precision` and
+`system_fault_rate`. They come from `src/domain/`, which does not carry the
+API's serialization-schema config, and adding it there would put a wire concern
+into a package kept free of them.
 
 ### Styling is plain CSS, not Tailwind
 §4 names Tailwind. At four pages of semantic HTML a utility framework adds a

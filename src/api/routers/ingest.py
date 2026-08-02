@@ -38,6 +38,7 @@ from src.api.routers._ingest_shared import (
 from src.api.routers._ingest_shared import (
     write_grouped as _write_grouped,
 )
+from src.api.schemas import IngestResult
 from src.app_utils.audit_log import log_event
 from src.data_layer.ingestion import (
     MAX_WEEK,
@@ -57,7 +58,7 @@ class RawCSVInput(BaseModel):
     csv_content: str = Field(min_length=1, max_length=2_000_000)
 
 
-@router.post("/raw", summary="Ingest pasted CSV text")
+@router.post("/raw", summary="Ingest pasted CSV text", response_model=IngestResult)
 def ingest_raw_csv(data: RawCSVInput, request: Request) -> dict:
     """Rows are merged by employee name, so re-pasting someone replaces their
     row rather than duplicating it. A `week` column in the pasted content routes
@@ -83,7 +84,9 @@ def ingest_raw_csv(data: RawCSVInput, request: Request) -> dict:
     )
 
 
-@router.post("/upload", summary="Ingest an uploaded CSV file")
+@router.post(
+    "/upload", summary="Ingest an uploaded CSV file", response_model=IngestResult
+)
 async def ingest_uploaded_csv(
     request: Request,
     # Bounded to match every other ingest route. This was a bare Form(...) with
@@ -145,7 +148,9 @@ class WebhookIngestInput(BaseModel):
     records: list[WebhookMetricRecord] = Field(min_length=1, max_length=500)
 
 
-@router.post("/webhook", summary="Ingest a signed JSON payload")
+@router.post(
+    "/webhook", summary="Ingest a signed JSON payload", response_model=IngestResult
+)
 def ingest_webhook(data: WebhookIngestInput, request: Request) -> dict:
     """Authenticated by HMAC over the raw body in the security middleware, since
     the sender is a system that cannot hold a rotating bearer token."""

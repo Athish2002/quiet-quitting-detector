@@ -21,6 +21,7 @@ from src.api.paths import (
     REALTIME_MEMORY_DIR,
     REALTIME_REPORT,
 )
+from src.api.schemas import ClearResult
 from src.app_utils.audit_log import log_event
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,11 @@ def _remove_file(path: str) -> None:
             logger.warning("Could not remove %s during clear.", path, exc_info=True)
 
 
-@router.post("/memory/clear", summary="Delete all main-cohort evaluations")
+@router.post(
+    "/memory/clear",
+    summary="Delete all main-cohort evaluations",
+    response_model=ClearResult,
+)
 def clear_pipeline_data() -> dict:
     try:
         removed = _remove_matching(MEMORY_DIR, "*.json")
@@ -64,7 +69,11 @@ def clear_pipeline_data() -> dict:
         raise HTTPException(status_code=500, detail="Failed to clear memory.") from exc
 
 
-@router.post("/memory/clear/realtime", summary="Delete all realtime-cohort data")
+@router.post(
+    "/memory/clear/realtime",
+    summary="Delete all realtime-cohort data",
+    response_model=ClearResult,
+)
 def clear_realtime_data() -> dict:
     try:
         removed = _remove_matching(REALTIME_MEMORY_DIR, "*.json")

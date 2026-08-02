@@ -89,7 +89,7 @@ function CalibrationPanel() {
             <div>
               <dt>Confirmed when raised above Healthy</dt>
               <dd>
-                {data.overall.elevated_precision === null
+                {data.overall.elevated_precision == null
                   ? "Not yet measurable"
                   : `${Math.round(data.overall.elevated_precision * 100)}%`}
               </dd>

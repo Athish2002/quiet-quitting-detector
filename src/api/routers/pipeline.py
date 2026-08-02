@@ -24,6 +24,7 @@ from src.api.paths import (
     WEEKLY_DIR,
     ensure,
 )
+from src.api.schemas import RunProgress, RunStarted
 from src.app_utils import progress
 from src.app_utils.audit_log import log_event
 from src.data_layer.ingestion import ingest_weekly_csvs
@@ -89,13 +90,19 @@ def _start(scope: str, weekly: str, memory: str, report: str, message: str) -> d
     return {"success": True, "message": message, "started": True}
 
 
-@router.post("/run", summary="Start the main cohort pipeline")
+@router.post(
+    "/run", summary="Start the main cohort pipeline", response_model=RunStarted
+)
 def execute_pipeline() -> dict:
     """Returns immediately. Poll GET /run/progress, then GET /employees."""
     return _start("main", WEEKLY_DIR, MEMORY_DIR, MAIN_REPORT, "Pipeline started.")
 
 
-@router.post("/run/realtime", summary="Start the realtime cohort pipeline")
+@router.post(
+    "/run/realtime",
+    summary="Start the realtime cohort pipeline",
+    response_model=RunStarted,
+)
 def execute_realtime_pipeline() -> dict:
     # Directories first: idempotent, and doing them before reserving the slot
     # means a filesystem error cannot leave the run flag stuck on.
@@ -109,7 +116,6 @@ def execute_realtime_pipeline() -> dict:
     )
 
 
-@router.get("/run/progress", summary="Current run progress")
+@router.get("/run/progress", summary="Current run progress", response_model=RunProgress)
 def get_run_progress() -> dict:
-    """{running, scope, done, total, current, error}"""
     return progress.snapshot()

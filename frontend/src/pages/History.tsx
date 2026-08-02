@@ -120,12 +120,15 @@ function EventLogPanel() {
           <tbody>
             {data.slice(0, 50).map((event, index) => (
               <tr key={index} className={event.success === false ? "row--failed" : ""}>
-                <td>{event.timestamp ?? "—"}</td>
+                <td>{event.timestamp || "—"}</td>
                 <td>
-                  {event.event_type ?? "—"}
+                  {/* `action`, not `event_type`. The hand-written type invented
+                      the latter and this column rendered an em-dash on every
+                      row until the generated types disagreed with it. */}
+                  {event.action || "—"}
                   {event.source ? ` / ${event.source}` : ""}
                 </td>
-                <td>{event.detail ?? ""}</td>
+                <td>{event.detail}</td>
               </tr>
             ))}
           </tbody>

@@ -92,6 +92,30 @@ jobs:
           name: openapi
           path: openapi.json
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+        working-directory: frontend
+
+      - name: The generated API client matches the served API
+        # `schema.ts` is COMMITTED but GENERATED, which is a combination that
+        # rots silently: without this step, "the frontend's types come from the
+        # backend" degrades into "they came from the backend once", and `tsc`
+        # goes on cheerfully checking the frontend against an API that has since
+        # changed. The export above is the schema the app actually serves; if
+        # regenerating from it moves the committed file, the client is behind.
+        run: |
+          npm run generate:api --prefix frontend
+          if ! git diff --quiet -- frontend/src/api/schema.ts; then
+            echo "::error::frontend/src/api/schema.ts is stale. Regenerate it: uv run python scripts/export_openapi.py && npm --prefix frontend run generate:api"
+            git diff -- frontend/src/api/schema.ts
+            exit 1
+          fi
+
       - name: Agent eval suite
         # §8.9 / §6.2. BLOCKING, not a report. It runs the real domain logic
         # with the deterministic fake scorer, so no LLM is called and §6.3 holds.

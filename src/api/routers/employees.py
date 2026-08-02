@@ -17,6 +17,7 @@ import os
 from fastapi import APIRouter, HTTPException
 
 from src.api.paths import MEMORY_DIR, REALTIME_MEMORY_DIR, memory_dir_for
+from src.api.schemas import BriefingView, EmployeeSummary
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,19 @@ def _load_weeks(memory_dir: str) -> dict[str, dict[int, dict]]:
     return records
 
 
+def _signals_of(record: dict) -> list[dict]:
+    """The stored signals, minus anything that is not one.
+
+    The response model would reject a malformed entry and fail the whole cohort
+    request. Dropping it keeps every other person on screen, which is the same
+    call `_load_weeks` makes about an unreadable file.
+    """
+    stored = record.get("signals")
+    if not isinstance(stored, list):
+        return []
+    return [signal for signal in stored if isinstance(signal, dict)]
+
+
 def _summarise(memory_dir: str) -> list[dict]:
     """Latest classification per person, plus their own week-by-week history."""
     summary = []
@@ -65,7 +79,7 @@ def _summarise(memory_dir: str) -> list[dict]:
                 "classification": latest.get("classification", "Healthy"),
                 "rationale": latest.get("rationale", ""),
                 "latest_week": max(weeks),
-                "signals": latest.get("signals", []),
+                "signals": _signals_of(latest),
                 # Phase 2/3 fields travel with the score so a consumer cannot
                 # render the number without its caveat.
                 "confidence": latest.get("confidence"),
@@ -88,17 +102,29 @@ def _summarise(memory_dir: str) -> list[dict]:
     return summary
 
 
-@router.get("/employees", summary="Latest status for the main cohort")
+@router.get(
+    "/employees",
+    summary="Latest status for the main cohort",
+    response_model=list[EmployeeSummary],
+)
 def get_employees_status() -> list[dict]:
     return _summarise(MEMORY_DIR)
 
 
-@router.get("/employees/realtime", summary="Latest status for the realtime cohort")
+@router.get(
+    "/employees/realtime",
+    summary="Latest status for the realtime cohort",
+    response_model=list[EmployeeSummary],
+)
 def get_realtime_employees_status() -> list[dict]:
     return _summarise(REALTIME_MEMORY_DIR)
 
 
-@router.get("/employee/{name}/briefing", summary="A person's latest briefing")
+@router.get(
+    "/employee/{name}/briefing",
+    summary="A person's latest briefing",
+    response_model=BriefingView,
+)
 def get_employee_briefing(name: str, scope: str = "main") -> dict:
     """The manager briefing from this person's most recent evaluation."""
     name_lower = name.strip().lower()
