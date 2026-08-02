@@ -1,7 +1,7 @@
 employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,weekly_hours
-Arjun,7,2.5,1,44
-Priya,8,0.27,0,39
-Karthik,4,2.36,1,41
-Divya,10,0.31,0,38
-Ravi,4,1.96,1,57
-Meena,2,3.93,2,40
+Arjun,10,0.43,0,41
+Priya,11,0.38,0,42
+Karthik,7,2.34,0,45
+Divya,9,0.4,0,38
+Ravi,3,4.58,2,41
+Meena,7,2.1,2,41

@@ -44,6 +44,39 @@ Notable changes per unit of work. Newest first.
   run. Reads now have their own 300/min budget; the tight 6/min limit that
   protects the API quota is unchanged.
 
+## CI green, and a reproducible demo cohort
+
+### The CI gates I added had never actually run
+`gitleaks` failed on the first push that exercised it — correctly. The E2E job
+carried a 64-hex `key_sha256` literal; it was the SHA-256 of a deliberately
+public throwaway whose plaintext sat in the comment above it, but no scanner can
+tell that from a real token, and neither can a human skimming a diff. The hash is
+now derived at runtime, so no literal exists in the repo.
+
+Because `check` had always failed first, the **E2E job had never run at all**.
+Its first real run found two tests passing for the wrong reason:
+
+- The "refuses to be a leaderboard" test asserted on a table caption and on
+  there being no sortable headers — both vacuous against an empty registry,
+  because there is no table. A fresh checkout has no cohort; my machine did.
+- One test built its own `browser.newContext()` (which does not inherit
+  `baseURL`) and closed it by hand, racing in-flight requests. It failed at
+  `context.close()` — the least informative place a test can fail.
+
+And the readiness poll (`curl … && break`) exited 0 whether or not the server
+came up, so a dead server produced a **green** step and nine unreadable failures
+downstream. A readiness check that cannot fail is not a readiness check.
+
+All three CI jobs — `check`, `web`, `e2e` — now pass.
+
+### The demo generator is reproducible
+§5 requires "same seed → byte-identical output" and the generator was unseeded.
+`data/weekly/*.csv` are tracked and it overwrites them, so every `mock-data` call
+— including the one the E2E suite makes to seed itself — produced a diff of
+meaningless number churn. A repository that reports changes nobody made trains
+people to discard changes without reading them. Now seeded, with an optional
+`seed` in the request body for variety.
+
 ## Fixes — a dead root agent, dead code, and a leaky test suite
 
 ### The ADK root agent could not run at all

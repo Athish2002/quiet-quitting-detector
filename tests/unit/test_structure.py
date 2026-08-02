@@ -218,3 +218,40 @@ def test_no_stateful_store_is_tracked_by_git():
         + "\nUntrack with `git rm --cached <path>` -- adding them to .gitignore "
         "is not enough once git already tracks them."
     )
+
+
+def test_the_demo_generator_is_reproducible():
+    """§5: "Same seed -> byte-identical output."
+
+    `data/weekly/*.csv` are tracked, and the generator overwrites them. Without a
+    seed every run produced a diff of meaningless number churn -- including the
+    run the E2E suite does to seed itself. A repository that reports changes
+    nobody made trains people to discard changes without reading them.
+    """
+    import csv
+    import io
+    import random
+
+    from src.api.routers.simulator import (
+        DEFAULT_SEED,
+        DEMO_EMPLOYEES,
+        _assign_archetype,
+        _week_metrics,
+    )
+
+    def cohort(seed: int) -> str:
+        rng = random.Random(seed)
+        profiles = {name: _assign_archetype(rng) for name in DEMO_EMPLOYEES}
+        out = io.StringIO()
+        writer = csv.writer(out)
+        for week in range(1, 5):
+            for employee, archetype in profiles.items():
+                writer.writerow([employee, *_week_metrics(archetype, week, rng)])
+        return out.getvalue()
+
+    assert cohort(DEFAULT_SEED) == cohort(DEFAULT_SEED), (
+        "the same seed produced different data"
+    )
+    assert cohort(DEFAULT_SEED) != cohort(DEFAULT_SEED + 1), (
+        "the seed has no effect -- the generator is not actually seeded"
+    )

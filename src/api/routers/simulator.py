@@ -145,8 +145,8 @@ def _write_mock_history(
             json.dump(record, fh, indent=2)
 
 
-def _assign_archetype() -> str:
-    roll = random.random()
+def _assign_archetype(rng: random.Random) -> str:
+    roll = rng.random()
     if roll < 0.15:
         return "Silent Exit"
     if roll < 0.30:
@@ -156,48 +156,50 @@ def _assign_archetype() -> str:
     return "Healthy"
 
 
-def _week_metrics(archetype: str, week: int) -> tuple[int, float, int, int]:
+def _week_metrics(
+    archetype: str, week: int, rng: random.Random
+) -> tuple[int, float, int, int]:
     """One employee-week for an archetype: (tasks, response, after_hours, hours)."""
     if archetype == "Silent Exit":
         return (
-            max(1, 10 - int(week * 2.5) + random.randint(-1, 1)),
-            round(max(0.5, 0.4 + week * 1.2 + random.uniform(-0.4, 0.6)), 2),
-            random.randint(1, max(1, week)),
-            max(35, 45 - (week * 2) + random.randint(-2, 2)),
+            max(1, 10 - int(week * 2.5) + rng.randint(-1, 1)),
+            round(max(0.5, 0.4 + week * 1.2 + rng.uniform(-0.4, 0.6)), 2),
+            rng.randint(1, max(1, week)),
+            max(35, 45 - (week * 2) + rng.randint(-2, 2)),
         )
     if archetype == "At Risk":
         return (
-            max(2, 10 - int(week * 1.5) + random.randint(-2, 1)),
-            round(max(0.4, 0.5 + week * 0.6 + random.uniform(-0.2, 0.4)), 2),
-            random.randint(0, max(1, week - 1)),
-            int(max(38, 48 - (week * 1.5) + random.randint(-3, 3))),
+            max(2, 10 - int(week * 1.5) + rng.randint(-2, 1)),
+            round(max(0.4, 0.5 + week * 0.6 + rng.uniform(-0.2, 0.4)), 2),
+            rng.randint(0, max(1, week - 1)),
+            int(max(38, 48 - (week * 1.5) + rng.randint(-3, 3))),
         )
     if archetype == "Watch":
         if week == 3:
             return (
-                random.randint(4, 6),
-                round(random.uniform(1.5, 2.5), 2),
-                random.randint(1, 2),
-                random.randint(50, 60),
+                rng.randint(4, 6),
+                round(rng.uniform(1.5, 2.5), 2),
+                rng.randint(1, 2),
+                rng.randint(50, 60),
             )
         if week == 4:  # recovery
             return (
-                random.randint(8, 10),
-                round(random.uniform(0.5, 1.2), 2),
+                rng.randint(8, 10),
+                round(rng.uniform(0.5, 1.2), 2),
                 0,
-                random.randint(40, 42),
+                rng.randint(40, 42),
             )
         return (
-            max(5, 10 - week + random.randint(-1, 0)),
-            round(0.5 + week * 0.3 + random.uniform(-0.1, 0.2), 2),
+            max(5, 10 - week + rng.randint(-1, 0)),
+            round(0.5 + week * 0.3 + rng.uniform(-0.1, 0.2), 2),
             0,
-            random.randint(42, 48),
+            rng.randint(42, 48),
         )
     return (
-        random.randint(8, 11),
-        round(max(0.2, 0.4 + random.uniform(-0.15, 0.2)), 2),
-        random.choice([0, 0, 1]),
-        random.randint(38, 42),
+        rng.randint(8, 11),
+        round(max(0.2, 0.4 + rng.uniform(-0.15, 0.2)), 2),
+        rng.choice([0, 0, 1]),
+        rng.randint(38, 42),
     )
 
 
@@ -265,8 +267,25 @@ def _classify_mock(
     )
 
 
+#: Default seed for the demo cohort.
+#:
+#: §5 requires "same seed -> byte-identical output". Without one the generator
+#: rewrote data/weekly/*.csv with fresh random values on every call -- and those
+#: CSVs are TRACKED, so every mock-data run (including the one the E2E suite
+#: does to seed itself) produced a spurious diff of meaningless number churn. A
+#: repository that reports changes nobody made trains people to `git checkout .`
+#: without reading, which is how a real change gets discarded.
+DEFAULT_SEED = 20260801
+
+
+class MockDataInput(BaseModel):
+    """Optional seed. Omit it for the reproducible default cohort."""
+
+    seed: int | None = Field(default=None, ge=0, le=2**31 - 1)
+
+
 @router.post("/mock-data", summary="Regenerate the synthetic demo cohort")
-def generate_mock_data() -> dict:
+def generate_mock_data(data: MockDataInput | None = None) -> dict:
     """Writes four weekly CSVs and matching memory files. DESTRUCTIVE.
 
     Emits exactly CANONICAL_HEADER. This generator previously wrote sick_days,
@@ -274,6 +293,11 @@ def generate_mock_data() -> dict:
     disk even after they were removed from the allowlist -- the reason
     `test_mock_generator_emits_only_canonical_columns` exists.
     """
+    # A dedicated Random instance, not the global one: seeding `random` globally
+    # would silently make every other caller in the process deterministic too.
+    seed = data.seed if data and data.seed is not None else DEFAULT_SEED
+    rng = random.Random(seed)
+
     try:
         ensure(WEEKLY_DIR, MEMORY_DIR)
         for stale in glob.glob(os.path.join(WEEKLY_DIR, "*.csv")):
@@ -281,15 +305,16 @@ def generate_mock_data() -> dict:
         for stale in glob.glob(os.path.join(MEMORY_DIR, "*.json")):
             os.remove(stale)
 
-        profiles = {name: _assign_archetype() for name in DEMO_EMPLOYEES}
+        profiles = {name: _assign_archetype(rng) for name in DEMO_EMPLOYEES}
 
         for week in range(1, 5):
-            _write_week(week, profiles)
+            _write_week(week, profiles, rng)
 
         log_event("mock_data", "main", "Generated randomized weekly CSV logs.")
         return {
             "success": True,
-            "message": "Successfully generated new randomized weekly metric logs.",
+            "message": f"Generated the demo cohort from seed {seed}.",
+            "seed": seed,
         }
     except Exception as exc:
         raise HTTPException(
@@ -297,7 +322,7 @@ def generate_mock_data() -> dict:
         ) from exc
 
 
-def _write_week(week: int, profiles: dict[str, str]) -> None:
+def _write_week(week: int, profiles: dict[str, str], rng: random.Random) -> None:
     import csv
 
     path = os.path.join(WEEKLY_DIR, f"week{week}.csv")
@@ -306,13 +331,13 @@ def _write_week(week: int, profiles: dict[str, str]) -> None:
         writer.writerow(CANONICAL_HEADER)
 
         for employee, archetype in profiles.items():
-            tasks, response, after_hours, hours = _week_metrics(archetype, week)
+            tasks, response, after_hours, hours = _week_metrics(archetype, week, rng)
             writer.writerow([employee, int(tasks), response, after_hours, int(hours)])
 
             # Weeks 1-3 also get memory files so history renders in the UI.
             if week < 4:
                 base = _BASE_SCORES.get(archetype, {}).get(week, 1)
-                score = max(1, min(10, base + random.randint(-1, 1)))
+                score = max(1, min(10, base + rng.randint(-1, 1)))
                 classification, rationale = _classify_mock(
                     score, tasks, response, hours
                 )

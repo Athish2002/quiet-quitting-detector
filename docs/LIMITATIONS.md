@@ -28,8 +28,9 @@ first flagged this. `README.md` was corrected in Phase 0.
 ### Synthetic data is not labelled at row level
 §5 requires every synthetic record tagged `origin='synthetic'`, a persistent UI
 banner, and a production guard (`ALLOW_SYNTHETIC_DATA`). **None of this exists
-yet.** `POST /api/mock-data` is now admin-authenticated (Phase 4) but still
-unlabelled. Scheduled for the synthetic-data work in a later phase.
+yet.** `POST /api/mock-data` is admin-authenticated (Phase 4) and now
+**reproducible** — seeded, so the same seed gives byte-identical output — but it
+is still unlabelled, and nothing stops a production build from seeding.
 
 ---
 
