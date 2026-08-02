@@ -19,8 +19,8 @@ PROHIBITED = ("sick_days", "task_accuracy", "sentiment")
 def _isolated_identity(tmp_path, monkeypatch):
     from src.data_layer import identity
 
-    monkeypatch.setattr(identity, "IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
-    monkeypatch.setenv("IDENTITY_SALT", "test-salt")
+    monkeypatch.setenv("IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
+    monkeypatch.setenv("IDENTITY_SALT", "test-salt-not-a-secret")
     identity.reset_resolver()
     yield
     identity.reset_resolver()

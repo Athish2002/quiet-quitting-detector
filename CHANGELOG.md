@@ -2,6 +2,44 @@
 
 Notable changes per unit of work. Newest first.
 
+## Validated configuration — the process refuses to start on a bad value
+
+The environment is untyped input from outside the process, which is the one
+boundary this codebase was not checking. Every setting was an
+`os.environ.get(NAME, default)` somewhere, so a typo and an unset variable were
+indistinguishable: the process started on the default and looked healthy.
+
+Two failures came out of that, and both were real.
+
+**A malformed `API_KEYS` was absorbed.** The key ring loaded nothing, generated
+a temporary admin key, printed it into a log nobody was watching, and then
+rejected every caller — an outage that presents as a client problem.
+
+**The test suite's own isolation was not running.** `tests/unit/conftest.py`
+redirects `FEEDBACK_DB_PATH`, `INTERVENTION_DB_PATH` and `MODEL_REGISTRY_DIR` at
+`tmp_path` so a test run cannot touch the developer's real data. It had no
+effect: the stores captured those paths into module constants at *import* time,
+which happens before any fixture runs. The docstring described a protection that
+had never once executed. Paths resolve per call now, a probe confirms it, and
+the hash-chained access trail (`AUDIT_DB_PATH`) was added to the same fixture.
+
+- **`src/config.py`** — one Pydantic model for every variable this application
+  reads. `app.py` builds it before assembling anything, and does not catch
+  `ConfigError`: uvicorn exits non-zero and the release does not roll forward.
+- **Every problem is reported together**, not the first one. A deployment fixed
+  one variable per restart is a deployment nobody finishes fixing.
+- **The rules catch the mistakes that are silent**: `*` in `ALLOW_ORIGINS`
+  (credentialed CORS, so a wildcard hands any origin an authenticated session),
+  the API *key* pasted where its SHA-256 belongs, a salt or webhook secret too
+  short to be one, an empty `FOO=$BAR` path override.
+- Errors are reported in terms of the variable people set — `ALLOW_ORIGINS`,
+  not `allow_origins.0`.
+- `src/app_utils/settings.py:get_settings` is now `get_persisted_settings`. Two
+  functions of that name in one codebase is a bug waiting for whoever imports
+  the wrong one.
+- No new dependency: `pydantic-settings` cannot be installed here, and the
+  field definitions transfer to it unchanged if that ever stops being true.
+
 ## Response models — the generated client now covers responses too
 
 The frontend's types were generated from the backend for paths, methods and

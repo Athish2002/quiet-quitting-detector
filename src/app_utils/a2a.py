@@ -22,7 +22,6 @@ registration.
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
 from a2a.server.apps import A2AFastAPIApplication
@@ -35,6 +34,8 @@ from a2a.utils.constants import (
 )
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
 from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+
+from src.config import get_settings
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -82,8 +83,9 @@ async def attach_a2a_routes(
     ``APP_URL``). Call once per app — typically in a FastAPI ``lifespan``, since
     the card is built asynchronously; repeated calls register duplicate routes.
     """
-    resolved_app_url = app_url or os.getenv("APP_URL", "http://0.0.0.0:8000")
-    resolved_agent_version = agent_version or os.getenv("AGENT_VERSION", "0.1.0")
+    settings = get_settings()
+    resolved_app_url = app_url or settings.app_url
+    resolved_agent_version = agent_version or settings.agent_version
     resolved_capabilities = capabilities or _default_capabilities()
 
     agent_card = await AgentCardBuilder(

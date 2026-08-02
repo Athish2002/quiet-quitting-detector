@@ -76,7 +76,17 @@ def _isolate_writable_state(monkeypatch, tmp_path):
 
     Only the databases are redirected here. Tests that need `MEMORY_DIR` moved
     do it themselves, because several assert on files they wrote.
+
+    This did not work until `src/config.py` existed: the stores captured their
+    paths into module constants at IMPORT time, which is before any fixture
+    runs, so every setenv below was ignored and the suite wrote to the real
+    `data/` directory. The docstring described a protection that was not
+    running. Paths are resolved per call now, and a probe confirms it.
     """
     monkeypatch.setenv("FEEDBACK_DB_PATH", str(tmp_path / "feedback.db"))
     monkeypatch.setenv("INTERVENTION_DB_PATH", str(tmp_path / "interventions.db"))
     monkeypatch.setenv("MODEL_REGISTRY_DIR", str(tmp_path / "models"))
+    # The access trail, added once the redirection above started working. This
+    # is the record of who looked at whose assessment; a test run must not
+    # append to the real one.
+    monkeypatch.setenv("AUDIT_DB_PATH", str(tmp_path / "audit.db"))

@@ -132,7 +132,7 @@ def test_ingest_path_drops_prohibited_columns_end_to_end():
 def _isolated_audit(tmp_path, monkeypatch):
     from src.governance import audit
 
-    monkeypatch.setattr(audit, "AUDIT_DB_PATH", str(tmp_path / "audit.db"))
+    monkeypatch.setenv("AUDIT_DB_PATH", str(tmp_path / "audit.db"))
     audit._initialised.clear()
     yield
 
@@ -221,12 +221,12 @@ def test_audit_log_rejects_update_and_delete():
     """Immutability enforced by the engine, not by convention."""
     import sqlite3
 
-    from src.governance.audit import AUDIT_DB_PATH, record_access
+    from src.governance.audit import audit_db_path, record_access
 
     record_access(
         actor="a", action="read_score", purpose="model_evaluation", subject_id="sub_x"
     )
-    conn = sqlite3.connect(AUDIT_DB_PATH)
+    conn = sqlite3.connect(audit_db_path())
     try:
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute("UPDATE access_log SET actor='forged'")
@@ -236,10 +236,19 @@ def test_audit_log_rejects_update_and_delete():
         conn.close()
 
 
-def test_audit_write_never_raises_even_when_broken(monkeypatch):
+def test_audit_write_never_raises_even_when_broken(monkeypatch, tmp_path):
     from src.governance import audit
 
-    monkeypatch.setattr(audit, "AUDIT_DB_PATH", "/\0invalid/audit.db")
+    # Through the environment, because that is where the path now comes from
+    # (src/config.py). Patching a module constant would test a path the running
+    # application never reads.
+    #
+    # "Under a regular file" rather than a NUL byte: the null is rejected by
+    # os.environ itself on Windows, and the point is a path the database cannot
+    # be opened at, not a particular way of spelling one.
+    blocker = tmp_path / "not-a-directory"
+    blocker.write_text("", encoding="utf-8")
+    monkeypatch.setenv("AUDIT_DB_PATH", str(blocker / "audit.db"))
     audit._initialised.clear()
     audit.record_access(
         actor="a", action="x", purpose="model_evaluation"

@@ -34,12 +34,16 @@ import threading
 import unicodedata
 from dataclasses import dataclass
 
+from src.config import get_settings
+
 logger = logging.getLogger(__name__)
 
+
 # Separate store, separate access control (Phase 0). Never commit this file.
-IDENTITY_MAP_PATH = os.environ.get(
-    "IDENTITY_MAP_PATH", os.path.join("data", "identity_map.json")
-)
+#: Resolved per call, never captured at import -- see src/config.py.
+def identity_map_path() -> str:
+    return get_settings().identity_map
+
 
 _DEV_SALT = "dev-only-insecure-salt"
 _lock = threading.Lock()
@@ -59,7 +63,7 @@ ID_COLUMN_ALIASES = [
 
 
 def _salt() -> str:
-    salt = os.environ.get("IDENTITY_SALT", "").strip()
+    salt = get_settings().identity_salt
     if not salt:
         # Loud, because an unsalted/predictable hash means the pseudonyms are
         # reversible by brute force over a name list -- i.e. not pseudonymous.
@@ -119,7 +123,7 @@ class IdentityResolver:
     """
 
     def __init__(self, map_path: str | None = None):
-        self.map_path = map_path or IDENTITY_MAP_PATH
+        self.map_path = map_path or identity_map_path()
         self._map: dict = self._load()
 
     def _load(self) -> dict:

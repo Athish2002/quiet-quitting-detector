@@ -15,8 +15,9 @@ export interface paths {
          * API usage counters
          * @description Success vs rejected provider calls.
          *
-         *     Reads the same path the writer uses (METRICS_FILE) rather than a duplicated
-         *     literal, so overriding API_METRICS_PATH cannot desync reader and writer.
+         *     Reads the same path the writer uses (`metrics_file()`) rather than a
+         *     duplicated literal, so overriding API_METRICS_PATH cannot desync reader and
+         *     writer.
          */
         get: operations["get_metrics_api_v1_metrics_get"];
         put?: never;

@@ -12,8 +12,12 @@ from pydantic import BaseModel
 
 from src.api.schemas import ApiCounters, AppSettings, ProviderStatus
 from src.app_utils.audit_log import log_event
-from src.app_utils.runner_helper import METRICS_FILE, get_model_status
-from src.app_utils.settings import get_settings, is_local_only_mode, set_local_only_mode
+from src.app_utils.runner_helper import get_model_status, metrics_file
+from src.app_utils.settings import (
+    get_persisted_settings,
+    is_local_only_mode,
+    set_local_only_mode,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +43,14 @@ def favicon() -> Response:
 def get_metrics() -> dict:
     """Success vs rejected provider calls.
 
-    Reads the same path the writer uses (METRICS_FILE) rather than a duplicated
-    literal, so overriding API_METRICS_PATH cannot desync reader and writer.
+    Reads the same path the writer uses (`metrics_file()`) rather than a
+    duplicated literal, so overriding API_METRICS_PATH cannot desync reader and
+    writer.
     """
-    if os.path.exists(METRICS_FILE):
+    path = metrics_file()
+    if os.path.exists(path):
         try:
-            with open(METRICS_FILE, encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 data = json.load(fh)
             if isinstance(data, dict):
                 return {
@@ -60,7 +66,7 @@ def get_metrics() -> dict:
     "/settings", summary="Persisted application settings", response_model=AppSettings
 )
 def get_settings_endpoint() -> dict:
-    return get_settings()
+    return get_persisted_settings()
 
 
 class SettingsUpdateInput(BaseModel):

@@ -98,8 +98,8 @@ def deterministic(monkeypatch, tmp_path):
     """Replace every nondeterministic seam. Nothing here reaches a network."""
     from src.data_layer import identity
 
-    monkeypatch.setattr(identity, "IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
-    monkeypatch.setenv("IDENTITY_SALT", "parity-fixed-salt")
+    monkeypatch.setenv("IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
+    monkeypatch.setenv("IDENTITY_SALT", "parity-fixed-salt-not-a-secret")
     identity.reset_resolver()
 
     import src.manager_briefing_agent as briefing_mod

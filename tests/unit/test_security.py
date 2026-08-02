@@ -389,9 +389,11 @@ def test_valid_key_configuration_is_loaded(monkeypatch):
 # Webhook signatures
 # ---------------------------------------------------------------------------
 def test_webhook_signature_is_verified_over_the_body(monkeypatch):
-    monkeypatch.setenv("WEBHOOK_SIGNING_SECRET", "shared-secret")
+    monkeypatch.setenv("WEBHOOK_SIGNING_SECRET", "shared-secret-not-a-real-one")
     body = b'{"employee_name": "Ade", "week": 1}'
-    signature = hmac.new(b"shared-secret", body, hashlib.sha256).hexdigest()
+    signature = hmac.new(
+        b"shared-secret-not-a-real-one", body, hashlib.sha256
+    ).hexdigest()
 
     assert verify_webhook_signature(body, signature) is True
     assert verify_webhook_signature(body, f"sha256={signature}") is True
@@ -616,7 +618,7 @@ def test_a_refused_request_is_written_to_the_audit_log(client, tmp_path, monkeyp
     from src.governance import audit
 
     db = str(tmp_path / "audit.db")
-    monkeypatch.setattr(audit, "AUDIT_DB_PATH", db)
+    monkeypatch.setenv("AUDIT_DB_PATH", db)
 
     client.post("/api/memory/clear")
 

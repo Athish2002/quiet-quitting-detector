@@ -30,13 +30,16 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.config import get_settings
 from src.domain.feedback import CalibrationReport, is_regression
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_REGISTRY_DIR = os.environ.get(
-    "MODEL_REGISTRY_DIR", os.path.join("data", "models")
-)
+
+#: Resolved per call, never captured at import -- see src/config.py.
+def default_registry_dir() -> str:
+    return get_settings().model_registry_dir
+
 
 _ACTIVE_POINTER = "ACTIVE.json"
 
@@ -86,7 +89,7 @@ class ModelRegistry:
     """A directory of model manifests plus a pointer to the active one."""
 
     def __init__(self, directory: str | None = None) -> None:
-        self.directory = directory or DEFAULT_REGISTRY_DIR
+        self.directory = directory or default_registry_dir()
 
     # -- storage ---------------------------------------------------------
     def _path(self, version: str) -> str:

@@ -26,13 +26,17 @@ import threading
 from contextlib import contextmanager
 from datetime import UTC, datetime
 
+from src.config import get_settings
 from src.domain.feedback import FeedbackReason, FeedbackRecord, FeedbackVerdict
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FEEDBACK_DB = os.environ.get(
-    "FEEDBACK_DB_PATH", os.path.join("data", "feedback.db")
-)
+
+#: Resolved per call, never captured at import. The import-time version
+#: silently ignored the test suite's tmp_path redirection -- see src/config.py.
+def default_db_path() -> str:
+    return get_settings().feedback_db
+
 
 _init_lock = threading.Lock()
 _initialised: set[str] = set()
@@ -58,7 +62,7 @@ class FeedbackStore:
     """Append-or-replace store of manager verdicts, keyed by (subject, week)."""
 
     def __init__(self, db_path: str | None = None) -> None:
-        self.db_path = db_path or DEFAULT_FEEDBACK_DB
+        self.db_path = db_path or default_db_path()
 
     @contextmanager
     def _connect(self):

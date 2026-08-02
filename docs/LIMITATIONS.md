@@ -233,10 +233,22 @@ list that can only shrink (a test fails if either grows):
 | `run_pipeline.py` | 553 | CLI presentation. Wants a `src/cli/` package separating rendering from driving. |
 | `src/app_utils/runner_helper.py` | 493 | Monkey-patches the GenAI client constructor (B9). Wants the patching split from the chain. |
 
-**Config is still not a validated `Settings` model.** §4 wants every setting read
-through a Pydantic model that fails fast on bad values; `src/api/paths.py` is
-plain constants and env vars are read ad hoc across modules. Doing it half would
-leave two config mechanisms instead of one.
+**Not everything the process touches goes through `Settings`.** `src/config.py`
+covers every variable this application reads, and `app.py` refuses to start on a
+bad one. Two categories are deliberately outside it:
+
+* The variables in `src/app_utils/telemetry.py` and `services.py`. Those are
+  *written* for the ADK and OpenTelemetry SDKs, which read the environment
+  themselves — a model "validating" them would be describing someone else's
+  contract, and would go stale when that contract changed.
+* The fixed directory constants in `src/api/paths.py` (`data/memory`,
+  `data/weekly`, …). They are not environment-driven, so there is nothing to
+  validate; making them overridable is a feature nobody has asked for.
+
+`pydantic-settings` would be the natural library and is not used: this
+environment cannot install packages, and a config layer that only works where
+there is network access is worse than the stdlib version. The field definitions
+and validators transfer unchanged if that stops being true.
 
 ## Frontend (Phase 6, complete)
 

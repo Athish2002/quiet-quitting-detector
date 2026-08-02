@@ -147,11 +147,14 @@ def test_set_total_floors_at_one():
 
 @pytest.fixture
 def metrics_path(tmp_path, monkeypatch):
-    """Point the metrics writer at a temp file so tests never touch the real one."""
-    from src.app_utils import runner_helper
+    """Point the metrics writer at a temp file so tests never touch the real one.
 
+    Through the environment, because that is where the path comes from
+    (src/config.py). Patching a module constant tested a value the running
+    application no longer reads.
+    """
     path = tmp_path / "api_metrics.json"
-    monkeypatch.setattr(runner_helper, "METRICS_FILE", str(path))
+    monkeypatch.setenv("API_METRICS_PATH", str(path))
     return path
 
 
@@ -210,8 +213,10 @@ def test_metrics_write_is_never_fatal_to_caller(tmp_path, monkeypatch):
     """Instrumentation must not break the request it measures."""
     from src.app_utils import runner_helper
 
-    # An unwritable directory path forces the write to fail.
-    monkeypatch.setattr(
-        runner_helper, "METRICS_FILE", str(tmp_path / "nope" / "\0bad" / "m.json")
-    )
+    # A path under a regular FILE forces the write to fail: os.makedirs cannot
+    # create a directory there. (A NUL byte would be rejected by os.environ
+    # itself on Windows, before the writer ever saw the value.)
+    blocker = tmp_path / "not-a-directory"
+    blocker.write_text("", encoding="utf-8")
+    monkeypatch.setenv("API_METRICS_PATH", str(blocker / "m.json"))
     runner_helper._update_metrics(True)  # must not raise

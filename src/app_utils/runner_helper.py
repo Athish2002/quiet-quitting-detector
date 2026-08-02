@@ -32,6 +32,7 @@ from google.genai import Client, types
 from google.genai import types as genai_types
 
 from src.app_utils.settings import is_local_only_mode
+from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,10 @@ def _wait_for_call_slot() -> None:
         _last_call_time = time.time()
 
 
-METRICS_FILE = os.environ.get("API_METRICS_PATH", "api_metrics.json")
+#: Resolved per call, never captured at import -- see src/config.py.
+def metrics_file() -> str:
+    return get_settings().api_metrics
+
 
 # Serialises the read-modify-write below. Without it, concurrent callers (the
 # background pipeline thread, per-attempt executor threads, and any parallel
@@ -86,12 +90,13 @@ def _update_metrics(success: bool) -> None:
     so the badge accurately reflects how often the system is running on
     local logic instead of live Gemini calls.
     """
+    path = metrics_file()
     try:
         with _metrics_lock:
             metrics = {"success": 0, "rejected": 0}
-            if os.path.exists(METRICS_FILE):
+            if os.path.exists(path):
                 try:
-                    with open(METRICS_FILE, encoding="utf-8") as f:
+                    with open(path, encoding="utf-8") as f:
                         loaded = json.load(f)
                     if isinstance(loaded, dict):
                         metrics.update(
@@ -104,15 +109,13 @@ def _update_metrics(success: bool) -> None:
                     # Corrupt/truncated file (e.g. killed mid-write by an
                     # older build): restart the counters rather than crash the
                     # call this is only instrumenting.
-                    logger.warning(
-                        "%s was unreadable; resetting API counters.", METRICS_FILE
-                    )
+                    logger.warning("%s was unreadable; resetting API counters.", path)
 
             metrics["success" if success else "rejected"] += 1
 
             # Atomic replace: a crash can no longer leave a half-written file,
             # and readers never observe a partial JSON document.
-            directory = os.path.dirname(os.path.abspath(METRICS_FILE))
+            directory = os.path.dirname(os.path.abspath(path))
             os.makedirs(directory, exist_ok=True)
             fd, tmp_path = tempfile.mkstemp(
                 dir=directory, prefix=".api_metrics_", suffix=".tmp"
@@ -120,7 +123,7 @@ def _update_metrics(success: bool) -> None:
             try:
                 with os.fdopen(fd, "w", encoding="utf-8") as f:
                     json.dump(metrics, f)
-                os.replace(tmp_path, METRICS_FILE)
+                os.replace(tmp_path, path)
             except Exception:
                 with contextlib.suppress(OSError):
                     os.unlink(tmp_path)
@@ -151,7 +154,7 @@ def patched_api_client(self) -> Client:
             kwargs["vertexai"] = True
 
         # Explicitly pass api_key so it doesn't do environment lookup warning
-        key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        key = get_settings().gemini_api_key
         if key:
             kwargs["api_key"] = key
 
@@ -173,7 +176,7 @@ def patched_live_api_client(self) -> Client:
             kwargs["vertexai"] = True
 
         # Explicitly pass api_key
-        key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        key = get_settings().gemini_api_key
         if key:
             kwargs["api_key"] = key
 
@@ -237,10 +240,10 @@ def _groq_models() -> list[str]:
     env var (litellm ids, e.g. "groq/llama-3.3-70b-versatile,groq/llama-3.1-8b-instant").
     Returns [] when unconfigured so Gemini-only setups are wholly unaffected.
     """
-    if not os.environ.get("GROQ_API_KEY") or not _litellm_available():
+    settings = get_settings()
+    if not settings.groq_api_key or not _litellm_available():
         return []
-    raw = os.environ.get("GROQ_MODELS", "groq/llama-3.3-70b-versatile")
-    return [m.strip() for m in raw.split(",") if m.strip()]
+    return list(settings.groq_models)
 
 
 def _ollama_models() -> list[str]:
@@ -253,7 +256,7 @@ def _ollama_models() -> list[str]:
     """
     if not _litellm_available():
         return []
-    raw = os.environ.get("OLLAMA_MODEL", "").strip()
+    raw = get_settings().ollama_model
     if not raw:
         return []
     return [m.strip() for m in raw.split(",") if m.strip()]
@@ -292,7 +295,7 @@ def _build_model(model_name: str):
     from google.adk.models.lite_llm import LiteLlm
 
     if provider == "ollama":
-        api_base = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
+        api_base = get_settings().ollama_api_base
         return LiteLlm(model=model_name, api_base=api_base)
     return LiteLlm(model=model_name)  # groq / other OpenAI-compatible providers
 

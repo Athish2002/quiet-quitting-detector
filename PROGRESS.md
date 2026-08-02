@@ -12,7 +12,7 @@ and `origin/main` are in sync and the tree is clean.
 |---|---|
 | `ruff check` / `ruff format --check` | pass |
 | `ty check` | pass |
-| Unit tests | **416 pass** |
+| Unit tests | **434 pass** |
 | Generated API client is not stale (CI diffs `schema.ts`) | pass |
 | `domain` dependency contract | pass |
 | `domain` coverage (≥95% floor) | **99.3%** |
@@ -70,19 +70,18 @@ Each of these is enforced by a test that fails if the refusal is removed:
    Flip to `True` with `IDENTITY_SALT` set before any real data.
 2. **Rate limiting is in-process** — multi-worker deployments multiply the
    effective limit by the worker count. Redis is O1.
-3. **Config is not a validated `Settings` model** (§4). Env vars are read ad hoc.
-4. **Synthetic data is reproducible but unlabelled** — no `origin='synthetic'`
+3. **Synthetic data is reproducible but unlabelled** — no `origin='synthetic'`
    row tag, no UI banner, no `ALLOW_SYNTHETIC_DATA` production guard.
-5. **Three legacy files are over the 400-line limit**, on an explicit exception
+4. **Three legacy files are over the 400-line limit**, on an explicit exception
    list in `tests/unit/test_structure.py` that can only shrink:
    `risk_scorer_agent.py`, `run_pipeline.py`, `runner_helper.py`.
-6. **`src/fast_api_app.py` needs GCP credentials to import**, which is why
+5. **`src/fast_api_app.py` needs GCP credentials to import**, which is why
    `tests/integration/test_server_e2e.py` cannot run here.
-7. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
+6. Deferred from §7 on purpose: subject-access export route, delete-by-employee,
    scheduled retention purge, key rotation.
-8. CI still lacks the ≥80% overall coverage ratchet and the Docker + `trivy`
+7. CI still lacks the ≥80% overall coverage ratchet and the Docker + `trivy`
    scan.
-9. **Three report routes are file downloads**, so the generated client types
+8. **Three report routes are file downloads**, so the generated client types
    their bodies as `unknown`. No page calls them.
 
 ## Environment constraints (real, and they shape the choices)
@@ -102,14 +101,15 @@ Each of these is enforced by a test that fails if the refusal is removed:
 
 Nothing is half-finished; pick whichever is most valuable.
 
-**Highest value for a reviewer:** gap 3 — a validated `Settings` model that
-fails fast on bad config (§4). It is the last place the system trusts input it
-has not checked.
+**Highest value for a reviewer:** gap 3 — the §5 synthetic-data work: row
+tagging, a UI banner, and an `ALLOW_SYNTHETIC_DATA` production guard. It is the
+last place the system can present made-up numbers as measurements.
 
 **Then, in rough order:**
-- Gap 4 — the §5 synthetic-data work: row tagging, UI banner, production guard.
-- Gap 5 — split `risk_scorer_agent.py` (the fallback tiers want their own
+- Gap 4 — split `risk_scorer_agent.py` (the fallback tiers want their own
   module) and `run_pipeline.py` (rendering split from driving).
+- Gap 1 — flip `key_by_surrogate` to True. `IDENTITY_SALT` is now validated
+  when set, so the remaining work is the flag and its migration.
 - O1 — Postgres behind the repository interfaces.
 
 **Outstanding asks from earlier sessions**, neither started:
@@ -130,3 +130,8 @@ has not checked.
   `uv run python scripts/export_openapi.py && npm --prefix frontend run generate:api`.
 - Response models live in `src/api/schemas/`, not beside the handlers — one
   module of them was 419 lines and the 400-line gate is not negotiable.
+- **Config comes from `src/config.py` and nowhere else.** Never add an
+  `os.environ.get` — add a field. Values resolve per call, deliberately: the
+  cached-at-import version is what made the test suite's tmp_path isolation a
+  no-op for three stores without anybody noticing.
+- Secrets in test fixtures need 16+ characters now, or `Settings` rejects them.

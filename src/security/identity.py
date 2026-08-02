@@ -25,22 +25,28 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
 import logging
-import os
 import secrets
 from enum import IntEnum
 
 from pydantic import BaseModel, ConfigDict
 
+from src.config import API_KEYS_ENV, WEBHOOK_SECRET_ENV, ConfigError, get_settings
+
 logger = logging.getLogger(__name__)
 
-#: Environment variable holding configured keys, as JSON:
-#:   [{"id": "ci", "role": "admin", "key_sha256": "<hex>"}, ...]
-API_KEYS_ENV = "API_KEYS"
-
-#: Shared secret for webhook HMAC signatures.
-WEBHOOK_SECRET_ENV = "WEBHOOK_SIGNING_SECRET"
+#: Re-exported from src/config.py so the names are defined once. Both are
+#: still importable from here, which is where callers have always looked.
+__all__ = [
+    "API_KEYS_ENV",
+    "WEBHOOK_SECRET_ENV",
+    "ApiKey",
+    "KeyRing",
+    "Principal",
+    "Role",
+    "hash_key",
+    "verify_webhook_signature",
+]
 
 
 class Role(IntEnum):
@@ -93,35 +99,32 @@ def hash_key(raw: str) -> str:
 
 
 def _parse_configured() -> list[ApiKey]:
-    """Read keys from the environment. Malformed entries are dropped loudly."""
-    raw = os.environ.get(API_KEYS_ENV, "").strip()
-    if not raw:
-        return []
+    """Read keys from the validated configuration.
 
+    A bad `API_KEYS` still yields NO keys here rather than an exception, and
+    that has not changed: this is a library that middleware constructs, and the
+    safe failure for it is "authenticate nobody", never "authenticate anyone".
+
+    What changed is that a deployment does not reach this point at all. `app.py`
+    validates the configuration at startup and refuses to serve on a malformed
+    `API_KEYS` (src/config.py), so a typo is now a failure to boot with an
+    explanation instead of a server that starts, prints a temporary key nobody
+    is watching for, and rejects every real caller.
+    """
     try:
-        entries = json.loads(raw)
-    except json.JSONDecodeError:
+        specs = get_settings().api_keys
+    except ConfigError:
         logger.error(
-            "%s is set but is not valid JSON. NO KEYS LOADED -- every "
+            "%s is set but is not usable. NO KEYS LOADED -- every "
             "authenticated route will reject every caller.",
             API_KEYS_ENV,
         )
         return []
 
-    keys: list[ApiKey] = []
-    for entry in entries if isinstance(entries, list) else []:
-        try:
-            role = ROLE_NAMES[str(entry["role"]).lower()]
-            keys.append(
-                ApiKey(
-                    id=str(entry["id"]),
-                    role=role,
-                    key_sha256=str(entry["key_sha256"]).lower(),
-                )
-            )
-        except (KeyError, TypeError, ValueError):
-            logger.error("Skipping malformed API key entry (id not logged).")
-    return keys
+    return [
+        ApiKey(id=spec.id, role=ROLE_NAMES[spec.role], key_sha256=spec.key_sha256)
+        for spec in specs
+    ]
 
 
 class KeyRing:
@@ -199,7 +202,7 @@ def verify_webhook_signature(body: bytes, signature: str | None) -> bool:
     Returns False when no secret is configured: an unsigned webhook is not
     trusted just because the server was not told what to expect.
     """
-    secret = os.environ.get(WEBHOOK_SECRET_ENV, "").strip()
+    secret = get_settings().webhook_signing_secret
     if not secret or not signature:
         return False
 

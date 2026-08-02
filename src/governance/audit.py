@@ -22,9 +22,15 @@ import threading
 from contextlib import contextmanager
 from datetime import UTC, datetime
 
+from src.config import get_settings
+
 logger = logging.getLogger(__name__)
 
-AUDIT_DB_PATH = os.environ.get("AUDIT_DB_PATH", os.path.join("data", "audit.db"))
+
+#: Resolved per call, never captured at import -- see src/config.py.
+def audit_db_path() -> str:
+    return get_settings().audit_db
+
 
 _init_lock = threading.Lock()
 _initialised: set[str] = set()
@@ -73,7 +79,7 @@ END;
 
 @contextmanager
 def _connect(db_path: str | None = None):
-    path = db_path or AUDIT_DB_PATH
+    path = db_path or audit_db_path()
     parent = os.path.dirname(os.path.abspath(path))
     os.makedirs(parent, exist_ok=True)
     conn = sqlite3.connect(path, timeout=10)

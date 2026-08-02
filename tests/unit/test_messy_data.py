@@ -20,10 +20,9 @@ from src.data_layer.preprocessing import preprocess_employee_records
 
 @pytest.fixture(autouse=True)
 def _isolated_identity(tmp_path, monkeypatch):
-    from src.data_layer import identity
 
-    monkeypatch.setattr(identity, "IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
-    monkeypatch.setenv("IDENTITY_SALT", "test-salt")
+    monkeypatch.setenv("IDENTITY_MAP_PATH", str(tmp_path / "idmap.json"))
+    monkeypatch.setenv("IDENTITY_SALT", "test-salt-not-a-secret")
     reset_resolver()
     yield
     reset_resolver()
@@ -153,9 +152,9 @@ def test_surrogate_id_contains_no_real_name():
 
 
 def test_salt_changes_the_pseudonym(tmp_path, monkeypatch):
-    monkeypatch.setenv("IDENTITY_SALT", "salt-a")
+    monkeypatch.setenv("IDENTITY_SALT", "salt-a-not-a-secret")
     a = IdentityResolver(str(tmp_path / "a.json")).resolve({"name": "Ada"}).surrogate_id
-    monkeypatch.setenv("IDENTITY_SALT", "salt-b")
+    monkeypatch.setenv("IDENTITY_SALT", "salt-b-not-a-secret")
     b = IdentityResolver(str(tmp_path / "b.json")).resolve({"name": "Ada"}).surrogate_id
     assert a != b
 

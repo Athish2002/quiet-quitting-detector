@@ -22,14 +22,14 @@ import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 
+from src.config import get_settings
+
 logger = logging.getLogger(__name__)
 
-_CONFIG_PATH = os.environ.get(
-    "DATA_ALLOWLIST_PATH",
-    os.path.join(
-        os.path.dirname(__file__), "..", "..", "config", "data_allowlist.json"
-    ),
-)
+
+#: Resolved per call, never captured at import -- see src/config.py.
+def config_path() -> str:
+    return get_settings().data_allowlist
 
 
 class ForbiddenFieldError(Exception):
@@ -72,7 +72,7 @@ def load_policy() -> dict:
     Cached because it is consulted per-record on every ingest path; call
     `load_policy.cache_clear()` in tests that patch the config.
     """
-    with open(os.path.abspath(_CONFIG_PATH), encoding="utf-8") as f:
+    with open(os.path.abspath(config_path()), encoding="utf-8") as f:
         return json.load(f)
 
 

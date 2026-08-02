@@ -6,10 +6,10 @@
 # import) or redeclare them (two copies that drift -- the B6 failure again, in
 # miniature). One module both can import is the boring correct answer.
 #
-# Not a Settings model yet. §4 wants everything through a validated Pydantic
-# `Settings` that fails fast on bad values, and that is a real piece of work
-# touching every module that reads an env var. Doing it here, half, would leave
-# two config mechanisms instead of one. Listed in docs/LIMITATIONS.md.
+# Not part of `src/config.py`, and that is the whole distinction: nothing here
+# is environment-driven. `Settings` exists to validate untyped input from
+# outside the process; these are fixed layout decisions with no input to check.
+# Anything a deployment CAN set lives there, and is validated at startup.
 
 from __future__ import annotations
 

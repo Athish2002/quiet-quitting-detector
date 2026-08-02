@@ -125,9 +125,9 @@ def purge_expired_audit(
     a transaction and restores them immediately. That keeps ad-hoc deletion
     impossible while still allowing the one sanctioned, audited purge path.
     """
-    from src.governance.audit import AUDIT_DB_PATH, _connect
+    from src.governance.audit import _connect, audit_db_path
 
-    path = db_path or AUDIT_DB_PATH
+    path = db_path or audit_db_path()
     cut = _cutoff("audit_log", now)
     report = PurgeReport(bucket="audit_log", cutoff=cut.isoformat())
 

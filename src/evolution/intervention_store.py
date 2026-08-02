@@ -20,13 +20,16 @@ import threading
 from contextlib import contextmanager
 from datetime import UTC, datetime
 
+from src.config import get_settings
 from src.domain.intervention import InterventionRecord, InterventionType
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_INTERVENTION_DB = os.environ.get(
-    "INTERVENTION_DB_PATH", os.path.join("data", "interventions.db")
-)
+
+#: Resolved per call, never captured at import -- see src/config.py.
+def default_db_path() -> str:
+    return get_settings().intervention_db
+
 
 _init_lock = threading.Lock()
 _initialised: set[str] = set()
@@ -47,7 +50,7 @@ class InterventionStore:
     """What kind of action a manager took, and when. Never what they said."""
 
     def __init__(self, db_path: str | None = None) -> None:
-        self.db_path = db_path or DEFAULT_INTERVENTION_DB
+        self.db_path = db_path or default_db_path()
 
     @contextmanager
     def _connect(self):

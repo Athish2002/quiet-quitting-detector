@@ -26,7 +26,14 @@ def _load() -> dict:
         return dict(DEFAULT_SETTINGS)
 
 
-def get_settings() -> dict:
+def get_persisted_settings() -> dict:
+    """The stored preferences.
+
+    Named apart from `src.config.get_settings` on purpose: that one is the
+    validated ENVIRONMENT, this one is the single toggle a user flips at
+    runtime. Two functions called `get_settings` in one codebase is a bug
+    waiting for whoever imports the wrong one.
+    """
     return _load()
 
 

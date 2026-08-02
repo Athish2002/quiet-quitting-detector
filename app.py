@@ -42,9 +42,24 @@ from src.api.routers import (
     simulator,
     system,
 )
+from src.config import get_settings
 from src.security import KeyRing, SecurityMiddleware
 
 logger = logging.getLogger(__name__)
+
+# --- Configuration ----------------------------------------------------------
+# Read and validated BEFORE anything is assembled, so a bad value is a refusal
+# to start with an explanation rather than a server that comes up looking fine.
+# The failure this prevents is specific: a malformed API_KEYS used to be
+# absorbed -- the key ring loaded nothing, printed a temporary key into a log
+# nobody was watching, and then rejected every real caller. That is a
+# five-hour outage that looks like a client problem.
+#
+# `ConfigError` is deliberately not caught. Uvicorn exits non-zero, the
+# container fails its healthcheck, and the orchestrator does not roll the
+# release forward.
+settings = get_settings()
+logger.warning(settings.startup_summary())
 
 app = FastAPI(
     title="Quiet-Quitting Detector",
@@ -59,14 +74,11 @@ app = FastAPI(
 # --- CORS -------------------------------------------------------------------
 # An explicit allowlist, never "*". With credentials enabled a wildcard would
 # let any origin drive an authenticated session.
-allow_origins = (
-    os.getenv("ALLOW_ORIGINS", "").split(",")
-    if os.getenv("ALLOW_ORIGINS")
-    else ["http://localhost:8000", "http://localhost:5173"]
-)
+# The "never *" part is now enforced rather than described: `Settings` refuses
+# a wildcard outright, so this comment cannot quietly become untrue.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=list(settings.allow_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
