@@ -75,9 +75,10 @@ an OIDC exchange later produces the same object from a token instead of a header
 holds its own, so the effective limit multiplies by the worker count. Redis is the
 fix and belongs with O1.
 
-### Idempotency covers three of five ingest paths
-Raw paste, upload and webhook honour `Idempotency-Key`. The DB and S3 sync paths
-do not, so a retry there can still duplicate a week.
+### ~~Idempotency covers three of five ingest paths~~ — FIXED
+All six ingest paths honour `Idempotency-Key` now. Enforced by a test that
+derives the route list from the live app, so a path added later is covered
+without anyone remembering.
 
 ### Rate limits are three fixed numbers
 300/min for reads, 30/min for writes, 6/min for LLM-triggering routes. The single
@@ -101,6 +102,13 @@ render. Injected CSS is a far narrower problem than injected script.
   rotation, expiry, or revocation short of redeploying.
 - **Full compliance tooling**: DPIA, records of processing, and breach procedures
   are out of scope for this project.
+
+### The ADK server app needs GCP credentials to import
+`src/fast_api_app.py` calls `google.auth.default()` and constructs a Cloud
+Logging client at import time, so it cannot start without credentials. That is
+why `tests/integration/test_server_e2e.py` cannot run here. The agent itself has
+no such dependency — `tests/unit/test_agent_tools.py` asserts that `src.agent`
+and `src.orchestrator_agent` import cleanly without them.
 
 ### Integration tests excluded from CI
 `tests/integration/` requires a live LLM provider and GCP credentials, so it is

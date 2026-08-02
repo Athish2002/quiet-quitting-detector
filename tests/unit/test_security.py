@@ -686,3 +686,36 @@ def test_llm_triggering_routes_keep_a_tight_budget():
 
     assert EXPENSIVE_LIMIT <= 10
     assert EXPENSIVE_LIMIT < READ_LIMIT
+
+
+def test_every_ingest_route_honours_an_idempotency_key(client):
+    """A sender that times out and retries must not append a second copy.
+
+    Nobody sees an error when it does: one person's metrics silently double,
+    which reads as an employee whose output suddenly improved. Derived from the
+    live route table, so an ingest path added later is covered without anyone
+    remembering.
+    """
+    import inspect
+
+    from src.api.routers import ingest as ingest_router
+
+    ingest_posts = [
+        route
+        for route in client.app.routes
+        if getattr(route, "path", "").startswith("/api/v1/ingest/")
+        and "POST" in (getattr(route, "methods", set()) or set())
+    ]
+    assert ingest_posts, "no ingest routes discovered"
+
+    missing = []
+    for route in ingest_posts:
+        source = inspect.getsource(route.endpoint)
+        if "_replay(request)" not in source:
+            missing.append(route.path)
+
+    assert not missing, (
+        "these ingest routes do not honour Idempotency-Key, so a retry "
+        f"duplicates a week: {missing}"
+    )
+    assert hasattr(ingest_router, "idempotency")

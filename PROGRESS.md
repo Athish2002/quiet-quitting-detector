@@ -6,11 +6,31 @@ Read this first, update it last. Current state only — history lives in `CHANGE
 `PRODUCTION_EVOLUTION_PROMPT.md` §9 is done. What remains is the optional track
 (O1–O4) and the gaps listed below.
 
-Everything committed is green: `ruff`, `ruff format`, `ty`, **397 unit tests**, the
-`domain` dependency contract, the `domain` coverage gate (**99.37%**, against a
+Everything committed is green: `ruff`, `ruff format`, `ty`, **414 unit tests**, the
+`domain` dependency contract, the `domain` coverage gate (**99.31%**, against a
 95% floor), the agent eval suite (9 accuracy + 6 safety, blocking), the frontend's
 `tsc --noEmit` strict + **23 vitest tests** with `jest-axe` on every page, and
 **9 Playwright E2E specs** against the composed stack. Clean tree.
+
+## Fixed since the phases closed
+
+Three things that were broken or dead rather than merely incomplete:
+
+1. **The ADK root agent could not run at all.** `run_orchestrator` was registered
+   as a tool with a `Callable` parameter, which has no JSON Schema — so ADK
+   failed to build the declaration and *every* ADK entrypoint died together.
+   Invisible to the unit suite because nothing there built a declaration.
+   `tests/unit/test_agent_tools.py` is the cheap check that was missing.
+2. **The cohort fairness correction reached no production path.** Built and
+   property-tested in Phase 2, called by nothing until `cohort_pass.py` gave the
+   pipeline a way to compute it once for the whole cohort. Tested code nothing
+   calls is a claim, not a feature.
+3. **Unit tests could reach a live provider.** §6.3 was held up by each test
+   remembering to stub its own seam, and it had already failed twice.
+   `tests/unit/conftest.py` blocks every provider seam by default.
+
+Also: idempotency now covers all six ingest paths (was three), and vitest no
+longer tries to run the Playwright specs.
 
 ---
 

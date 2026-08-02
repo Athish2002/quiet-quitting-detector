@@ -127,6 +127,7 @@ def detect_trends(
     employee_name: str,
     data: list[dict],
     enricher: TrendEnricher | None = None,
+    cohort_shifts: dict[str, dict[int, float]] | None = None,
 ) -> list[dict]:
     """Analyzes the employee's multi-week data and returns confirmed signals.
 
@@ -154,7 +155,10 @@ def detect_trends(
             }
         ]
 
-    confirmed_signals = confirm_signals(weeks)
+    # Cohort shifts remove movement everybody saw that week -- an outage, a
+    # holiday, a scope cut. They can only ever REMOVE a signal, never add one
+    # (tested in test_domain_statistics.py), so passing them is always safe.
+    confirmed_signals = confirm_signals(weeks, cohort_shifts=cohort_shifts)
     if not confirmed_signals:
         return []  # No persistent patterns detected
 

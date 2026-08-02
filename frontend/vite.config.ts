@@ -26,5 +26,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // Vitest owns src/, Playwright owns e2e/. Without this split vitest picks
+    // up the Playwright specs, fails to resolve @playwright/test's runner, and
+    // reports a failure that has nothing to do with the code under test --
+    // noise that trains people to ignore a red suite.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["node_modules", "dist", "e2e"],
   },
 });

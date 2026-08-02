@@ -44,6 +44,49 @@ Notable changes per unit of work. Newest first.
   run. Reads now have their own 300/min budget; the tight 6/min limit that
   protects the API quota is unchanged.
 
+## Fixes — a dead root agent, dead code, and a leaky test suite
+
+### The ADK root agent could not run at all
+`run_orchestrator` was registered directly as a tool, and its
+`progress_cb: Callable | None` parameter has no JSON Schema representation. ADK
+builds a schema for every tool before the agent starts, so this raised
+`PydanticInvalidForJsonSchema` and took down **every ADK entrypoint together** —
+`adk run`, the A2A path, the reasoning-engine adapter.
+
+Invisible to the unit suite, because nothing in it built a tool declaration. The
+integration tests caught it, and they are excluded from CI because they need a
+live LLM. Fixed with a thin `run_pipeline` wrapper, plus
+`tests/unit/test_agent_tools.py` — which builds the declaration, needs no
+network, and is the cheap check the expensive suite was the only thing covering.
+
+### The cohort correction was tested code that nothing called
+Built and property-tested in Phase 2, reachable from no production path for two
+phases: the pipeline scored people one at a time, so a cohort-wide number had
+nowhere to come from. `src/domain/cohort_pass.py` computes shifts once for the
+whole cohort before anybody is scored, and the orchestrator now passes them to
+the detector. Tested code no production path reaches is not a feature, it is a
+claim.
+
+### Unit tests could reach a live provider
+§6.3 was being honoured by each test remembering to stub its own seam — the same
+discipline that produced B1. It had already failed twice: the security suite
+spawned real pipeline threads after a refactor moved the name it patched, and a
+cohort test hit Gemini the moment its fixture confirmed a signal. Neither was
+visible beyond a slow run and some async warnings. `tests/unit/conftest.py` now
+blocks every provider seam by default and redirects the stateful stores to
+`tmp_path`.
+
+### Also
+- **Idempotency now covers all six ingest paths.** DB, object store and
+  natural-language were still able to duplicate a week on retry.
+- `ingest.py` went past the 400-line limit as a result, so it split into
+  `ingest.py`, `ingest_sources.py` and `_ingest_shared.py` — the structure gate
+  did its job and the limit was not raised.
+- Vitest was picking up the Playwright spec and reporting a failure unrelated to
+  the code under test. The two runners are now separated; a red suite that is
+  routinely wrong teaches people to ignore it.
+- Frontend types are regenerated from the live OpenAPI schema.
+
 ## Phase 5 (complete) — API restructure
 
 - **Blocker B4 closed.** `app.py` went from ~1,250 lines and 30+ inline routes to

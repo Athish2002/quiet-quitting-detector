@@ -10,7 +10,9 @@ from google.adk.models import Gemini
 from src.app_utils.runner_helper import run_agent_sync
 from src.data_layer.ingestion import ingest_weekly_csvs
 from src.data_layer.preprocessing import preprocess_employee_records
+from src.domain.cohort_pass import compute_cohort_shifts
 from src.domain.continuity import build_continuity, build_outcomes
+from src.domain.models import WeekMetrics
 from src.manager_briefing_agent import generate_briefing
 from src.risk_scorer_agent import score_risk
 from src.trend_detector_agent import detect_trends
@@ -36,6 +38,19 @@ orchestrator_agent = Agent(
     model=Gemini(model="gemini-2.5-flash"),
     instruction=SYSTEM_INSTRUCTION,
 )
+
+
+def _to_week_models(rows: list[dict]) -> list[WeekMetrics]:
+    """Adapt legacy dict rows for the cohort pass. Unparseable rows are dropped."""
+    weeks: list[WeekMetrics] = []
+    for row in rows:
+        if row.get("week") is None:
+            continue
+        try:
+            weeks.append(WeekMetrics.model_validate(row))
+        except Exception:
+            logger.debug("Skipping a malformed row during the cohort pass.")
+    return weeks
 
 
 def build_continuity_note(first_name: str, up_to_week: int, memory_folder: str) -> str:
@@ -117,6 +132,23 @@ def run_orchestrator(
         logger.warning(error_msg)
         return error_msg
 
+    # Phase 2's fairness correction, finally wired in (§6.1). Computed ONCE for
+    # the whole cohort before anybody is scored, because that is what it needs
+    # and why it sat unused until the pipeline was restructured: if the whole
+    # team's output fell in a holiday week, an individual's fall is explained
+    # and must not count against them.
+    #
+    # Failure here is non-fatal on purpose. No correction means signals stay as
+    # they are -- conservative in the direction that matters, since a shift can
+    # only ever remove a signal.
+    cohort_shifts: dict[str, dict[int, float]] = {}
+    try:
+        cohort_shifts = compute_cohort_shifts(
+            {name: _to_week_models(weeks) for name, weeks in employee_records.items()}
+        )
+    except Exception:
+        logger.warning("Could not compute cohort shifts; scoring without them.")
+
     pipeline_results = {}
 
     # Process each employee sequence
@@ -170,7 +202,9 @@ def run_orchestrator(
                         w_missing = expected_weeks.intersection(
                             range(1, w + 1)
                         ) - processed_weeks.intersection(range(1, w + 1))
-                        signals = detect_trends(first_name, sub_timeline)
+                        signals = detect_trends(
+                            first_name, sub_timeline, cohort_shifts=cohort_shifts
+                        )
                         if w_missing:
                             signals.append(
                                 {
@@ -200,7 +234,9 @@ def run_orchestrator(
                     w_missing = expected_weeks.intersection(
                         range(1, w + 1)
                     ) - processed_weeks.intersection(range(1, w + 1))
-                    signals = detect_trends(first_name, sub_timeline)
+                    signals = detect_trends(
+                        first_name, sub_timeline, cohort_shifts=cohort_shifts
+                    )
                     if w_missing:
                         signals.append(
                             {
@@ -232,7 +268,9 @@ def run_orchestrator(
                 ) - processed_weeks.intersection(range(1, w + 1))
 
                 # 1. Trend Detector Agent
-                signals = detect_trends(first_name, sub_timeline)
+                signals = detect_trends(
+                    first_name, sub_timeline, cohort_shifts=cohort_shifts
+                )
                 if w_missing:
                     signals.append(
                         {

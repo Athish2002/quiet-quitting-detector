@@ -35,6 +35,7 @@ from src.api.routers import (
     employees,
     evolution,
     ingest,
+    ingest_sources,
     maintenance,
     pipeline,
     reports,
@@ -109,6 +110,7 @@ _ROUTERS = (
     reports.router,
     maintenance.router,
     ingest.router,
+    ingest_sources.router,
     simulator.router,
     evolution.router,
 )

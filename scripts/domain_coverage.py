@@ -37,6 +37,7 @@ DOMAIN_TESTS = [
     "tests/unit/test_domain_statistics.py",
     "tests/unit/test_evolution.py",
     "tests/unit/test_intervention.py",
+    "tests/unit/test_cohort_pass.py",
 ]
 
 DEFAULT_MIN = 95.0

@@ -133,7 +133,7 @@ def test_every_router_is_mounted():
     router_modules = {
         path.stem
         for path in (ROOT / "src" / "api" / "routers").glob("*.py")
-        if path.stem not in {"__init__", "nl_agent"}
+        if not path.stem.startswith("_") and path.stem != "nl_agent"
     }
 
     mounted_paths = {getattr(route, "path", "") for route in app_module.app.routes}
