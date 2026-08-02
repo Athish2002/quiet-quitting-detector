@@ -1,0 +1,30 @@
+# Acknowledged gitleaks findings.
+#
+# Every entry here needs a reason, and the reason must be that the value is NOT
+# a credential -- never that rotating it is inconvenient. An ignore file used to
+# quiet a real leak is worse than no scanning at all, because it makes the green
+# build a lie.
+#
+# ---------------------------------------------------------------------------
+# 8f46cee8 .github/workflows/ci.yml:148 -- generic-api-key
+#
+# A SHA-256 hash of the string "ci-e2e-key-not-a-secret", which was written in
+# plaintext in the comment directly above it. The E2E suite needs a known API
+# key so it does not have to scrape one from the server log, and the server
+# stores only hashes -- so the workflow carried the hash of a deliberately
+# public throwaway.
+#
+# It is not a secret in any sense: the plaintext is in the same file, in the
+# same commit, and it grants access only to a server that CI starts and kills
+# within one job. gitleaks flags it because `generic-api-key` matches any
+# 64-character hex literal, which it cannot distinguish from a real token.
+#
+# The workflow no longer contains the literal at all -- the hash is now derived
+# at runtime with `sha256sum`, which also removes the risk of the comment and
+# the value drifting apart. This entry covers only the historical commit.
+#
+# History was NOT rewritten to remove it. Rewriting published history to purge a
+# hash of a public string would break every existing clone for no security
+# benefit, and the honest record is that this was committed and then improved.
+# ---------------------------------------------------------------------------
+8f46cee8002100cabd742c873c80bdbffb125948:.github/workflows/ci.yml:generic-api-key:148

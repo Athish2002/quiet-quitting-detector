@@ -142,10 +142,12 @@ jobs:
       GEMINI_API_KEY: ""
       GOOGLE_API_KEY: ""
       IDENTITY_SALT: ci-fixed-salt-not-a-secret
-      # A fixed key so the suite does not have to scrape it from the log.
-      # sha256 of "ci-e2e-key-not-a-secret".
-      API_KEYS: >-
-        [{"id":"e2e","role":"admin","key_sha256":"8d9ee488979aefe3f6eb6beb2bd2a5f85e55a3d311c4a1b761695bcfa679c32c"}]
+      # A fixed, deliberately public key so the suite does not have to scrape
+      # one from the server log. Its SHA-256 is DERIVED below rather than
+      # written here: a 64-hex literal is indistinguishable from a real
+      # credential to a secret scanner, and hard-coding it alongside the
+      # plaintext also lets the two drift apart silently.
+      E2E_API_KEY: ci-e2e-key-not-a-secret
     steps:
       - uses: actions/checkout@v4
 
@@ -167,6 +169,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
 
+      - name: Derive the API key ring from the plaintext key
+        run: |
+          HASH=$(printf %s "$E2E_API_KEY" | sha256sum | cut -d" " -f1)
+          echo "API_KEYS=[{\"id\":\"e2e\",\"role\":\"admin\",\"key_sha256\":\"$HASH\"}]" >> "$GITHUB_ENV"
+
       - name: Start the server
         run: |
           uv run uvicorn app:app --host 127.0.0.1 --port 8000 &
@@ -180,7 +187,6 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:8000
-          E2E_API_KEY: ci-e2e-key-not-a-secret
 
       - uses: actions/upload-artifact@v4
         if: failure()
