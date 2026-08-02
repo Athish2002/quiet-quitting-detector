@@ -180,3 +180,41 @@ def test_nothing_outside_the_api_prefix_serves_data():
         "these routes sit outside /api and are therefore served without "
         f"authentication: {offenders}"
     )
+
+
+def test_no_stateful_store_is_tracked_by_git():
+    """Runtime databases must never be committed.
+
+    `data/feedback.db` was tracked by accident: a `git add -A` caught it before
+    the ignore rule existed, and .gitignore does NOT apply to files git is
+    already tracking -- so the rule looked right and did nothing. It was empty
+    and never reached the remote, but the next `git add -A` after a manager
+    submitted a verdict would have published real feedback about real people to
+    a public repository.
+
+    Checked against git rather than the filesystem, because being ignored and
+    being untracked are different things and only the second one protects
+    anybody.
+    """
+    import subprocess
+
+    tracked = subprocess.run(
+        ["git", "ls-files"],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+    ).stdout.splitlines()
+
+    forbidden_suffixes = (".db", ".db-journal", ".sqlite", ".sqlite3")
+    offenders = [
+        path
+        for path in tracked
+        if path.endswith(forbidden_suffixes) or path.startswith("data/models/")
+    ]
+
+    assert not offenders, (
+        "these runtime stores are tracked by git and would be published:\n  "
+        + "\n  ".join(offenders)
+        + "\nUntrack with `git rm --cached <path>` -- adding them to .gitignore "
+        "is not enough once git already tracks them."
+    )
