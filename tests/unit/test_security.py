@@ -129,14 +129,26 @@ def _no_side_effects(monkeypatch, tmp_path):
 def _mutating_routes(client) -> list[tuple[str, str]]:
     """Every non-safe route the live app exposes."""
     found = []
-    for route in client.app.routes:
-        methods = getattr(route, "methods", set()) or set()
-        path = getattr(route, "path", "")
-        if not path.startswith("/api/"):
-            continue
-        for method in methods:
-            if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
-                found.append((method.upper(), path))
+
+    def _collect(routes, prefix=""):
+        for route in routes:
+            cur_prefix = prefix
+            if hasattr(route, "include_context") and getattr(route.include_context, "prefix", None):
+                cur_prefix += route.include_context.prefix
+            if hasattr(route, "original_router") and hasattr(route.original_router, "routes"):
+                _collect(route.original_router.routes, cur_prefix)
+            elif hasattr(route, "routes"):
+                _collect(route.routes, cur_prefix)
+            else:
+                methods = getattr(route, "methods", set()) or set()
+                path = cur_prefix + getattr(route, "path", "")
+                if not path.startswith("/api/"):
+                    continue
+                for method in methods:
+                    if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
+                        found.append((method.upper(), path))
+
+    _collect(client.app.routes)
     assert found, "no mutating routes discovered -- the test is checking nothing"
     return sorted(set(found))
 
@@ -702,19 +714,32 @@ def test_every_ingest_route_honours_an_idempotency_key(client):
 
     from src.api.routers import ingest as ingest_router
 
-    ingest_posts = [
-        route
-        for route in client.app.routes
-        if getattr(route, "path", "").startswith("/api/v1/ingest/")
-        and "POST" in (getattr(route, "methods", set()) or set())
-    ]
+    ingest_posts = []
+
+    def _collect_ingest(routes, prefix=""):
+        for route in routes:
+            cur_prefix = prefix
+            if hasattr(route, "include_context") and getattr(route.include_context, "prefix", None):
+                cur_prefix += route.include_context.prefix
+            if hasattr(route, "original_router") and hasattr(route.original_router, "routes"):
+                _collect_ingest(route.original_router.routes, cur_prefix)
+            elif hasattr(route, "routes"):
+                _collect_ingest(route.routes, cur_prefix)
+            else:
+                full_path = cur_prefix + getattr(route, "path", "")
+                if full_path.startswith("/api/v1/ingest/") and "POST" in (
+                    getattr(route, "methods", set()) or set()
+                ):
+                    ingest_posts.append((route, full_path))
+
+    _collect_ingest(client.app.routes)
     assert ingest_posts, "no ingest routes discovered"
 
     missing = []
-    for route in ingest_posts:
+    for route, full_path in ingest_posts:
         source = inspect.getsource(route.endpoint)
         if "_replay(request)" not in source:
-            missing.append(route.path)
+            missing.append(full_path)
 
     assert not missing, (
         "these ingest routes do not honour Idempotency-Key, so a retry "

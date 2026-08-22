@@ -1842,4 +1842,492 @@ legend {
   .app-shell .app-main {
     padding: var(--space-5) var(--space-4) 48px;
   }
+
+  .app-shell .overview-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell .stat-strip {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .app-shell .stat-cell {
+    border-left: none;
+    padding: 0;
+  }
+
+  .app-shell .stance-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .app-shell .stance-col {
+    padding: 0;
+  }
+
+  .app-shell .stance-col:last-child {
+    padding: 0;
+    border-left: none;
+    border-top: var(--rule-hairline) solid var(--rule);
+    padding-top: var(--space-4);
+  }
+
+  .app-shell .link-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MODERNIST SHARED COMPONENTS & OVERVIEW (S3)
+ *
+ * 1. Shared button system (.btn, .btn--primary, .btn--secondary, .btn--quiet)
+ * 2. Classification chips (.chip, .chip--healthy, .chip--watch, etc.)
+ * 3. Overview section (Hero layout, R2 panels, Stat strip, Stance, Link cards)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- Modernist Button System (S3) ----------------------------------------- */
+
+.app-shell .btn,
+.app-shell button:not(.sidebar__run):not(.theme-toggle) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--surface);
+  border: var(--rule-hairline) solid var(--accent);
+  box-shadow: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.app-shell .btn:hover:not(:disabled),
+.app-shell button:not(.sidebar__run):not(.theme-toggle):hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--surface);
+}
+
+.app-shell .btn:active:not(:disabled),
+.app-shell button:not(.sidebar__run):not(.theme-toggle):active:not(:disabled) {
+  background: var(--accent-active);
+  border-color: var(--accent-active);
+  color: var(--surface);
+}
+
+.app-shell .btn:disabled,
+.app-shell button:not(.sidebar__run):not(.theme-toggle):disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.app-shell .btn--primary {
+  background: var(--accent);
+  color: var(--surface);
+  border-color: var(--accent);
+}
+
+.app-shell .btn--secondary {
+  background: transparent;
+  color: var(--ink);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .btn--secondary:hover:not(:disabled) {
+  background: var(--accent-bg);
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+.app-shell .btn--secondary:active:not(:disabled) {
+  background: var(--accent-bg);
+  color: var(--ink);
+}
+
+.app-shell .btn--quiet {
+  background: transparent;
+  color: var(--muted);
+  border: var(--rule-hairline) solid transparent;
+}
+
+.app-shell .btn--quiet:hover:not(:disabled) {
+  background: var(--accent-bg);
+  color: var(--ink);
+}
+
+/* Danger actions */
+.app-shell button.danger,
+.app-shell .btn--danger {
+  background: #991B1B;
+  color: #FFFFFF;
+  border-color: #991B1B;
+}
+
+.app-shell button.danger:hover:not(:disabled),
+.app-shell .btn--danger:hover:not(:disabled) {
+  background: #7F1D1D;
+  border-color: #7F1D1D;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .app-shell button.danger,
+[data-theme="dark"] .app-shell .btn--danger {
+  background: #DC2626;
+  color: #FFFFFF;
+  border-color: #DC2626;
+}
+
+[data-theme="dark"] .app-shell button.danger:hover:not(:disabled),
+[data-theme="dark"] .app-shell .btn--danger:hover:not(:disabled) {
+  background: #EF4444;
+  border-color: #EF4444;
+}
+
+/* --- Classification Chips (S3) ------------------------------------------- */
+
+.app-shell .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  border-radius: var(--radius);
+  text-transform: none;
+  border: var(--rule-hairline) solid transparent;
+}
+
+.app-shell .chip--healthy {
+  background: var(--healthy-bg);
+  color: var(--healthy);
+  border-color: var(--healthy);
+}
+
+.app-shell .chip--watch {
+  background: var(--watch-bg);
+  color: var(--watch);
+  border-color: var(--watch);
+}
+
+.app-shell .chip--at-risk {
+  background: var(--at-risk-bg);
+  color: var(--at-risk);
+  border-color: var(--at-risk);
+}
+
+.app-shell .chip--exit {
+  background: var(--exit-bg);
+  color: var(--exit);
+  border-color: var(--exit);
+}
+
+/* --- Overview Page Layout & R2 Panels (S3) -------------------------------- */
+
+.app-shell .overview-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell .overview-hero {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  align-items: start;
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: var(--rule-major) solid var(--rule);
+}
+
+.app-shell .overview-hero .section-head {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.app-shell .overview-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.app-shell .overview-side__card {
+  padding: var(--space-4);
+  background: var(--surface);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .overview-side__title {
+  margin: 0 0 var(--space-3);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-shell .distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-shell .distribution-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.app-shell .distribution-count {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.app-shell .latest-run-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-shell .latest-run-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.app-shell .latest-run-metric strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.app-shell .latest-run-note {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-2);
+  border-top: var(--rule-hairline) solid var(--rule);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* --- Stat Strip (S3) ------------------------------------------------------ */
+
+.app-shell .stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: var(--space-6);
+  border-bottom: var(--rule-major) solid var(--rule);
+}
+
+.app-shell .stat-cell {
+  padding: 0 var(--space-4) var(--space-5);
+  border-left: var(--rule-hairline) solid var(--rule);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell .stat-cell:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.app-shell .stat-cell:last-child {
+  padding-right: 0;
+}
+
+.app-shell .stat-cell__label {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-height: 28px;
+  line-height: 1.35;
+}
+
+.app-shell .stat-cell__numeral {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ink); /* HARD CONSTRAINT: always var(--ink) */
+}
+
+.app-shell .stat-cell__note {
+  margin: var(--space-2) 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* --- Notices & Calibration Caveats (S3) ----------------------------------- */
+
+.app-shell .overview-notice {
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  border: var(--rule-major) solid var(--accent);
+  background: var(--surface);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.app-shell .overview-notice--alert {
+  border-color: #DC2626;
+}
+
+.app-shell .overview-notice p {
+  margin: 0;
+}
+
+.app-shell .overview-notice strong {
+  font-weight: 700;
+}
+
+.app-shell .overview-notice a {
+  color: var(--accent);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* --- Stance Section ("What this is, and what it is not") (S3) ------------- */
+
+.app-shell .stance-section {
+  margin-bottom: var(--space-6);
+}
+
+.app-shell .stance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: var(--space-4);
+}
+
+.app-shell .stance-col {
+  padding: 0 var(--space-5) 0 0;
+}
+
+.app-shell .stance-col:last-child {
+  padding: 0 0 0 var(--space-5);
+  border-left: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .stance-col__label {
+  margin: 0 0 var(--space-3);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.app-shell .stance-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.app-shell .stance-list li {
+  margin-bottom: var(--space-2);
+}
+
+.app-shell .stance-list li strong {
+  font-weight: 600;
+}
+
+.app-shell .stance-closing {
+  padding-top: var(--space-4);
+  margin: 0;
+  border-top: var(--rule-major) solid var(--rule);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* --- Link Cards (S3) ------------------------------------------------------ */
+
+.app-shell .overview-links {
+  margin-bottom: var(--space-5);
+}
+
+.app-shell .link-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+.app-shell .link-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: var(--rule-hairline) solid var(--rule);
+  text-decoration: none;
+  color: var(--ink);
+  border-radius: var(--radius);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-shell .link-card:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+.app-shell .link-card__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-shell .link-card__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.app-shell .link-card__body {
+  margin: 0 0 var(--space-4);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  flex: 1;
+}
+
+.app-shell .link-card__action {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Screen reader utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

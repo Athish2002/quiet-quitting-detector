@@ -150,7 +150,11 @@ function EventLogPanel() {
             >
               Yes, clear it
             </button>
-            <button type="button" onClick={() => setConfirming(false)}>
+            <button
+              type="button"
+              className="btn--quiet"
+              onClick={() => setConfirming(false)}
+            >
               Cancel
             </button>
           </span>

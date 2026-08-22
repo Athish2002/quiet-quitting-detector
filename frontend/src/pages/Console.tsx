@@ -147,7 +147,14 @@ function RegistryPanel() {
             >
               Yes, regenerate
             </button>
-            <button type="button" onClick={() => setConfirming(false)}>
+            {/* Quiet on purpose: two filled buttons side by side make the
+                reader stop and read both, and the one that deletes every
+                stored evaluation should be the only one drawing the eye. */}
+            <button
+              type="button"
+              className="btn--quiet"
+              onClick={() => setConfirming(false)}
+            >
               Cancel
             </button>
           </span>

@@ -136,7 +136,23 @@ def test_every_router_is_mounted():
         if not path.stem.startswith("_") and path.stem != "nl_agent"
     }
 
-    mounted_paths = {getattr(route, "path", "") for route in app_module.app.routes}
+    mounted_paths = set()
+
+    def _collect_paths(routes, prefix=""):
+        for r in routes:
+            cur_prefix = prefix
+            if hasattr(r, "include_context") and getattr(r.include_context, "prefix", None):
+                cur_prefix += r.include_context.prefix
+            if hasattr(r, "original_router") and hasattr(r.original_router, "routes"):
+                _collect_paths(r.original_router.routes, cur_prefix)
+            elif hasattr(r, "routes"):
+                _collect_paths(r.routes, cur_prefix)
+            else:
+                p = cur_prefix + getattr(r, "path", "")
+                if p:
+                    mounted_paths.add(p)
+
+    _collect_paths(app_module.app.routes)
     assert any(p.startswith("/api/v1") for p in mounted_paths), "nothing mounted"
 
     source = (ROOT / "app.py").read_text(encoding="utf-8")

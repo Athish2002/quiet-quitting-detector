@@ -2,6 +2,27 @@
 
 Notable changes per unit of work. Newest first.
 
+## Redesign S3 — Overview section, R2 side panels, and the Modernist button system
+
+Replaced `Home.tsx` with the Modernist Overview section at `/` (`design/REDESIGN_PLAN.md`).
+
+**Overview layout & R2 panels.**
+- `SectionHeader` with `wide={true}` (44px h1 capped at 16ch), eyebrow `"OVERVIEW"`, title `"Weekly telemetry, read against a person's own history."`
+- Bespoke hero layout resolving R2: on wide screens, the empty right-hand space beside the hero holds:
+  1. A **band-distribution block**: decomposes "currently raised above Healthy" into four rows with classification chips (Healthy, Watch, At Risk, Silent Exit). Shows COUNTS ONLY — never names, never sorted by score.
+  2. A **latest evaluation panel**: reports how many were evaluated, the latest telemetry week, and data gaps. Deliberately does not repeat the active model name, which the sidebar owns.
+- **4-column stat strip**: `People on record` / `Currently raised above Healthy` / `Manager verdicts recorded` / `Reported as harmful` on equal columns with 1px rules between and 2px rule under. All four numerals are `var(--ink)` with no exceptions — a headcount of people is never rendered in an alert color.
+- **"What this is, and what it is not"**: two columns split by a 1px rule, headed by uppercase accent labels "It does" / "It does not" over ethical safeguards copy, a 2px rule, and a closing caveat paragraph.
+- **Three link cards**: Cohort (`/cohort`), Diagnostic room (`/diagnostic`), Access trail (`/audit`) with surface background, 1px rule, and accent hover states.
+- **Empty state handling**: when no telemetry or verdicts exist, numerals read 0/— and an accent notice explains no manager has validated the system yet.
+
+**Shared Modernist button system & classification chips.**
+- Introduced `.btn`, `.btn--primary` (accent fill, surface text, hover `--accent-hover`, active `--accent-active`), `.btn--secondary` (transparent, 1px rule border), `.btn--quiet`, and `.btn--danger` scoped under `.app-shell`.
+- Added `.chip` and `.chip--healthy` / `--watch` / `--at-risk` / `--exit` matching dual-theme verified contrast pairs.
+
+**Tests & Accessibility.**
+- Added `frontend/src/pages/Home.test.tsx` covering populated state, empty state, ink numeral constraint, absence of sort controls, counts-only distribution, and zero axe accessibility violations. All 89 frontend tests pass.
+
 ## Redesign S2 — one shell, eight sections, and the model chain on show
 
 The four sibling pages become a single shell: a 244px sticky sidebar, eight

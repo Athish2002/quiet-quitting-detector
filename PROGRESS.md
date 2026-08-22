@@ -100,24 +100,23 @@ Each of these is enforced by a test that fails if the refusal is removed:
 ## Next session
 
 **The frontend redesign track is now active — see `design/REDESIGN_PLAN.md`.**
-S1 (tokens) and S2 (app shell) have shipped. **S3 is Overview** — the stat
-strip, the "It does / It does not" block, the link cards, and the empty state.
-R2 decided it also gets a band-distribution block *and* a latest-run panel
-beside the hero, to fill the right-hand space.
+S1 (tokens), S2 (app shell), and S3 (Overview) have shipped. **S4 is Cohort** (`/cohort`, replacing `Console.tsx`).
 
-What S2 left in place for S3:
-- `.app-shell` carries the Modernist tokens. The four old pages now render
-  **inside** it, so they inherit `--ink` and `--muted` from the new palette and
-  everything else from the old one. That mix is expected and disappears as
-  S3–S9 replace each page.
-- **`.btn` was deliberately not restyled.** Old pages use it, and redefining it
-  in S2 would have restyled four pages this session was not touching. S3 owns
-  introducing the shared Modernist button system, along with the first section
-  that actually replaces old markup.
-- `SectionHeader` is the eyebrow/h1/intro/rule pattern every section opens
-  with. Use it rather than a fresh header.
-- Routes changed: `/console` is now `/cohort`. Old links in `Home.tsx` were
-  repointed; anything else referring to `/console` is stale.
+What S3 accomplished and left in place for S4:
+- `Home.tsx` replaced with the Modernist Overview section (`/`).
+- Section header with `wide={true}` (44px h1, max-width 16ch), eyebrow `"OVERVIEW"`, title `"Weekly telemetry, read against a person's own history."`
+- R2 side panels beside hero: band-distribution block (counts per band, never names) and latest evaluation panel.
+- 4-column stat strip (`People on record`, `Currently raised above Healthy`, `Manager verdicts recorded`, `Reported as harmful`), all numerals `var(--ink)`.
+- "What this is, and what it is not" two-column stance section with ethical safeguards.
+- 3 link cards for Cohort, Diagnostic room, Access trail.
+- Shared Modernist button system (`.btn`, `.btn--primary`, `.btn--secondary`, `.btn--quiet`, `.btn--danger`) and classification chips (`.chip--*`) defined in `styles.css`.
+- 10 new Overview unit and axe accessibility tests passing.
+
+What S4 (Cohort) will tackle:
+- Replace `Console.tsx` (cohort part only) with Modernist two-column alphabetical cohort grid.
+- Deviation bars on the `126px 1fr 1fr 62px` grid with centre axis.
+- **No sort control — ever.** No ranking of people.
+- Uses `RiskPill` / `ConfidenceBadge` and Modernist classification chips.
 
 Still true from S1:
 - **Archivo is not loaded.** The handoff's Google-Fonts `@import` cannot ship —

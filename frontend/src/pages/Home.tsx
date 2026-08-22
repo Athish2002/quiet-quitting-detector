@@ -1,158 +1,21 @@
+// frontend/src/pages/Home.tsx
+//
+// Section 1: Overview (/)
+//
+// An ethical, per-person view of team wellbeing. The landing section establishes
+// the tool's core premise before any detail is shown: telemetry is read against
+// a person's own history, never against a cohort ranking.
+//
+// Replaces the old glassmorphism Home page in S3 of the Modernist redesign.
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorNote } from "../components/ErrorNote";
-import type { CalibrationView, EmployeeSummary, ProviderStatus } from "../api/types";
+import { SectionHeader } from "../components/SectionHeader";
+import type { CalibrationView, EmployeeSummary } from "../api/types";
 
 export function Home() {
-  return (
-    <main className="page home-page" aria-labelledby="home-heading">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-eyebrow">
-          <span className="hero-eyebrow__dot"></span>
-          Enterprise Multi-Agent Intelligence
-        </div>
-        <h1 id="home-heading" className="hero-title">
-          Quiet-Quitting <span className="hero-title__gradient">Detector</span>
-        </h1>
-        <p className="hero-description">
-          Ethical, per-employee engagement telemetry. Evaluated for each person against
-          their own baseline, turning disengagement signals into supportive conversation blueprints.
-        </p>
-        <div className="hero-actions">
-          <Link to="/cohort" className="btn btn--primary">
-            Launch Cohort Console
-          </Link>
-          <Link to="/diagnostic" className="btn btn--glass">
-            Open Diagnostic Room
-          </Link>
-        </div>
-      </section>
-
-      {/* The constraints come before the controls, and that ordering is the
-          point: "we never compare people to each other" is a claim the operator
-          should be able to hold this tool to before they start using it. Four
-          tests and an E2E spec assert the wording below. */}
-      <StancePanel />
-
-      {/* Live System Telemetry Panel */}
-      <StatusPanel />
-
-      {/* Navigation Feature Grid */}
-      <section className="panel section-features" aria-labelledby="features-heading">
-        <h2 id="features-heading">Core Capabilities</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-card__icon">📊</div>
-            <h3>
-              <Link to="/cohort">Cohort Console</Link>
-            </h3>
-            <p>
-              Monitor team-wide disengagement signals, manage multi-source telemetry ingestion,
-              and execute what-if intervention simulations.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-card__icon">🔍</div>
-            <h3>
-              <Link to="/diagnostic">Diagnostic Room</Link>
-            </h3>
-            <p>
-              Deep-dive into individual employee trajectories, review risk driver explanations,
-              and generate empathetic manager briefing scripts.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-card__icon">📈</div>
-            <h3>
-              <Link to="/history">Trajectory & History</Link>
-            </h3>
-            <p>
-              Track historical weekly progress over time, review audit log trails, and measure
-              the real-world impact of post-intervention actions.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Multi-Agent Architecture Overview */}
-      <section className="panel section-architecture" aria-labelledby="arch-heading">
-        <h2 id="arch-heading">4-Agent Autonomous Pipeline</h2>
-        <p className="hint">
-          Every evaluation passes through an isolated 4-agent network designed to eliminate bias and prevent punitive scoring.
-        </p>
-        {/* h3, not h4: the section heading is an h2 and skipping a level is a
-            real axe violation, not a style preference. */}
-        <div className="agent-pipeline">
-          <div className="agent-step">
-            <span className="agent-step__num">01</span>
-            <h3>Orchestrator Agent</h3>
-            <p>Validates telemetry schemas and sequences chronological baseline evaluation.</p>
-          </div>
-          <div className="agent-step">
-            <span className="agent-step__num">02</span>
-            <h3>Trend Detector</h3>
-            <p>Identifies multi-week disengagement signals against an employee's personal history.</p>
-          </div>
-          <div className="agent-step">
-            <span className="agent-step__num">03</span>
-            <h3>Risk Scorer</h3>
-            <p>Computes risk indices while enforcing confidence suppression thresholds.</p>
-          </div>
-          <div className="agent-step">
-            <span className="agent-step__num">04</span>
-            <h3>Manager Briefing</h3>
-            <p>Synthesizes supportive, non-punitive dialogue templates and action plans.</p>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function StancePanel() {
-  return (
-    <section aria-labelledby="stance-heading" className="panel panel--stance">
-      <h2 id="stance-heading">Ethical Safeguards & Governance</h2>
-      <div className="stance">
-        <div>
-          <h3>It does</h3>
-          <ul>
-            <li>Compare each person to their <strong>own</strong> earlier weeks.</li>
-            <li>
-              Require a pattern to hold for two or more consecutive weeks, and to
-              still be happening now.
-            </li>
-            <li>Say when it is not confident, instead of showing a number.</li>
-            <li>Explain which metric drove a score.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>It does not</h3>
-          <ul>
-            <li>Rank people, or compare one person to another.</li>
-            <li>Recommend disciplinary action, ever.</li>
-            <li>
-              Hold anything about health, sentiment, or performance ratings —
-              there is no field for them.
-            </li>
-            <li>Treat missing data as evidence of anything.</li>
-          </ul>
-        </div>
-      </div>
-      <p className="callout callout--caveat">
-        This is a prompt for a conversation, not a verdict about a person. If it
-        is ever used to justify a decision about someone's employment, it is
-        being used for something it was explicitly built not to do.
-      </p>
-    </section>
-  );
-}
-
-function StatusPanel() {
   const employees = useQuery({
     queryKey: ["employees"],
     queryFn: () => api.get<EmployeeSummary[]>("/employees"),
@@ -161,66 +24,227 @@ function StatusPanel() {
     queryKey: ["calibration"],
     queryFn: () => api.get<CalibrationView>("/calibration"),
   });
-  const providers = useQuery({
-    queryKey: ["provider-status"],
-    queryFn: () => api.get<ProviderStatus>("/models/status"),
-  });
 
-  const error = employees.error ?? calibration.error ?? providers.error;
+  const error = employees.error ?? calibration.error;
+  const data = employees.data ?? [];
+  const cal = calibration.data?.overall;
+
+  // Counts for the 4 bands (counts ONLY, never names, never sorted by score)
+  const healthyCount = data.filter((e) => e.classification === "Healthy").length;
+  const watchCount = data.filter((e) => e.classification === "Watch").length;
+  const atRiskCount = data.filter((e) => e.classification === "At Risk").length;
+  const exitCount = data.filter((e) => e.classification === "Silent Exit").length;
+  const elevatedCount = watchCount + atRiskCount + exitCount;
+
+  // Latest run statistics
+  const latestWeek = data.length > 0 ? Math.max(...data.map((e) => e.latest_week)) : null;
+  const evaluatedCount = data.length;
+  const gapCount = data.filter(
+    (e) => e.degraded || e.confidence === "low" || e.confidence === "none",
+  ).length;
+
+  const totalPeople = employees.data !== undefined ? data.length : null;
+  const totalVerdicts = cal ? cal.total : null;
+  const harmfulVerdicts = cal ? cal.harmful : null;
 
   return (
-    <section aria-labelledby="status-heading" className="panel section-status">
-      <div className="section-status__header">
-        <h2 id="status-heading">Live System Telemetry</h2>
-        <span className="status-live-badge">
-          <span className="status-live-badge__dot"></span> Live API Active
-        </span>
-      </div>
-      
+    <div className="overview-page">
       {error ? <ErrorNote error={error} /> : null}
 
-      <dl className="stats stats--cards">
-        <div className="stat-card">
-          <dt>People on record</dt>
-          <dd>{employees.data?.length ?? "—"}</dd>
-        </div>
-        <div className="stat-card">
-          {/* A count, never a list of who, and labelled as what it actually is.
-              "Disengagement Signals" reads as a count of signals; this is a
-              count of PEOPLE, and the landing page is not the place to put
-              names next to a risk word. */}
-          <dt>Currently raised above Healthy</dt>
-          <dd>
-            {employees.data
-              ? employees.data.filter((e) => e.classification !== "Healthy").length
-              : "—"}
-          </dd>
-        </div>
-        <div className="stat-card">
-          <dt>Manager verdicts recorded</dt>
-          <dd>{calibration.data?.overall.total ?? "—"}</dd>
-        </div>
-        <div className="stat-card">
-          <dt>Scoring</dt>
-          <dd className="stat-card__mode">
-            {providers.data?.local_only_mode ? "Local only" : "Provider chain"}
-          </dd>
-        </div>
-      </dl>
+      {/* 1. Hero & R2 (SectionHeader left, Band distribution + Latest run right) */}
+      <div className="overview-hero">
+        <SectionHeader
+          eyebrow="OVERVIEW"
+          title="Weekly telemetry, read against a person's own history."
+          intro="An ethical, per-person view of team wellbeing. The system flags sustained divergence from an employee's own baseline and drafts supportive manager briefings — it never ranks people or compares one person to another."
+          wide={true}
+        />
 
+        <aside className="overview-side" aria-label="Current status and evaluation summary">
+          {/* R2 (a): Band distribution block */}
+          <div className="overview-side__card" aria-labelledby="band-dist-heading">
+            <p id="band-dist-heading" className="overview-side__title">
+              Current distribution
+            </p>
+            <ul className="distribution-list" aria-label="People per classification band">
+              <li className="distribution-item">
+                <span className="chip chip--healthy">Healthy</span>
+                <span className="distribution-count">{employees.isLoading ? "—" : healthyCount}</span>
+              </li>
+              <li className="distribution-item">
+                <span className="chip chip--watch">Watch</span>
+                <span className="distribution-count">{employees.isLoading ? "—" : watchCount}</span>
+              </li>
+              <li className="distribution-item">
+                <span className="chip chip--at-risk">At Risk</span>
+                <span className="distribution-count">{employees.isLoading ? "—" : atRiskCount}</span>
+              </li>
+              <li className="distribution-item">
+                <span className="chip chip--exit">Silent Exit</span>
+                <span className="distribution-count">{employees.isLoading ? "—" : exitCount}</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* R2 (b): Latest run panel */}
+          <div className="overview-side__card" aria-labelledby="latest-run-heading">
+            <p id="latest-run-heading" className="overview-side__title">
+              Latest evaluation
+            </p>
+            <div className="latest-run-metrics">
+              <div className="latest-run-metric">
+                <span>Evaluated</span>
+                <strong>{employees.isLoading ? "—" : `${evaluatedCount} people`}</strong>
+              </div>
+              <div className="latest-run-metric">
+                <span>Latest telemetry</span>
+                <strong>
+                  {employees.isLoading
+                    ? "—"
+                    : latestWeek !== null
+                      ? `Week ${latestWeek}`
+                      : "None"}
+                </strong>
+              </div>
+              <div className="latest-run-metric">
+                <span>Data gaps</span>
+                <strong>{employees.isLoading ? "—" : `${gapCount} with gaps`}</strong>
+              </div>
+            </div>
+            <p className="latest-run-note">Active model: see sidebar</p>
+          </div>
+        </aside>
+      </div>
+
+      {/* 3. Stat strip: 4 equal columns with rules between & under */}
+      <section aria-label="Summary statistics" className="stat-strip">
+        <div className="stat-cell">
+          <p className="stat-cell__label">People on record</p>
+          <p className="stat-cell__numeral">
+            {employees.isLoading ? "—" : totalPeople ?? 0}
+          </p>
+          <p className="stat-cell__note">Active in current cohort</p>
+        </div>
+        <div className="stat-cell">
+          <p className="stat-cell__label">Currently raised above Healthy</p>
+          <p className="stat-cell__numeral">
+            {employees.isLoading ? "—" : elevatedCount}
+          </p>
+          <p className="stat-cell__note">Watch, At Risk, or Silent Exit</p>
+        </div>
+        <div className="stat-cell">
+          <p className="stat-cell__label">Manager verdicts recorded</p>
+          <p className="stat-cell__numeral">
+            {calibration.isLoading ? "—" : totalVerdicts ?? 0}
+          </p>
+          <p className="stat-cell__note">Feedback on model accuracy</p>
+        </div>
+        <div className="stat-cell">
+          <p className="stat-cell__label">Reported as harmful</p>
+          <p className="stat-cell__numeral">
+            {calibration.isLoading ? "—" : harmfulVerdicts ?? 0}
+          </p>
+          <p className="stat-cell__note">Verdicts flagged harmful</p>
+        </div>
+      </section>
+
+      {/* 6. Empty state notice / calibration caveat */}
       {calibration.data && !calibration.data.overall.total ? (
-        <p className="callout callout--caveat">
-          No manager has told this system whether it was right yet, so nothing it
-          reports has been validated. Treat every assessment as a question.
-        </p>
+        <div className="overview-notice" role="status">
+          <p>
+            <strong>No manager verdicts recorded.</strong> No manager has told this system
+            whether it was right yet, so nothing it reports has been validated. Treat every
+            assessment as a question.
+          </p>
+        </div>
       ) : null}
 
       {calibration.data?.review_required ? (
-        <p role="alert" className="callout callout--alert">
-          Calibration is outside the acceptable range.{" "}
-          <Link to="/diagnostic">Review it before relying on any assessment.</Link>
-        </p>
+        <div className="overview-notice overview-notice--alert" role="alert">
+          <p>
+            <strong>Calibration review required.</strong> Calibration is outside the acceptable
+            range.{" "}
+            <Link to="/diagnostic">Review it before relying on any assessment.</Link>
+          </p>
+        </div>
       ) : null}
-    </section>
+
+      {/* 4. What this is, and what it is not */}
+      <section aria-labelledby="stance-heading" className="stance-section">
+        <h2 id="stance-heading" className="sr-only">
+          Ethical Safeguards &amp; Governance
+        </h2>
+        <div className="stance-grid">
+          <div className="stance-col">
+            <p className="stance-col__label">It does</p>
+            <ul className="stance-list">
+              <li>
+                Compare each person to their <strong>own</strong> earlier weeks.
+              </li>
+              <li>
+                Require a pattern to hold for two or more consecutive weeks, and to still be
+                happening now.
+              </li>
+              <li>Say when it is not confident, instead of showing a number.</li>
+              <li>Explain which metric drove a score.</li>
+            </ul>
+          </div>
+          <div className="stance-col">
+            <p className="stance-col__label">It does not</p>
+            <ul className="stance-list">
+              <li>Rank people, or compare one person to another.</li>
+              <li>Recommend disciplinary action, ever.</li>
+              <li>
+                Hold anything about health, sentiment, or performance ratings — there is no
+                field for them.
+              </li>
+              <li>Treat missing data as evidence of anything.</li>
+            </ul>
+          </div>
+        </div>
+        <p className="stance-closing">
+          This is a prompt for a conversation, not a verdict about a person. If it is ever used to
+          justify a decision about someone's employment, it is being used for something it was
+          explicitly built not to do.
+        </p>
+      </section>
+
+      {/* 5. Three Link Cards */}
+      <section aria-labelledby="links-heading" className="overview-links">
+        <h2 id="links-heading" className="sr-only">
+          Core sections
+        </h2>
+        <div className="link-cards-grid">
+          <Link to="/cohort" className="link-card">
+            <p className="link-card__eyebrow">Section 02</p>
+            <h3 className="link-card__title">Cohort</h3>
+            <p className="link-card__body">
+              Weekly telemetry across the full cohort. Alphabetical, unranked, with deviation bars
+              against each person's own baseline.
+            </p>
+            <span className="link-card__action">Open cohort &rarr;</span>
+          </Link>
+
+          <Link to="/diagnostic" className="link-card">
+            <p className="link-card__eyebrow">Section 04</p>
+            <h3 className="link-card__title">Diagnostic room</h3>
+            <p className="link-card__body">
+              Model calibration, harm rates, and the closed-vocabulary manager verdict form.
+            </p>
+            <span className="link-card__action">Open diagnostic room &rarr;</span>
+          </Link>
+
+          <Link to="/audit" className="link-card">
+            <p className="link-card__eyebrow">Section 08</p>
+            <h3 className="link-card__title">Access trail</h3>
+            <p className="link-card__body">
+              Immutable cryptographic log of every assessment opened, who viewed it, and retention
+              schedules.
+            </p>
+            <span className="link-card__action">Open access trail &rarr;</span>
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }
