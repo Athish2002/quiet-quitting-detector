@@ -2530,4 +2530,171 @@ legend {
   }
 }
 
+/* --- Modernist Cohort Section (S4) ---------------------------------------- */
+
+.app-shell .cohort-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell .cohort-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--rule);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .cohort-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  padding: 18px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+  cursor: pointer;
+}
+
+.app-shell .cohort-card:hover {
+  background: var(--surface);
+}
+
+.app-shell .cohort-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.app-shell .cohort-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.app-shell .cohort-card__person {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-shell .cohort-card__name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.app-shell .cohort-card__meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.app-shell .cohort-card__classification {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.app-shell .cohort-card__confidence {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.app-shell .cohort-card__metrics {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.app-shell .deviation-row {
+  display: grid;
+  grid-template-columns: 126px 1fr 1fr 62px;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
+.app-shell .deviation-row__label {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell .deviation-row__neg-track {
+  height: 9px;
+  display: flex;
+  justify-content: flex-end;
+  border-right: 2px solid var(--muted);
+}
+
+.app-shell .deviation-row__pos-track {
+  height: 9px;
+  display: block;
+}
+
+.app-shell .deviation-row__fill {
+  display: block;
+  height: 100%;
+}
+
+.app-shell .deviation-row__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.app-shell .cohort-card__headline {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.app-shell .cohort-empty {
+  padding: var(--space-5);
+  background: var(--surface);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .cohort-empty__heading {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.app-shell .cohort-empty__body {
+  margin: 0 0 var(--space-4);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.app-shell .cohort-banner {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.app-shell .cohort-banner--alert {
+  border-left-color: var(--exit);
+}
+
+@media (max-width: 900px) {
+  .app-shell .cohort-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 

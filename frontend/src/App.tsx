@@ -1,7 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ApiKeyGate } from "./components/ApiKeyGate";
-import { Console } from "./pages/Console";
+import { Cohort } from "./pages/Cohort";
 import { DiagnosticRoom } from "./pages/DiagnosticRoom";
 import { History } from "./pages/History";
 import { Home } from "./pages/Home";
@@ -10,11 +10,7 @@ import { Placeholder } from "./pages/Placeholder";
 // S2 of the redesign: the four sibling pages become one shell with eight
 // sections on real routes (design/REDESIGN_PLAN.md).
 //
-// The four existing pages are mounted at their new addresses unchanged. They
-// still carry their old markup and will look like a mix of two designs until
-// S3-S9 replace them one at a time -- that is the intended shape of the
-// migration, and it keeps the app usable at every commit rather than dark for
-// nine sessions.
+// S4 of the redesign: Cohort section replaces legacy Console at /cohort.
 
 function NotFound() {
   return (
@@ -34,7 +30,7 @@ export function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<Home />} />
-            <Route path="/cohort" element={<Console />} />
+            <Route path="/cohort" element={<Cohort />} />
             <Route
               path="/person/:name"
               element={

@@ -2,6 +2,28 @@
 
 Notable changes per unit of work. Newest first.
 
+## Redesign S4 — Cohort section, deviation bars, and unranked team grid
+
+Replaced `Console.tsx` at route `/cohort` with the Modernist Cohort section (`frontend/src/pages/Cohort.tsx`).
+
+**Cohort grid & Deviation bars:**
+- Section Header with eyebrow `"COHORT"`, title `"Full team telemetry, evaluated against each person's own baseline."`, and explicit reminder that comparing people to each other is refused.
+- Two-column alphabetical grid over a `1px` rule gap. Each cell links to `/person/${name}`.
+- **Strictly unranked**: no sort control, no leaderboard affordance, no ordering by score.
+- **Four deviation bars** per card on a `126px 1fr 1fr 62px` grid with a `2px var(--muted)` centre axis:
+  - Tasks completed, Response time, Weekly hours, After-hours logins.
+  - Negative values fill right-to-left against centre; positive values fill left-to-right.
+  - Adverse deltas render in `var(--accent)` with `var(--ink)` text; non-adverse deltas render in `var(--rule)` with `var(--muted)` text.
+  - After-hours logins carry no risk weight and are strictly inert across all values.
+- **Empty state**: bordered panel directing operators to `/ingest`.
+
+**History & Scaffolding Polish:**
+- Modernized History trajectory bars on a clean grid and restyled operational event log.
+- Removed unwanted outline boxes on placeholder scaffolding.
+
+**Tests & Accessibility:**
+- Added `frontend/src/pages/Cohort.test.tsx` asserting alphabetical sorting, absence of sort controls, adverse/inert bar coloring, empty state navigation, and zero axe accessibility violations. All 95 frontend tests passing.
+
 ## Redesign S3 — Overview section, R2 side panels, and the Modernist button system
 
 Replaced `Home.tsx` with the Modernist Overview section at `/` (`design/REDESIGN_PLAN.md`).

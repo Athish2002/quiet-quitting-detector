@@ -100,23 +100,24 @@ Each of these is enforced by a test that fails if the refusal is removed:
 ## Next session
 
 **The frontend redesign track is now active — see `design/REDESIGN_PLAN.md`.**
-S1 (tokens), S2 (app shell), and S3 (Overview) have shipped. **S4 is Cohort** (`/cohort`, replacing `Console.tsx`).
+S1 (tokens), S2 (app shell), S3 (Overview), and S4 (Cohort) have shipped. **S5 is Person detail** (`/person/:name`, replacing Placeholder).
 
-What S3 accomplished and left in place for S4:
-- `Home.tsx` replaced with the Modernist Overview section (`/`).
-- Section header with `wide={true}` (44px h1, max-width 16ch), eyebrow `"OVERVIEW"`, title `"Weekly telemetry, read against a person's own history."`
-- R2 side panels beside hero: band-distribution block (counts per band, never names) and latest evaluation panel.
-- 4-column stat strip (`People on record`, `Currently raised above Healthy`, `Manager verdicts recorded`, `Reported as harmful`), all numerals `var(--ink)`.
-- "What this is, and what it is not" two-column stance section with ethical safeguards.
-- 3 link cards for Cohort, Diagnostic room, Access trail.
-- Shared Modernist button system (`.btn`, `.btn--primary`, `.btn--secondary`, `.btn--quiet`, `.btn--danger`) and classification chips (`.chip--*`) defined in `styles.css`.
-- 10 new Overview unit and axe accessibility tests passing.
+What S4 accomplished and left in place for S5:
+- `Cohort.tsx` built at `/cohort`, rendering the two-column unranked alphabetical grid.
+- Full deviation bars on the `126px 1fr 1fr 62px` grid with centre axis: adverse deltas in `var(--accent)` / `var(--ink)`, non-adverse in `var(--rule)` / `var(--muted)`, after-hours strictly inert.
+- Clickable whole-card navigation to `/person/${name}`.
+- Empty state with direct route to Ingest.
+- Scaffolding outline box on placeholders removed.
+- History trajectories modernized with baseline bars and clean event log.
+- 6 new Cohort unit tests + axe accessibility checks passing (95 total frontend tests pass).
 
-What S4 (Cohort) will tackle:
-- Replace `Console.tsx` (cohort part only) with Modernist two-column alphabetical cohort grid.
-- Deviation bars on the `126px 1fr 1fr 62px` grid with centre axis.
-- **No sort control — ever.** No ranking of people.
-- Uses `RiskPill` / `ConfidenceBadge` and Modernist classification chips.
+What S5 (Person detail) will tackle:
+- `PersonDetail.tsx` replacing `Placeholder` at `/person/:name`.
+- Suppressed score layout at low/none confidence (renders range, no large single number).
+- Full score layout with 66px numeral + confidence chip when evidence is sufficient.
+- Attributions list + 4-week trajectory bars.
+- Confirmed patterns list + Intervention actions (Accept / Dismiss).
+- Automatic write to the hash-chained access audit trail on view.
 
 Still true from S1:
 - **Archivo is not loaded.** The handoff's Google-Fonts `@import` cannot ship —
