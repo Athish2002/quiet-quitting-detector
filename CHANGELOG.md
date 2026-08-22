@@ -2,6 +2,47 @@
 
 Notable changes per unit of work. Newest first.
 
+## Redesign S1 — a second palette, and a test that keeps it honest
+
+First unit of the frontend redesign (`design/REDESIGN_PLAN.md`). The Modernist
+token layer from the design handoff now exists for **both** themes, and nothing
+on screen has moved yet — the tokens are scoped to `.app-shell`, a class no
+component carries until S2.
+
+Keeping dark mode is a departure from the handoff, which specifies one light
+palette and verifies its four classification bands by hand. That hand
+verification is the whole problem: rule 8 requires every band to clear 4.5:1
+against its paired background, and adding a second theme doubles the pairs
+while moving them out of the range anyone checks by eye. A band that slips to
+3.8:1 renders fine, passes every other test, and is simply unreadable for some
+of the people it describes.
+
+So the dark set was derived rather than picked, and both themes are now
+asserted. `frontend/src/test/contrast.test.ts` parses the tokens out of
+`styles.css` and fails the build on any pair below its floor — 40 assertions,
+verified to go red by mutating a band and watching it catch. It parses the CSS
+as text because vitest runs with `css: false`, and because asserting on the
+stylesheet catches a bad *token* rather than one bad render.
+
+Three things worth knowing came out of doing it:
+
+**Light-mode Healthy is 4.53:1, not the 4.59:1 the handoff states.** Watch and
+At Risk match to 0.01, so the formula agrees and this is a tooling difference.
+It passes, but on 0.03 of headroom — a test now names that number so nobody
+tidies the green without seeing what they are spending.
+
+**Dark `--rule` is deliberately 1.62:1, not 3:1.** Rules carry all the structure
+in a design with no shadows, and the light palette ships them at 1.30:1.
+Matching that relationship is the correct bar; forcing 3:1 makes dark-mode
+rules visibly heavier than the design intends.
+
+**Archivo is not loaded, and the handoff's instruction to `@import` it from
+Google Fonts cannot be followed.** `src/security/middleware.py` sets
+`default-src 'self'` and declares no `font-src`, so both the stylesheet and the
+font files would be blocked in production — and third-party fonts would leak
+every viewer's IP, a poor trade for a tool that reads employee telemetry. The
+tokens fall back to the system UI stack until the woff2 files are self-hosted.
+
 ## Validated configuration — the process refuses to start on a bad value
 
 The environment is untyped input from outside the process, which is the one

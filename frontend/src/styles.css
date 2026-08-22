@@ -1,178 +1,1388 @@
-/* Light, high-contrast, no framework. Tailwind is what §4 names, but the whole
-   surface here is one page of semantic HTML, and a utility framework would add
-   a build step and a class-soup diff for no benefit at this size. Swap in when
-   the remaining pages land and the component count justifies it. */
+/* Glassmorphism Theme System – Quiet-Quitting Detector */
+
 :root {
-  --ink: #16202b;
-  --muted: #566577;
-  --line: #d7dee6;
-  --bg: #f7f9fb;
-  --alert: #8c2f1f;
-  --alert-bg: #fdf0ed;
-  --caveat-bg: #fbf6e8;
-  --ok: #1d5c3f;
+  /* Light Mode Variables */
+  --bg-gradient: radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.6) 0px, transparent 50%),
+                  radial-gradient(at 100% 0%, rgba(224, 231, 255, 0.5) 0px, transparent 50%),
+                  radial-gradient(at 50% 100%, rgba(236, 253, 245, 0.5) 0px, transparent 50%),
+                  #f8fafc;
+  --bg: #f8fafc;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(31, 38, 135, 0.04);
+  
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: rgba(203, 213, 225, 0.8);
+  
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-glow: rgba(37, 99, 235, 0.25);
+  --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+  /* Darker than --primary: this one lands on a pale tint as small bold text,
+     where #2563eb measured 4.33:1 -- just under AA. */
+  --brand-highlight: #1d4ed8;
+
+  --alert: #dc2626;
+  --alert-bg: rgba(254, 242, 242, 0.9);
+  --alert-border: rgba(248, 113, 113, 0.5);
+  
+  --caveat-bg: rgba(254, 252, 232, 0.9);
+  --caveat-border: rgba(234, 179, 8, 0.5);
+  --caveat-ink: #854d0e;
+
+  --ok: #166534;
+  --ok-bg: rgba(240, 253, 244, 0.9);
+  --ok-border: rgba(74, 222, 128, 0.5);
+
+  /* "At Risk" sits between caveat and alert and needs its own pair, not a
+     hardcoded orange: the literal that was here stayed pale in dark mode. */
+  --warn: #c2410c;
+  --warn-bg: rgba(254, 215, 170, 0.55);
+  --warn-border: rgba(249, 115, 22, 0.5);
+
+  /* Tints layered OVER the glass. Every one of these used to be a white
+     rgba(255,255,255,0.06), which is invisible on a light surface -- table
+     headers, row hover and nav hover all did nothing in light mode. */
+  --hover-tint: rgba(15, 23, 42, 0.05);
+  --surface-raised: rgba(15, 23, 42, 0.04);
+  --accent-tint: rgba(37, 99, 235, 0.12);
+  --accent-tint-border: rgba(37, 99, 235, 0.25);
+
   color-scheme: light;
 }
 
-* { box-sizing: border-box; }
+[data-theme="dark"] {
+  /* Dark Mode Variables with High Contrast & Smooth Tones */
+  --bg-gradient: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.3) 0px, transparent 50%),
+                  radial-gradient(at 100% 0%, rgba(88, 28, 135, 0.2) 0px, transparent 50%),
+                  radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%),
+                  #0b0f19;
+  --bg: #0b0f19;
+  --glass-bg: rgba(17, 24, 39, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  
+  --ink: #f8fafc;
+  --muted: #cbd5e1; /* High contrast text for dark mode */
+  --line: rgba(71, 85, 105, 0.65);
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-glow: rgba(59, 130, 246, 0.35);
+  --primary-gradient: linear-gradient(135deg, #3b82f6, #2563eb);
+  --brand-highlight: #60a5fa;
+
+  --alert: #f87171;
+  --alert-bg: rgba(127, 29, 29, 0.55);
+  --alert-border: rgba(239, 68, 68, 0.5);
+
+  --caveat-bg: rgba(113, 63, 18, 0.55);
+  --caveat-border: rgba(234, 179, 8, 0.5);
+  --caveat-ink: #fef08a;
+
+  --ok: #4ade80;
+  --ok-bg: rgba(20, 83, 45, 0.55);
+  --ok-border: rgba(34, 197, 94, 0.5);
+
+  --warn: #fdba74;
+  --warn-bg: rgba(124, 45, 18, 0.55);
+  --warn-border: rgba(249, 115, 22, 0.5);
+
+  --hover-tint: rgba(255, 255, 255, 0.07);
+  --surface-raised: rgba(255, 255, 255, 0.05);
+  --accent-tint: rgba(96, 165, 250, 0.16);
+  --accent-tint-border: rgba(96, 165, 250, 0.32);
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MODERNIST TOKENS -- the redesign palette (design/design_handoff_qq_ui/).
+ *
+ * Scoped to `.app-shell` rather than `:root`, deliberately. The four live pages
+ * read `--ink` and `--muted` from the `:root` block above; redefining those
+ * globally would restyle the whole app in a session whose exit criterion is
+ * "visually unchanged". Only the new shell (S2) carries `.app-shell`, so
+ * nothing outside it moves. S12 deletes the glassmorphism block and promotes
+ * these to `:root` -- the names here are already the final ones, so that is a
+ * deletion rather than a rename.
+ *
+ * Contrast here is not decoration. `src/test/contrast.test.ts` parses THIS
+ * BLOCK and fails if any pair drops below its floor: the handoff's rule 8 made
+ * executable. Change a value, run the test.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-shell {
+  --paper: #F2F5F4;
+  --surface: #FFFFFF;
+  --ink: #1B2422;
+  --muted: #5A6A66;
+  --rule: #D2DAD7;
+  --accent: #1D4E6B;
+  --accent-bg: #EAF1F5;
+  --accent-hover: #173E55;
+  --accent-active: #12303F;
+
+  /* Classification bands. Reserved EXCLUSIVELY for classification labels --
+     never a button, a link, a nav item, the brand mark, or any count of people.
+     A headcount rendered in an alert colour is the one change that would turn
+     this interface into the thing its own copy says it is not. */
+  --healthy: #47795A;
+  --healthy-bg: #EDF4EF;
+  --watch: #8A6A22;
+  --watch-bg: #FAF4E6;
+  --at-risk: #9E5333;
+  --at-risk-bg: #FAEFEA;
+  --exit: #7E3A2C;
+  --exit-bg: #F9EDEA;
+
+  /* The handoff specifies Archivo via an @import from Google Fonts. That cannot
+     ship here: `src/security/middleware.py` sets `default-src 'self'` and
+     declares no `font-src`, so both the stylesheet and the woff2 files would be
+     blocked in production -- and pulling fonts from a third party would leak
+     every viewer's IP to Google, a poor trade for a tool that reads employee
+     telemetry. Archivo must be self-hosted before the typography is real; until
+     those files are vendored this falls back to the system UI stack. */
+  --font-heading: Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Geometry. Radius is 0 everywhere with no exceptions; it is a token so that
+     a stray `border-radius: 4px` reads as the mistake it is. */
+  --radius: 0;
+  --rule-hairline: 1px;
+  --rule-major: 2px;
+  --content-max: 1160px;
+  --sidebar-w: 244px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  color-scheme: light;
+}
+
+/* Dark mode is an addition to the handoff, which specifies light only. Every
+ * value below is derived and verified, not eyeballed -- `design/verify_contrast.py`
+ * prints the full table and exits non-zero if any pair fails.
+ *
+ * `--rule` is the one to leave alone. It sits at 1.62:1 against paper, which
+ * looks wrong beside a 4.5 floor until you notice the LIGHT design ships its
+ * rules at 1.30:1. This design has no shadows -- rules carry all the structure --
+ * so matching light's relationship is the correct bar. Pushing dark rules to 3:1
+ * makes them visibly heavier than the design intends. */
+[data-theme="dark"] .app-shell {
+  --paper: #121817;
+  --surface: #1B2422;
+  --ink: #F2F5F4;
+  --muted: #9DACA8;
+  --rule: #323E3B;
+  --accent: #7FB6D6;
+  --accent-bg: #1A2C38;
+  /* Light mode darkens the accent on hover; dark mode has to lighten it, or the
+     button appears to recede when you point at it. */
+  --accent-hover: #9AC6E0;
+  --accent-active: #B5D6EA;
+
+  --healthy: #44A769;
+  --healthy-bg: #152119;
+  --watch: #B19148;
+  --watch-bg: #211D15;
+  --at-risk: #C18267;
+  --at-risk-bg: #211815;
+  --exit: #C58072;
+  --exit-bg: #211715;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Interaction easing -- and the reason it is suppressed while the theme flips.
+ *
+ * This is the bug that made the whole interface look broken. A transition on a
+ * property whose value comes from a `var()` does not re-resolve when the
+ * VARIABLE changes: the declaration text is still `color: var(--ink)`, so the
+ * browser sees no change to transition toward and the element keeps its old
+ * computed colour. Permanently -- not for the duration of the transition.
+ *
+ * Measured: with transitions on, clicking the toggle flipped `data-theme` and
+ * left `.theme-toggle` at rgb(15,23,42) and every table header at the light
+ * tint, indefinitely. With transitions off, both resolved correctly. Because
+ * the original rule was `* { transition: ... }`, that applied to every element
+ * on the page, so a theme switch produced a half-light, half-dark UI.
+ *
+ * The fix is to turn transitions off for the instant the theme attribute
+ * changes (ThemeToggle sets `data-theme-switching` for one frame), which lets
+ * the new values apply directly. Hover and focus still ease, because those
+ * swap in a different RULE rather than changing a variable underneath. */
+[data-theme-switching],
+[data-theme-switching] *,
+[data-theme-switching] *::before,
+[data-theme-switching] *::after {
+  transition: none !important;
+}
+
+/* Scoped to elements that actually carry a themed surface rather than applied
+ * with `*`, and `transform` is included: it was missing, so hover lifts
+ * snapped while their shadows eased over 300ms. */
+body,
+.header-glass,
+.panel,
+.hero-section,
+.stat-card,
+.feature-card,
+.agent-step,
+.callout,
+.gate,
+.keybar,
+fieldset,
+table,
+th,
+td,
+tr,
+input,
+textarea,
+select,
+a,
+button,
+.btn,
+.pill,
+.badge {
+  transition:
+    background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Accessibility is a requirement here, not a polish item (§4), and that has to
+ * include vestibular safety: `pulseDot` runs forever and every card lifts on
+ * hover. Honour the setting rather than assume nobody set it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
   line-height: 1.55;
+  min-height: 100vh;
 }
 
-nav ul { display: flex; gap: 1rem; list-style: none; padding: 1rem; margin: 0; }
-nav a { color: var(--ink); text-decoration: none; padding: 0.35rem 0.6rem; border-radius: 6px; }
-nav a[aria-current="page"] { background: var(--ink); color: #fff; }
+/* Glass Header & Clean Brand Navigation */
+.header-glass {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
 
-/* Visible focus everywhere. Keyboard navigation is a requirement, not polish. */
-a:focus-visible, button:focus-visible, input:focus-visible {
-  outline: 3px solid #1a56a8;
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0.65rem 1.25rem;
+  gap: 1rem;
+}
+
+/* Clean Brand Logo without blocky background */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--ink);
+  white-space: nowrap;
+  padding: 0.2rem 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.brand-logo:hover {
+  opacity: 0.9;
+}
+
+.brand-logo__icon {
+  font-size: 1.25rem;
+}
+
+.brand-logo__highlight {
+  color: var(--brand-highlight);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-list {
+  display: flex;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 0.92rem;
+  border: 1px solid transparent;
+}
+
+nav a:hover {
+  color: var(--ink);
+  background: var(--hover-tint);
+}
+
+/* Scoped to `.nav-list`: the brand is a NavLink to "/", so it carries
+   aria-current="page" on the home page and was drawing this pill around the
+   wordmark -- the one thing `.brand-logo` says it must not have. */
+.nav-list a[aria-current="page"] {
+  background: var(--accent-tint);
+  color: var(--brand-highlight);
+  border: 1px solid var(--accent-tint-border);
+  font-weight: 600;
+  box-shadow: 0 2px 10px var(--primary-glow);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* Wins over `button` on specificity now that its colour is not !important. */
+  background: var(--glass-bg);
+  color: var(--ink);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.theme-toggle__icon {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+/* Narrow screens. Hiding the two labels was not enough on its own: four nav
+   pills plus the toggle still overran the bar, and nothing was allowed to wrap,
+   so the page scrolled sideways. */
+@media (max-width: 44rem) {
+  .brand-logo__text { display: none; }
+  .theme-toggle__label { display: none; }
+
+  .nav-container {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 0.5rem;
+  }
+
+  /* `display: contents` dissolves the wrapper so the toggle becomes a direct
+     child of the bar. Row one is then brand | toggle -- the two fixed items --
+     and the four links get a full row to themselves, instead of three fitting
+     beside the toggle and the fourth orphaning onto a third line. */
+  .nav-right {
+    display: contents;
+  }
+
+  .theme-toggle {
+    order: 2;
+  }
+
+  .nav-list {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  nav a {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.88rem;
+  }
+
+  .hero-section { padding: 2.25rem 1.25rem; }
+  .hero-title { font-size: 2.1rem; }
+  .hero-description { font-size: 1.02rem; }
+  .panel { padding: 1.25rem 1.1rem; }
+  .page { padding: 1.25rem 0.9rem 4rem; }
+}
+
+/* A table cannot reflow, so give it its own scroller instead of letting it
+   widen the document. */
+@media (max-width: 34rem) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Accessibility Focus States */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.page { max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 4rem; }
-.page__intro { color: var(--muted); max-width: 46rem; }
+/* Page Layout */
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 5rem;
+  animation: fadeIn 0.3s ease-out;
+}
 
-.panel {
-  background: #fff;
-  border: 1px solid var(--line);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero Section */
+.hero-section {
+  padding: 3.25rem 1.75rem;
+  text-align: center;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+  margin-bottom: 2rem;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.95rem;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--brand-highlight);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--accent-tint-border);
+}
+
+.hero-eyebrow__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.3; transform: scale(0.9); }
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 1rem;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.hero-title__gradient {
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* If background-clip is ignored, -webkit-text-fill-color would leave the
+     word invisible rather than merely unstyled. */
+  color: transparent;
+}
+
+.hero-description {
+  font-size: 1.15rem;
+  color: var(--muted);
+  max-width: 44rem;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Buttons.
+ *
+ * `color` here was `#ffffff !important`, which is why this section is worth a
+ * comment. An `!important` on a bare element selector cannot be overridden by
+ * any ordinary class, so every button that is NOT a filled primary -- the theme
+ * toggle, the keybar's "Forget key" link, the glass hero button -- had white
+ * text it could not opt out of. On the toggle's pale glass background in light
+ * mode that is white on white: the label was invisible, and `.btn--glass` only
+ * escaped by answering with an `!important` of its own.
+ *
+ * The variants below now win on ordinary specificity, so a new one does not
+ * have to join an escalation. */
+button,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.4rem;
   border-radius: 10px;
-  padding: 1.25rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.96rem;
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--primary-gradient);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+button:hover:not(:disabled),
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px var(--primary-glow);
+  opacity: 0.95;
+}
+
+button:active:not(:disabled),
+.btn:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Explicit rather than implied. `.btn--primary` was already in the markup with
+   nothing behind it, relying on `.btn` happening to be filled. */
+.btn--primary {
+  background: var(--primary-gradient);
+  color: #ffffff;
+}
+
+.btn--glass {
+  background: var(--glass-bg);
+  color: var(--ink);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--glass-shadow);
+}
+
+.btn--glass:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+/* For the second button in a pair, where the first is the real action.
+   Two filled buttons side by side make the reader stop and read both. */
+.btn--quiet {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.btn--quiet:hover:not(:disabled) {
+  background: var(--hover-tint);
+  color: var(--ink);
+  border-color: var(--muted);
+  box-shadow: none;
+}
+
+button.danger {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+button.danger:hover:not(:disabled) {
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+}
+
+/* A blue focus ring on a blue button is not a focus ring. */
+button:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Action Rows & Spacing */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+/* Status & Features Panels */
+.section-status__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 1px solid var(--ok-border);
+}
+
+.status-live-badge__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+/* `.stats.stats--cards`, not `.stats--cards`: it is a MODIFIER of `.stats`,
+   and expressing that as equal specificity means whichever rule happens to be
+   written later wins. The base `.stats` rule sits further down this file and
+   was silently overriding these columns. */
+.stats.stats--cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1.25rem;
+}
+
+.stat-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: var(--glass-shadow);
+}
+
+.stat-card dt {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-card dd {
+  margin: 0.35rem 0 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.stat-card__mode {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.feature-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.feature-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: var(--glass-shadow);
+}
+
+.feature-card__icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem;
+}
+
+.feature-card a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.feature-card a:hover {
+  color: var(--primary);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* Agent Pipeline Grid */
+.agent-pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.agent-step {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+}
+
+.agent-step__num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--brand-highlight);
+  background: var(--accent-tint);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.agent-step h3 {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.agent-step p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Glass Panels & High Contrast Tables */
+.panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  padding: 1.5rem 1.75rem;
   margin-block: 1.5rem;
 }
 
 .callout {
-  background: var(--bg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
   border-left: 4px solid var(--muted);
-  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  padding: 0.9rem 1.15rem;
   margin-block: 1rem;
 }
-.callout--alert { background: var(--alert-bg); border-left-color: var(--alert); color: var(--alert); }
-.callout--caveat { background: var(--caveat-bg); border-left-color: #9a7b1f; }
 
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; margin: 0; }
-.stats dt { color: var(--muted); font-size: 0.9rem; }
-.stats dd { margin: 0.15rem 0 0; font-size: 1.5rem; font-weight: 600; }
-
-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-caption { text-align: left; color: var(--muted); padding-bottom: 0.6rem; }
-th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); }
-tbody th { font-weight: 500; text-transform: capitalize; }
-
-.field { margin-block: 0.85rem; }
-.field label { display: block; font-weight: 500; }
-.field--radio { display: flex; gap: 0.5rem; align-items: baseline; }
-.field--radio label { font-weight: 400; }
-input[type="text"], input[type="number"], input[type="password"], .field input {
-  padding: 0.5rem; border: 1px solid var(--line); border-radius: 6px; min-width: 14rem;
+.callout--alert {
+  background: var(--alert-bg);
+  border-color: var(--alert-border);
+  border-left-color: var(--alert);
+  color: var(--ink);
 }
-fieldset { border: 1px solid var(--line); border-radius: 8px; margin-block: 1rem; }
-legend { padding-inline: 0.4rem; font-weight: 500; }
 
-button {
-  background: var(--ink); color: #fff; border: 0; border-radius: 6px;
-  padding: 0.55rem 1rem; font-size: 1rem; cursor: pointer;
+.callout--caveat {
+  background: var(--caveat-bg);
+  border-color: var(--caveat-border);
+  border-left-color: #eab308;
+  color: var(--ink);
 }
-button:disabled { background: var(--muted); cursor: not-allowed; }
 
-.hint { color: var(--muted); font-size: 0.9rem; }
+/* Glass Tables - High Contrast Fixes */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 1rem;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+}
 
+caption {
+  text-align: left;
+  color: var(--muted);
+  padding: 0.75rem 0.25rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+th {
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+td, .hint, caption {
+  color: var(--muted);
+}
+
+td strong, tbody th, td span, td button, td a {
+  color: var(--ink);
+}
+
+tbody tr:hover {
+  background: var(--hover-tint);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Form Controls & Re-styled Fieldsets */
+.field {
+  margin-block: 1rem;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.field--radio {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin-block: 0.65rem;
+}
+
+.field--radio input[type="radio"] {
+  accent-color: var(--primary);
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  cursor: pointer;
+}
+
+.field--radio label {
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+.field--radio label strong {
+  color: var(--ink);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+.field input,
+textarea {
+  background: var(--glass-bg);
+  color: var(--ink);
+  padding: 0.65rem 0.95rem;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 10px;
+  min-width: 14rem;
+  font-size: 0.95rem;
+  backdrop-filter: blur(8px);
+}
+
+/* `min-width: 14rem` above is meant for the short numeric fields. A textarea
+   is where a whole CSV export gets pasted, and at 14rem the placeholder header
+   row alone wrapped over four lines. */
+textarea {
+  width: 100%;
+  min-height: 8rem;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+.field input:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  outline: none;
+}
+
+/* Re-styled Glass Fieldsets (No raw wireframe outline) */
+fieldset {
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-block: 1.25rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--glass-shadow);
+}
+
+legend {
+  padding-inline: 0.6rem;
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+/* Keybar & Gate Modal */
 .keybar {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 1rem; padding: 0.5rem 1.25rem; background: #eef3f8;
-  border-bottom: 1px solid var(--line); font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 1.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 0.9rem;
 }
-.keybar button { background: none; color: var(--ink); text-decoration: underline; padding: 0; }
 
-.gate { max-width: 32rem; margin: 4rem auto; padding: 1.5rem; background: #fff;
-  border: 1px solid var(--line); border-radius: 10px; }
+.keybar button {
+  background: none;
+  color: var(--primary);
+  text-decoration: underline;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  font-weight: 600;
+}
 
-.badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
-  font-size: 0.85rem; border: 1px solid var(--line); }
-.badge--low, .badge--none { background: var(--caveat-bg); border-color: #9a7b1f; }
-.badge--high { background: #eaf5ef; border-color: var(--ok); color: var(--ok); }
+.keybar button:hover:not(:disabled) {
+  transform: none;
+  color: var(--primary-hover);
+  box-shadow: none;
+}
 
-.score__value { font-size: 2.4rem; margin: 0; }
-.score__scale { color: var(--muted); font-size: 1.1rem; }
-.score--suppressed .score__caveat { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.4rem; }
-.score__footnote { color: var(--muted); font-size: 0.85rem; }
+.gate {
+  max-width: 32rem;
+  margin: 4rem auto;
+  padding: 2.25rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+}
 
-/* --- Phase 6: the remaining three pages ---------------------------------- */
+.gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
 
-/* Keyboard users should not tab through the nav on every page. Visible only
-   when focused, but genuinely visible then -- an off-screen skip link that
-   never appears is worse than none, because it looks handled. */
+.gate label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.gate input[type="password"],
+.gate input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.gate button[type="submit"] {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+}
+
+/* Status Pills & Badges */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  font-size: 0.88rem;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+.pill--healthy {
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  color: var(--ok);
+}
+
+.pill--watch {
+  background: var(--caveat-bg);
+  border-color: var(--caveat-border);
+  color: var(--caveat-ink);
+}
+
+.pill--at-risk {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn);
+}
+
+.pill--silent-exit {
+  background: var(--alert-bg);
+  border-color: var(--alert-border);
+  color: var(--alert);
+}
+
+/* Stance List */
+.panel--stance {
+  border-left: 5px solid var(--primary);
+}
+
+.stance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.stance h3 {
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+}
+
+.stance ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.stance li {
+  margin-block: 0.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .skip-link {
   position: absolute;
   left: -9999px;
+  /* Inverted rather than --primary: white on the dark theme's blue measured
+     3.68:1, and the first thing a keyboard user meets should not be the one
+     element that fails AA. */
   background: var(--ink);
-  color: #fff;
+  color: var(--bg);
   padding: 0.6rem 1rem;
-  border-radius: 0 0 6px 0;
-  z-index: 10;
+  border-radius: 0 0 8px 0;
+  z-index: 1000;
+  font-weight: 600;
 }
+
 .skip-link:focus {
   left: 0;
   top: 0;
 }
 
-.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1.25rem; }
-.confirm { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.95rem; }
-button.danger { background: var(--alert); }
+/* ==========================================================================
+   Components the theme rewrite left without rules.
+   ==========================================================================
+   Twenty-six classes still in the markup had no declaration at all, so they
+   fell back to browser defaults. Most were merely plain; three mattered:
 
-textarea {
-  width: 100%;
-  padding: 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
-  font-size: 0.9rem;
+   * `.sparkline` rendered as a NUMBERED LIST and `.bar` as an inline span with
+     no width or colour, so the History page's week-by-week trajectory -- the
+     whole point of that page -- drew nothing at all.
+   * `.score--suppressed` is how §6.1's promise is kept on screen. Without it
+     the caveat and the plausible range lost the visual weight that stops a
+     low-confidence assessment reading as a confident number.
+   * `.badge` had no shape, so the confidence label sat as bare text.
+   ========================================================================== */
+
+.page__intro {
+  color: var(--muted);
+  max-width: 46rem;
+  font-size: 1.02rem;
 }
 
-/* Classification is spelled out in text, never carried by colour alone
-   (WCAG 1.4.1) -- the colour is a secondary cue for people who can use it. */
-.pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); font-size: 0.9rem; }
-.pill--healthy { background: #eaf5ef; border-color: var(--ok); color: var(--ok); }
-.pill--watch { background: var(--caveat-bg); border-color: #9a7b1f; }
-.pill--at-risk { background: #fbeee8; border-color: #a2542b; color: #7d3d1c; }
-.pill--silent-exit { background: var(--alert-bg); border-color: var(--alert); color: var(--alert); }
-.pill__score { font-weight: 600; }
-.pill__caveat { font-style: italic; }
+/* The plain figure list, as used by the Diagnostic Room. `.stats--cards` is
+   the glass variant on Home and overrides the columns. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
 
-.result { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-.briefing { white-space: pre-wrap; background: var(--bg); padding: 0.9rem; border-radius: 6px; font-size: 0.9rem; }
+.stats dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 
-.trajectory { margin-block: 1.25rem; }
-.trajectory h3 { margin-bottom: 0.4rem; }
-.sparkline { display: flex; gap: 0.9rem; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; align-items: flex-end; }
-.sparkline li { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
-.sparkline__label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-.bar { width: 26px; border-radius: 3px 3px 0 0; background: var(--muted); }
-.bar--healthy { background: var(--ok); }
-.bar--watch { background: #9a7b1f; }
-.bar--at-risk { background: #a2542b; }
-.bar--silent-exit { background: var(--alert); }
+.stats dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
 
-.row--failed { background: var(--alert-bg); }
+/* --- Confidence ---------------------------------------------------------- */
 
-.panel--stance { border-left: 4px solid var(--ink); }
-.stance { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.5rem; }
-.stance h3 { margin-bottom: 0.4rem; }
-.stance ul { margin: 0; padding-left: 1.1rem; }
-.stance li { margin-block: 0.35rem; }
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--ink);
+}
 
-.cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
-.cards li { border: 1px solid var(--line); border-radius: 8px; padding: 0.9rem 1rem; }
-.cards a { font-weight: 600; color: var(--ink); }
-.cards p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.badge--none,
+.badge--low {
+  background: var(--caveat-bg);
+  border-color: var(--caveat-border);
+  color: var(--caveat-ink);
+}
 
-header { border-bottom: 1px solid var(--line); background: #fff; }
+.badge--moderate {
+  background: var(--accent-tint);
+  border-color: var(--accent-tint-border);
+  color: var(--brand-highlight);
+}
 
-@media (max-width: 40rem) {
-  .stats { grid-template-columns: 1fr 1fr; }
-  table { font-size: 0.9rem; }
+.badge--high {
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  color: var(--ok);
+}
+
+.score__value {
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.score__scale {
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.score__range {
+  margin: 0.35rem 0;
+  color: var(--ink);
+}
+
+.score__footnote {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+/* The caveat carries the same weight as a score would, because it IS the
+   finding here. Rendering it smaller and greyer than the number is the exact
+   failure ConfidenceBadge.tsx was written to avoid. */
+.score--suppressed .score__caveat {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+}
+
+.score--suppressed {
+  border-left: 4px solid var(--caveat-border);
+  padding-left: 1rem;
+}
+
+.pill__score {
+  font-weight: 700;
+}
+
+.pill__caveat {
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* --- History trajectories ------------------------------------------------ */
+
+.trajectory {
+  margin-block: 1.5rem;
+}
+
+.trajectory h3 {
+  margin-bottom: 0.5rem;
+}
+
+.sparkline {
+  display: flex;
+  gap: 0.9rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.sparkline li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sparkline__label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* `display: block` is load-bearing: the height comes from an inline style, and
+   an inline element ignores it. This is why every bar was invisible. */
+.bar {
+  display: block;
+  width: 26px;
+  border-radius: 4px 4px 0 0;
+  background: var(--muted);
+}
+
+.bar--healthy {
+  background: var(--ok);
+}
+
+.bar--watch {
+  background: var(--caveat-border);
+}
+
+.bar--at-risk {
+  background: var(--warn-border);
+}
+
+.bar--silent-exit {
+  background: var(--alert);
+}
+
+/* --- Console ------------------------------------------------------------- */
+
+.result {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.briefing {
+  white-space: pre-wrap;
+  background: var(--surface-raised);
+  border: 1px solid var(--glass-border);
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+/* --- Home ---------------------------------------------------------------- */
+/* Present in the markup as section hooks. Declared so they are addressable
+   rather than silently inert, and so the sections keep even rhythm. */
+
+.home-page > .panel {
+  margin-block: 1.75rem;
+}
+
+.section-status,
+.section-features,
+.section-architecture {
+  scroll-margin-top: 5rem;
 }

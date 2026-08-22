@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-2c48e129-c596-4549-a21f-930d7816820d/styles.css">
+<style>
+:root{
+  --paper:#F2F5F4; --surface:#FFFFFF; --ink:#1B2422; --muted:#5A6A66; --rule:#D2DAD7;
+  --accent:#1D4E6B; --accent-bg:#EAF1F5;
+  --healthy:#47795A; --healthy-bg:#EDF4EF;
+  --watch:#8A6A22; --watch-bg:#FAF4E6;
+  --at-risk:#9E5333; --at-risk-bg:#FAEFEA;
+  --exit:#7E3A2C; --exit-bg:#F9EDEA;
+  --color-bg:var(--paper); --color-surface:var(--surface); --color-text:var(--ink);
+  --color-accent:var(--accent); --color-divider:var(--rule);
+  --color-accent-100:var(--accent-bg); --color-accent-200:#D6E4EC; --color-accent-600:#173E55;
+  --color-accent-700:#12303F; --color-accent-800:#12303F;
+  --color-neutral-200:#E4EAE8; --color-neutral-500:#8A9A96; --color-neutral-800:#3A4744;
+}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+a{color:var(--accent)}a:hover{color:#12303F}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.qq-nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;cursor:pointer;font-family:var(--font-body);font-size:13.5px;padding:7px 10px;color:#1B2422}
+.qq-nav:hover{background:var(--accent-bg)}
+.qq-card{background:var(--surface);border:1px solid var(--rule);padding:14px 16px;text-align:left;font-family:var(--font-body);cursor:pointer;display:block;width:100%}
+.qq-card:hover{border-color:var(--accent);background:var(--accent-bg)}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-variant-numeric:tabular-nums">
+
+  <aside style="width:244px;flex:none;border-right:2px solid var(--rule);padding:24px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;background:var(--paper)">
+    <div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div style="width:14px;height:14px;background:var(--accent)"></div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;line-height:1.05">Quiet-Quitting<br>Detector</div>
+      </div>
+      <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-top:8px">Wellbeing prompt · not a verdict</div>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:2px;border-top:2px solid var(--rule);padding-top:12px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+        <button type="button" class="qq-nav" onClick="{{ n.go }}" style="background:{{ n.bg }};color:{{ n.fg }};font-weight:{{ n.weight }}">
+          <span style="width:3px;align-self:stretch;background:{{ n.mark }}"></span>
+          <span>{{ n.label }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;border-top:2px solid var(--rule);padding-top:14px">
+      <div style="font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">Pipeline</div>
+      <button type="button" class="btn btn-primary btn-block" onClick="{{ runPipeline }}" disabled="{{ running }}">{{ runLabel }}</button>
+      <div style="font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-top:6px">Demo state</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+          <button type="button" class="qq-nav" onClick="{{ m.go }}" style="background:{{ m.bg }};color:{{ m.fg }};font-size:12px;padding:5px 10px">{{ m.label }}</button>
+        </sc-for>
+      </div>
+      <div style="border-top:1px solid var(--rule);padding-top:12px;display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;flex:none;background:{{ statusDot }}"></span>
+          <span style="font-size:11.5px;font-weight:600">{{ statusLabel }}</span>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--muted)">
+            <span>Provider calls</span>
+            <span style="color:var(--ink);font-weight:600">{{ apiUsed }} / {{ apiQuota }}</span>
+          </div>
+          <div style="height:6px;background:var(--rule);margin-top:5px"><div style="height:100%;background:var(--accent);width:{{ apiPct }}%"></div></div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.35">{{ apiNote }}</div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);line-height:1.4">Local scoring · model {{ modelVersion }}</div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;padding:30px 40px 72px;max-width:1160px">
+
+    <sc-if value="{{ running }}" hint-placeholder-val="{{ false }}">
+      <div style="border:2px solid var(--accent);padding:12px 14px;margin-bottom:22px;display:flex;align-items:center;gap:14px">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:13px">Evaluating {{ runCurrent }}</div>
+        <div style="flex:1;height:8px;background:var(--rule)"><div style="height:100%;background:var(--accent);width:{{ runPct }}%"></div></div>
+        <div style="font-size:12px">{{ runDone }} of {{ runTotal }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showConstraintBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface);border-left:4px solid var(--ink);padding:15px 18px;margin-bottom:24px;display:flex;gap:18px;align-items:flex-start">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:0.09em;text-transform:uppercase;flex:none;width:132px;color:var(--accent)">Use constraint</div>
+        <div style="font-size:13.5px;line-height:1.45;max-width:720px;color:var(--ink)">This system compares each person only to their own earlier weeks. It does not rank people, does not recommend disciplinary action, and must never be used to justify a decision about someone's employment. Every assessment you open is written to the access trail.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ degradedMode }}" hint-placeholder-val="{{ false }}">
+      <div style="border:2px solid var(--accent);padding:12px 16px;margin-bottom:24px;font-size:13.5px;line-height:1.45">
+        <strong>Degraded tier.</strong> The provider chain is unavailable, so scores come from the local fallback scorer. Confidence is capped at “Not sure yet” and no single number is shown for anyone.
+      </div>
+    </sc-if>
+
+    <!-- ══ OVERVIEW ══ -->
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Overview</div>
+        <h1 style="font-size:44px;max-width:16ch;margin:0 0 10px">Weekly telemetry, read against a person's own history.</h1>
+        <p style="font-size:16px;max-width:60ch;color:var(--muted);text-wrap:pretty">Four weeks of engagement metrics, evaluated per person against their own baseline, turned into a supportive prompt for a conversation — with the uncertainty attached to the finding rather than buried under it.</p>
+        <div class="hr" style="margin:26px 0 0"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid var(--rule)">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="padding:20px 20px 22px;border-right:1px solid var(--rule)">
+              <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);min-height:28px">{{ s.label }}</div>
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:40px;line-height:1;margin-top:10px;color:{{ s.color }}">{{ s.value }}</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:6px">{{ s.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ unvalidated }}" hint-placeholder-val="{{ false }}">
+          <div style="border:2px solid var(--accent);padding:14px 16px;margin-top:24px;font-size:13.5px;max-width:78ch;line-height:1.45">No manager has told this system whether it was right yet, so nothing it reports has been validated. Treat every assessment as a question.</div>
+        </sc-if>
+
+        <sc-if value="{{ showStance }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:34px">
+            <h2 style="font-size:26px;margin:0 0 16px">What this is, and what it is not</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:2px solid var(--rule)">
+              <div style="padding:18px 24px 18px 0;border-right:1px solid var(--rule)">
+                <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">It does</div>
+                <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.6">
+                  <li>Compare each person to their <strong>own</strong> earlier weeks.</li>
+                  <li>Require a pattern to hold two or more consecutive weeks, and to still be happening now.</li>
+                  <li>Say when it is not confident, instead of showing a number.</li>
+                  <li>Explain which metric drove a score.</li>
+                </ul>
+              </div>
+              <div style="padding:18px 0 18px 24px">
+                <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">It does not</div>
+                <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.6">
+                  <li>Rank people, or compare one person to another.</li>
+                  <li>Recommend disciplinary action, ever.</li>
+                  <li>Hold anything about health, sentiment or performance ratings — there is no field for them.</li>
+                  <li>Treat missing data as evidence of anything.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="hr"></div>
+            <p style="font-size:14px;max-width:80ch;color:var(--muted)">This is a prompt for a conversation, not a verdict about a person. If it is ever used to justify a decision about someone's employment, it is being used for something it was explicitly built not to do.</p>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:34px;border-top:2px solid var(--rule);padding-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <sc-for list="{{ overviewLinks }}" as="l" hint-placeholder-count="3">
+            <button type="button" class="qq-card" onClick="{{ l.go }}">
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:17px">{{ l.title }}</div>
+              <div style="font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45">{{ l.body }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ COHORT ══ -->
+    <sc-if value="{{ isCohort }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Cohort</div>
+        <h1 style="font-size:38px;margin:0 0 10px">Everyone on record</h1>
+        <p style="font-size:15px;max-width:70ch;color:var(--muted)">Listed alphabetically. Bars show each metric's deviation from <em>that person's own</em> four-week baseline — solid for movement away from their norm, faint for movement that carries no risk weight. There is no sort control, because sorting this by score would make it a leaderboard.</p>
+        <div class="hr"></div>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--rule);background:var(--surface);padding:30px;max-width:60ch">
+            <h3 style="margin:0 0 8px">Nobody on record yet</h3>
+            <p style="font-size:14px;color:var(--muted)">Paste a weekly export in Ingest, then run the pipeline. Nothing is scored until at least two weeks of a person's own history exist.</p>
+            <button type="button" class="btn btn-primary" onClick="{{ goIngest }}">Go to ingest</button>
+          </div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule)">
+          <sc-for list="{{ people }}" as="p" hint-placeholder-count="6">
+            <button type="button" onClick="{{ p.open }}" style="background:var(--paper);border:0;padding:18px 20px;text-align:left;cursor:pointer;font-family:var(--font-body)" style-hover="background:var(--surface)">
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">{{ p.display }}</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px">{{ p.meta }}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                  <span style="font-size:11px;padding:3px 9px;background:{{ p.pillBg }};color:{{ p.pillFg }};font-weight:600;border:1px solid {{ p.pillFg }}">{{ p.classification }}</span>
+                  <span style="font-size:10.5px;color:var(--muted)">{{ p.confLabel }}</span>
+                </div>
+              </div>
+
+              <div style="margin-top:14px;display:flex;flex-direction:column;gap:5px">
+                <sc-for list="{{ p.metrics }}" as="m" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:126px 1fr 1fr 62px;align-items:center;gap:6px;font-size:11.5px">
+                    <span style="color:var(--muted)">{{ m.label }}</span>
+                    <span style="height:9px;display:flex;justify-content:flex-end;border-right:2px solid var(--muted)">
+                      <span style="width:{{ m.negW }}%;height:100%;background:{{ m.color }}"></span>
+                    </span>
+                    <span style="height:9px;display:block">
+                      <span style="width:{{ m.posW }}%;height:100%;background:{{ m.color }};display:block"></span>
+                    </span>
+                    <span style="text-align:right;font-variant-numeric:tabular-nums;color:{{ m.textColor }}">{{ m.deltaLabel }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.45">{{ p.headline }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ PERSON ══ -->
+    <sc-if value="{{ isPerson }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <button type="button" class="btn btn-ghost" onClick="{{ goCohort }}" style="padding-left:0;margin-bottom:14px">← Back to cohort</button>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <h1 style="font-size:38px;margin:0">{{ person.display }}</h1>
+          <span style="font-size:12px;padding:4px 11px;background:{{ person.pillBg }};color:{{ person.pillFg }};font-weight:600;border:1px solid {{ person.pillFg }}">{{ person.classification }}</span>
+          <span style="font-size:12px;color:var(--muted)">{{ person.meta }} · latest week {{ person.latestWeek }}</span>
+        </div>
+        <div class="hr"></div>
+
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:0;border-bottom:2px solid var(--rule)">
+          <div style="padding:4px 26px 26px 0;border-right:1px solid var(--rule)">
+            <sc-if value="{{ person.suppressed }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="font-family:var(--font-heading);font-weight:800;font-size:19px;line-height:1.2;max-width:22ch">We are not confident enough to give a single number here.</div>
+                <div style="font-size:14px;margin-top:12px">Plausible range <strong style="font-size:22px">{{ person.rangeLabel }}</strong> out of 10</div>
+                <div style="margin-top:10px"><span style="font-size:11px;padding:3px 9px;background:var(--accent-bg);color:var(--accent)">{{ person.confLabel }}</span></div>
+                <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">This range is a rule-of-thumb band that widens when there is less evidence. It is not a statistical confidence interval.</p>
+              </div>
+            </sc-if>
+            <sc-if value="{{ person.showScore }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">Risk index</div>
+                <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px">
+                  <span style="font-family:var(--font-heading);font-weight:800;font-size:66px;line-height:0.9;color:var(--ink)">{{ person.score }}</span>
+                  <span style="font-size:18px;color:var(--muted)">/ 10</span>
+                </div>
+                <div style="font-size:13px;margin-top:8px">Plausible range {{ person.rangeLabel }}</div>
+                <div style="margin-top:10px"><span style="font-size:11px;padding:3px 9px;background:var(--rule);color:var(--ink)">{{ person.confLabel }}</span></div>
+              </div>
+            </sc-if>
+            <p style="font-size:13px;line-height:1.5;margin-top:18px;color:var(--muted)">{{ person.rationale }}</p>
+          </div>
+
+          <div style="padding:4px 0 26px 26px">
+            <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">What drove it</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ person.attributions }}" as="a" hint-placeholder-count="3">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:13px">
+                    <span>{{ a.metric }} <span style="color:var(--muted)">{{ a.direction }}, weeks {{ a.weeks }}</span></span>
+                    <span style="font-variant-numeric:tabular-nums">{{ a.label }}</span>
+                  </div>
+                  <div style="height:10px;background:var(--rule);margin-top:4px"><div style="height:100%;background:var(--accent);width:{{ a.pct }}%"></div></div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px">Four-week trajectory</div>
+            <div style="display:flex;align-items:flex-end;gap:10px;height:96px;border-bottom:2px solid var(--rule);padding-bottom:0">
+              <sc-for list="{{ person.history }}" as="w" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;width:56px;height:100%">
+                  <span style="font-size:11px;font-variant-numeric:tabular-nums">{{ w.score }}</span>
+                  <span style="width:100%;background:{{ w.color }};height:{{ w.h }}px"></span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:6px">
+              <sc-for list="{{ person.history }}" as="w" hint-placeholder-count="4">
+                <div style="width:56px;font-size:10.5px;line-height:1.25;color:var(--muted)">W{{ w.week }}<br>{{ w.classification }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:2px solid var(--rule)">
+          <div style="padding:22px 26px 26px 0;border-right:1px solid var(--rule)">
+            <h3 style="font-size:20px;margin:0 0 4px">Confirmed patterns</h3>
+            <p style="font-size:12px;color:var(--muted)">Held for two or more consecutive weeks, and still happening in the latest week.</p>
+            <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule)">
+              <sc-for list="{{ person.signals }}" as="s" hint-placeholder-count="3">
+                <div style="padding:12px 0;border-bottom:1px solid var(--rule)">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:14px">{{ s.name }}</span>
+                    <span style="font-size:10px;padding:2px 8px;background:{{ s.sevBg }};color:{{ s.sevFg }};text-transform:uppercase;letter-spacing:0.06em">{{ s.severity }}</span>
+                    <span style="font-size:11px;color:var(--muted);margin-left:auto">weeks {{ s.weeks }}</span>
+                  </div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.45">{{ s.detail }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ person.noSignals }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13.5px;margin-top:12px">No confirmed patterns. Nothing here needs a conversation prompt this week.</p>
+            </sc-if>
+          </div>
+
+          <div style="padding:22px 0 26px 26px">
+            <h3 style="font-size:20px;margin:0 0 4px">Suggested next steps</h3>
+            <p style="font-size:12px;color:var(--muted)">Supportive actions only. Accepting one records it so its outcome can be measured later.</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ person.interventions }}" as="i" hint-placeholder-count="3">
+                <div style="border:1px solid var(--rule);background:var(--surface);padding:14px 16px">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ i.title }}</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.45">{{ i.why }}</div>
+                  <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+                    <sc-if value="{{ i.accepted }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:11.5px;padding:4px 10px;background:var(--accent);color:var(--surface);font-weight:600">Recorded · outcome tracked from week {{ i.trackFrom }}</span>
+                    </sc-if>
+                    <sc-if value="{{ i.pending }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:flex;gap:8px">
+                        <button type="button" class="btn btn-primary" onClick="{{ i.accept }}">Accept</button>
+                        <button type="button" class="btn btn-secondary" onClick="{{ i.dismiss }}">Not this</button>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size:11.5px;color:var(--muted);margin-top:16px;max-width:80ch;line-height:1.5">You are viewing an individual assessment. This view has been written to the hash-chained access trail with your identity and a timestamp, and cannot be deleted from this interface. <a href="#" onClick="{{ goAudit }}">See the access trail</a>.</p>
+      </section>
+    </sc-if>
+
+    <!-- ══ DIAGNOSTIC ══ -->
+    <sc-if value="{{ isDiagnostic }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Diagnostic room</div>
+        <h1 style="font-size:38px;margin:0 0 10px">Is this system right?</h1>
+        <p style="font-size:15px;max-width:70ch;color:var(--muted)">{{ calibMessage }}</p>
+        <div class="hr"></div>
+
+        <sc-if value="{{ reviewRequired }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--accent);color:var(--surface);padding:14px 16px;margin-bottom:22px;font-size:13.5px;max-width:80ch">This system is outside its acceptable operating range. Consider rolling back the active model before relying on any assessment.</div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--rule);border-bottom:2px solid var(--rule)">
+          <sc-for list="{{ calibStats }}" as="s" hint-placeholder-count="4">
+            <div style="padding:18px 20px;border-right:1px solid var(--rule)">
+              <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);min-height:28px">{{ s.label }}</div>
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;line-height:1;margin-top:8px;color:{{ s.color }}">{{ s.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <h2 style="font-size:26px;margin:32px 0 6px">What happened after managers acted</h2>
+        <p style="font-size:13.5px;max-width:80ch;color:var(--accent)">Association only — not evidence of cause. These figures are recovery beyond what regression to the mean already predicts, and small samples are withheld rather than reported.</p>
+        <table class="table" style="margin-top:12px">
+          <thead><tr><th>Kind of action</th><th>Measured</th><th>Improved</th><th>Declined</th><th>No detectable change</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ outcomes }}" as="o" hint-placeholder-count="4">
+              <tr>
+                <td style="font-weight:600">{{ o.intervention }}</td>
+                <td style="color:{{ o.noteColor }};font-size:{{ o.noteSize }}">{{ o.sample }}</td>
+                <td>{{ o.improved }}</td>
+                <td>{{ o.declined }}</td>
+                <td>{{ o.noChange }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+
+        <h2 style="font-size:26px;margin:34px 0 6px">Tell us whether a briefing was right</h2>
+        <p style="font-size:13.5px;max-width:80ch;color:var(--muted)">This is the only way the system finds out it was wrong. There is no free-text field on purpose — please do not record anything about a person's health or circumstances anywhere in this tool.</p>
+        <div style="display:grid;grid-template-columns:220px 120px 1fr;gap:18px;align-items:start;margin-top:14px;max-width:920px">
+          <div class="field">
+            <label>Person</label>
+            <select class="input" value="{{ fbName }}" onChange="{{ setFbName }}">
+              <sc-for list="{{ nameOptions }}" as="n" hint-placeholder-count="6">
+                <option value="{{ n }}">{{ n }}</option>
+              </sc-for>
+            </select>
+          </div>
+          <div class="field">
+            <label>Week</label>
+            <input class="input" type="number" min="1" value="{{ fbWeek }}" onChange="{{ setFbWeek }}">
+          </div>
+          <div class="field">
+            <label>Your verdict</label>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:2px">
+              <sc-for list="{{ verdicts }}" as="v" hint-placeholder-count="3">
+                <button type="button" onClick="{{ v.pick }}" style="display:flex;align-items:center;gap:10px;text-align:left;background:{{ v.bg }};color:{{ v.fg }};border:1px solid var(--rule);padding:8px 12px;cursor:pointer;font-family:var(--font-body);font-size:13.5px">
+                  <span style="width:12px;height:12px;flex:none;background:{{ v.dot }};border:1px solid var(--rule)"></span>
+                  <strong>{{ v.label }}</strong>
+                  <span style="opacity:0.75">{{ v.hint }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
+          <button type="button" class="btn btn-primary" onClick="{{ recordVerdict }}">Record verdict</button>
+          <sc-if value="{{ fbDone }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:13px;color:var(--accent)">Recorded. Thank you — this is what keeps the system honest.</span>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ INGEST ══ -->
+    <sc-if value="{{ isIngest }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Ingest</div>
+        <h1 style="font-size:38px;margin:0 0 10px">Bring a weekly export in</h1>
+        <p style="font-size:15px;max-width:70ch;color:var(--muted)">Unknown column names are resolved by alias, and re-pasting someone replaces their row rather than duplicating it. Columns this system is not allowed to hold — anything about health, sentiment or performance ratings — are dropped on the way in and named in the receipt.</p>
+        <div class="hr"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start">
+          <div>
+            <div style="display:flex;gap:16px;align-items:flex-end">
+              <div class="field" style="width:140px">
+                <label>Default week</label>
+                <input class="input" type="number" min="1" value="{{ ingestWeek }}" onChange="{{ setIngestWeek }}">
+              </div>
+              <div style="font-size:11.5px;color:var(--muted);padding-bottom:8px">Used for rows that do not carry their own week column.</div>
+            </div>
+            <div class="field" style="margin-top:14px">
+              <label>CSV content</label>
+              <textarea class="input" rows="9" style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px" value="{{ ingestCsv }}" onChange="{{ setIngestCsv }}" placeholder="employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,weekly_hours"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button type="button" class="btn btn-primary" onClick="{{ doIngest }}" disabled="{{ ingestEmpty }}">Ingest</button>
+              <button type="button" class="btn btn-secondary" onClick="{{ fillSample }}">Paste sample week</button>
+            </div>
+
+            <sc-if value="{{ ingestResult }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top:2px solid var(--rule);margin-top:26px;padding-top:18px">
+                <h3 style="font-size:20px;margin:0 0 10px">Ingest receipt</h3>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--rule)">
+                  <sc-for list="{{ ingestStats }}" as="s" hint-placeholder-count="3">
+                    <div style="padding:12px 14px 14px 0">
+                      <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">{{ s.label }}</div>
+                      <div style="font-family:var(--font-heading);font-weight:800;font-size:26px;margin-top:4px;color:{{ s.color }}">{{ s.value }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ hasDropped }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;border:2px solid var(--accent);padding:12px 14px">
+                    <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin-bottom:6px">Dropped by the allowlist</div>
+                    <div style="font-size:13px;line-height:1.5">{{ droppedList }} — this system has no field for these and will not store them.</div>
+                  </div>
+                </sc-if>
+                <p style="font-size:13px;margin-top:14px">Ingested. Run the pipeline to evaluate the new data.</p>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--rule);padding:18px">
+            <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin-bottom:10px">Allowlist</div>
+            <div style="display:flex;flex-direction:column;gap:0">
+              <sc-for list="{{ allowlist }}" as="a" hint-placeholder-count="8">
+                <div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule);font-size:12.5px">
+                  <span style="width:7px;height:7px;flex:none;background:{{ a.color }}"></span>
+                  <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">{{ a.field }}</span>
+                  <span style="margin-left:auto;color:var(--muted);font-size:11px">{{ a.status }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ SIMULATOR ══ -->
+    <sc-if value="{{ isSimulator }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Simulator</div>
+        <h1 style="font-size:38px;margin:0 0 10px">What-if, on a scratchpad</h1>
+        <p style="font-size:15px;max-width:70ch;color:var(--muted)">Runs the same agent chain against numbers you make up. Writes to a scratch directory, so it can never overwrite a real person's history even if you use their name.</p>
+        <div class="hr"></div>
+
+        <div style="display:grid;grid-template-columns:330px 1fr;gap:36px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="field">
+              <label>First name</label>
+              <input class="input" value="{{ simName }}" onChange="{{ setSimName }}">
+            </div>
+            <sc-for list="{{ simFields }}" as="f" hint-placeholder-count="5">
+              <div class="field">
+                <label>{{ f.label }}</label>
+                <input class="input" type="range" min="{{ f.min }}" max="{{ f.max }}" step="{{ f.step }}" value="{{ f.value }}" onChange="{{ f.set }}" style="accent-color:var(--accent)">
+                <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:2px">
+                  <span style="color:var(--muted)">baseline {{ f.baseline }}</span>
+                  <span style="font-variant-numeric:tabular-nums;font-weight:600">{{ f.value }}{{ f.unit }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border-left:1px solid var(--rule);padding-left:32px">
+            <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">Live result</div>
+            <div style="display:flex;align-items:center;gap:22px;margin-top:8px">
+              <span style="font-family:var(--font-heading);font-weight:800;font-size:60px;line-height:0.9;color:var(--ink)">{{ simScore }}</span>
+              <span style="font-size:12px;padding:5px 12px;background:{{ simPillBg }};color:{{ simPillFg }};font-weight:600;border:1px solid {{ simPillFg }}">{{ simClass }}</span>
+            </div>
+            <p style="font-size:14px;max-width:60ch;margin-top:12px">{{ simRationale }}</p>
+            <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">Signals the chain confirmed</div>
+            <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule)">
+              <sc-for list="{{ simSignals }}" as="s" hint-placeholder-count="2">
+                <div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13px">
+                  <span>{{ s.name }}</span>
+                  <span style="font-size:10px;padding:2px 8px;background:{{ s.sevBg }};color:{{ s.sevFg }};text-transform:uppercase;letter-spacing:0.06em;margin-left:auto">{{ s.severity }}</span>
+                  <span style="font-variant-numeric:tabular-nums;width:58px;text-align:right;color:var(--muted)">+{{ s.weight }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ simNoSignals }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13.5px">No confirmed patterns at these numbers.</p>
+            </sc-if>
+            <div style="margin-top:20px;background:var(--surface);border:1px solid var(--rule);padding:16px">
+              <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Manager briefing draft</div>
+              <p style="font-size:13.5px;line-height:1.55;margin:0">{{ simBriefing }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ HISTORY ══ -->
+    <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">History</div>
+        <h1 style="font-size:38px;margin:0 0 10px">Week by week</h1>
+        <p style="font-size:15px;max-width:70ch;color:var(--muted)">Each row is one person compared against <em>their own</em> earlier weeks. Rows are never compared to each other, and the vertical scale is per person.</p>
+        <div class="hr"></div>
+
+        <div style="display:flex;flex-direction:column;gap:0;border-top:2px solid var(--rule)">
+          <sc-for list="{{ people }}" as="p" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:170px 1fr 210px;gap:20px;align-items:center;padding:14px 0;border-bottom:1px solid var(--rule)">
+              <div>
+                <div style="font-family:var(--font-heading);font-weight:800;font-size:16px">{{ p.display }}</div>
+                <div style="font-size:11px;color:var(--muted)">{{ p.meta }}</div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:6px;height:52px">
+                <sc-for list="{{ p.history }}" as="w" hint-placeholder-count="4">
+                  <div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;width:46px;height:100%">
+                    <span style="font-size:10px;color:var(--muted)">{{ w.score }}</span>
+                    <span style="width:100%;background:{{ w.color }};height:{{ w.hSmall }}px"></span>
+                    <span style="font-size:9.5px;color:var(--muted)">W{{ w.week }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+                <span style="font-size:11px;padding:3px 9px;background:{{ p.pillBg }};color:{{ p.pillFg }};font-weight:600;border:1px solid {{ p.pillFg }}">{{ p.classification }}</span>
+                <button type="button" class="btn btn-secondary" onClick="{{ p.open }}">Open</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <h2 style="font-size:26px;margin:34px 0 4px">Operational event log</h2>
+        <p style="font-size:13px;max-width:80ch;color:var(--muted)">Ingests, runs and resets. This is housekeeping — it is <strong>not</strong> the access audit trail, which records who viewed whose assessment, is hash-chained, and cannot be cleared from anywhere in this interface.</p>
+        <table class="table" style="margin-top:10px">
+          <thead><tr><th>When</th><th>Event</th><th>Detail</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ events }}" as="e" hint-placeholder-count="6">
+              <tr>
+                <td style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:nowrap">{{ e.timestamp }}</td>
+                <td style="color:{{ e.color }}">{{ e.type }}</td>
+                <td style="color:var(--muted)">{{ e.detail }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <sc-if value="{{ noEvents }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13.5px">No events recorded.</p>
+        </sc-if>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
+          <sc-if value="{{ confirmingClear }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;gap:10px;align-items:center;font-size:13px">
+              <span>Clear the operational log?</span>
+              <button type="button" class="btn btn-primary" onClick="{{ clearLog }}">Yes, clear it</button>
+              <button type="button" class="btn btn-secondary" onClick="{{ cancelClear }}">Cancel</button>
+            </span>
+          </sc-if>
+          <sc-if value="{{ notConfirmingClear }}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="btn btn-secondary" onClick="{{ askClear }}">Clear event log</button>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ══ AUDIT ══ -->
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <section>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Access trail &amp; retention</div>
+        <h1 style="font-size:38px;margin:0 0 10px">Who looked at whose assessment</h1>
+        <p style="font-size:15px;max-width:74ch;color:var(--muted)">Append-only and hash-chained at the database level. There is no control on this page that edits or deletes a row — the record is the one thing the person being measured can hold this system to.</p>
+        <div class="hr"></div>
+
+        <table class="table">
+          <thead><tr><th>When</th><th>Viewer</th><th>Subject</th><th>Purpose</th><th>Chain</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ auditRows }}" as="r" hint-placeholder-count="7">
+              <tr>
+                <td style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:nowrap">{{ r.when }}</td>
+                <td>{{ r.viewer }}</td>
+                <td>{{ r.subject }}</td>
+                <td style="color:var(--muted)">{{ r.purpose }}</td>
+                <td style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted)">{{ r.hash }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+
+        <h2 style="font-size:26px;margin:34px 0 10px">Retention</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)">
+          <sc-for list="{{ retention }}" as="r" hint-placeholder-count="6">
+            <div style="background:var(--paper);padding:16px 18px">
+              <div style="font-size:10.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">{{ r.kind }}</div>
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:24px;margin-top:6px">{{ r.period }}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45">{{ r.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:16px;max-width:80ch;line-height:1.5">Purpose limitation is enforced server-side: a request whose declared purpose is not on the allowlist is refused, and the refusal is itself logged.</p>
+      </section>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;governance&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;front&quot;,&quot;secondary&quot;,&quot;minimal&quot;],&quot;default&quot;:&quot;front&quot;,&quot;tsType&quot;:&quot;'front'|'secondary'|'minimal'&quot;,&quot;section&quot;:&quot;Framing&quot;},&quot;anonymiseAll&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Framing&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable'|'compact'&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+const CLS = {
+  "Healthy": ["var(--healthy-bg)", "var(--healthy)"],
+  "Watch": ["var(--watch-bg)", "var(--watch)"],
+  "At Risk": ["var(--at-risk-bg)", "var(--at-risk)"],
+  "Silent Exit": ["var(--exit-bg)", "var(--exit)"],
+};
+const SEV = { low: ["var(--paper)", "var(--muted)"], medium: ["var(--rule)", "var(--ink)"], high: ["var(--ink)", "var(--surface)"] };
+const CONF = { none: "No usable evidence", low: "Not sure yet", moderate: "Moderate confidence", high: "Well evidenced" };
+
+const RAW = [
+  { id: "e-arjun", name: "Arjun", team: "Platform · 3y tenure", cls: "Healthy", score: 2, conf: "high", range: [1, 3],
+    rationale: "Nothing in Arjun's four weeks moves outside his own normal range. Two metrics drifted and both came back.",
+    m: [["Tasks completed", -6], ["Response time", 4], ["After-hours logins", -20], ["Weekly hours", -3]],
+    signals: [], attributions: [["Response time", 0.3, "slower", "3–4"]],
+    hist: [2, 3, 2, 2], iv: [] },
+  { id: "e-ct4471", name: "CT-4471", anon: true, team: "Anonymised cohort · consent pending", cls: "Watch", score: 5, conf: "low", range: [3, 7],
+    rationale: "Only two weeks of this subject's own history exist, so the band is wide. Treat as a prompt to ask, not a finding.",
+    m: [["Tasks completed", -22], ["Response time", 41], ["After-hours logins", 0], ["Weekly hours", -9]],
+    signals: [["Response latency drift", "medium", "3–4", "Median reply time rose for two consecutive weeks and is still elevated in week 4."]],
+    attributions: [["Response time", 0.62, "slower", "3–4"], ["Tasks completed", 0.38, "fewer", "4"]],
+    hist: [null, null, 4, 5], iv: [["Ask what changed in week 3", "The drift starts in one week, which is usually a workload or dependency change rather than a person change."]] },
+  { id: "e-divya", name: "Divya", team: "Design systems · 2y tenure", cls: "Healthy", score: 3, conf: "high", range: [2, 4],
+    rationale: "Output dipped in week 3 and recovered in week 4. One week is not a pattern and the rule requires two.",
+    m: [["Tasks completed", -11], ["Response time", 9], ["After-hours logins", -50], ["Weekly hours", 2]],
+    signals: [], attributions: [["Tasks completed", 0.44, "fewer", "3"]],
+    hist: [3, 3, 4, 3], iv: [] },
+  { id: "e-karthik", name: "Karthik", team: "Infrastructure · 5y tenure", cls: "At Risk", score: 7, conf: "high", range: [6, 8],
+    rationale: "Three metrics have moved away from Karthik's own baseline for three consecutive weeks and all three are still moving in week 4.",
+    m: [["Tasks completed", -34], ["Response time", 118], ["After-hours logins", -100], ["Weekly hours", -18]],
+    signals: [
+      ["Sustained output decline", "high", "2–4", "Tasks completed fell below his own 4-week baseline for three consecutive weeks."],
+      ["Response latency drift", "medium", "2–4", "Median reply time more than doubled against his own norm and has not returned."],
+      ["Withdrawal from optional work", "medium", "3–4", "After-hours activity, previously routine for him, has stopped entirely."]],
+    attributions: [["Tasks completed", 0.46, "fewer", "2–4"], ["Response time", 0.34, "slower", "2–4"], ["Weekly hours", 0.2, "lower", "3–4"]],
+    hist: [4, 6, 6, 7],
+    iv: [["Book a 1:1 with no agenda", "Three metrics moving together over three weeks is usually about load or direction, not capability. Ask before concluding."],
+        ["Review his on-call load", "The decline starts the week after a rota change. That is the cheapest thing to rule out first."],
+        ["Check the scope of the migration he owns", "Weekly hours dropped while task count dropped — consistent with blocked work, not disengagement."]] },
+  { id: "e-meena", name: "Meena", team: "Data · 1y tenure", cls: "Watch", score: 4, conf: "moderate", range: [3, 6],
+    rationale: "Two weeks of lower output against her own baseline, still present in week 4. Low volume of history keeps the band wide.",
+    m: [["Tasks completed", -19], ["Response time", 27], ["After-hours logins", 0], ["Weekly hours", -6]],
+    signals: [["Sustained output decline", "medium", "3–4", "Tasks completed below her own baseline for two consecutive weeks, still below in week 4."]],
+    attributions: [["Tasks completed", 0.58, "fewer", "3–4"], ["Response time", 0.42, "slower", "4"]],
+    hist: [3, 3, 4, 4], iv: [["Check onboarding blockers", "She is one year in and the dip coincides with her first solo project."]] },
+  { id: "e-priya", name: "Priya", team: "Platform · 4y tenure", cls: "Healthy", score: 2, conf: "high", range: [1, 3],
+    rationale: "Stable against her own baseline on every metric. Nothing needs a prompt this week.",
+    m: [["Tasks completed", 5], ["Response time", -8], ["After-hours logins", -33], ["Weekly hours", 1]],
+    signals: [], attributions: [["After-hours logins", 0.22, "fewer", "2–4"]],
+    hist: [2, 2, 2, 2], iv: [] },
+  { id: "e-ravi", name: "Ravi", team: "Mobile · 6y tenure", cls: "Silent Exit", score: 8, conf: "moderate", range: [7, 9],
+    rationale: "Every measured channel has moved away from Ravi's own baseline for four weeks and none has recovered. The recurrence adjustment applies: he was elevated in weeks 2 and 3 and has not since had four healthy weeks.",
+    m: [["Tasks completed", -47], ["Response time", 210], ["After-hours logins", -100], ["Weekly hours", -24]],
+    signals: [
+      ["Sustained output decline", "high", "1–4", "Tasks completed below his own baseline every week in the window."],
+      ["Response latency drift", "high", "2–4", "Median reply time is three times his own norm and rising."],
+      ["Complete withdrawal from optional work", "high", "2–4", "No after-hours or cross-team activity for three weeks, against a strong prior pattern."],
+      ["Recurrence adjustment applied", "low", "4", "Elevated in two prior weeks without four consecutive healthy weeks since. +1."]],
+    attributions: [["Response time", 0.4, "slower", "2–4"], ["Tasks completed", 0.35, "fewer", "1–4"], ["Weekly hours", 0.25, "lower", "2–4"]],
+    hist: [5, 6, 7, 8],
+    iv: [["Have the conversation this week", "Four weeks with no recovery is the point at which waiting stops being neutral."],
+        ["Ask what he would change about the work", "Open question, not a performance framing. The tool cannot tell you why, only that something changed."],
+        ["Check whether his scope changed in week 1", "The decline starts at the window edge, so the cause may predate the data you have."]] },
+  { id: "e-tt9002", name: "TT-9002", anon: true, team: "Anonymised cohort · consent pending", cls: "Healthy", score: 1, conf: "none", range: [1, 4],
+    rationale: "One week of history. There is not enough of this subject's own record to say anything at all.",
+    m: [["Tasks completed", 0], ["Response time", 0], ["After-hours logins", 0], ["Weekly hours", 0]],
+    signals: [], attributions: [],
+    hist: [null, null, null, 1], iv: [] },
+];
+
+const ADVERSE = { "Tasks completed": -1, "Response time": 1, "After-hours logins": 0, "Weekly hours": -1 };
+const BASE_EVENTS = [
+  ["2026-08-21 09:14", "run.complete", "8 subjects evaluated · model qq-local-2.3 · 11.4s", false],
+  ["2026-08-21 09:13", "run.start", "scope: all subjects", false],
+  ["2026-08-20 17:02", "ingest.raw", "week 4 · 8 rows · 2 columns dropped by allowlist", false],
+  ["2026-08-20 16:58", "ingest.raw", "week 4 · rejected: column 'sentiment_score' not permitted", true],
+  ["2026-08-18 11:30", "feedback.record", "verdict: accurate · week 3", false],
+  ["2026-08-17 08:05", "retention.sweep", "3 raw weekly rows past 90 days deleted", false],
+];
+const SAMPLE_CSV = "employee_name,tasks_completed,avg_response_time_hours,after_hours_logins,weekly_hours,sentiment_score\nArjun,10,0.34,0,42,0.71\nPriya,9,0.29,1,41,0.65\nKarthik,6,2.60,0,39,0.40\nRavi,5,3.90,0,34,0.22";
+
+class Component extends DCLogic {
+  state = {
+    view: "overview", personId: null, mode: "populated",
+    running: false, runDone: 0, runCurrent: null,
+    fbName: "Karthik", fbWeek: 4, fbVerdict: "accurate", fbDone: false, extraVerdicts: 0, extraHarm: 0,
+    ingestWeek: 5, ingestCsv: "", ingestResult: null,
+    sim: { name: "Sam", week: 4, tasks: 6, response: 2.5, after: 0, hours: 32 },
+    accepted: {}, dismissed: {}, events: BASE_EVENTS, confirmingClear: false,
+  };
+
+  componentWillUnmount() { clearInterval(this._t); }
+
+  go = (view) => () => this.setState({ view, fbDone: false });
+
+  people() {
+    const mode = this.state.mode;
+    if (mode === "empty") return [];
+    const anonAll = this.props.anonymiseAll ?? false;
+    return RAW.map((r) => {
+      const degraded = mode === "degraded";
+      const conf = degraded ? (r.conf === "none" ? "none" : "low") : r.conf;
+      return { ...r, conf, degraded, display: (r.anon || anonAll) ? (r.anon ? r.name : "S-" + r.id.slice(2, 7).toUpperCase()) : r.name };
+    });
+  }
+
+  decorate(p) {
+    const [pillBg, pillFg] = CLS[p.cls];
+    const suppressed = p.conf === "low" || p.conf === "none";
+    const hist = p.hist.map((s, i) => ({
+      week: i + 1, score: s === null ? "—" : s,
+      classification: s === null ? "no data" : this.band(s),
+      color: s === null ? "var(--rule)" : CLS[this.band(s)][1],
+      h: s === null ? 4 : Math.round(s * 8.4), hSmall: s === null ? 3 : Math.round(s * 4.6),
+    }));
+    return {
+      ...p, pillBg, pillFg, suppressed, showScore: !suppressed,
+      classification: p.cls, latestWeek: 4, meta: p.team,
+      confLabel: CONF[p.conf], rangeLabel: p.range[0] + "–" + p.range[1],
+      headline: p.signals.length ? p.signals.length + " confirmed pattern" + (p.signals.length > 1 ? "s" : "") + " · " + p.signals[0][0].toLowerCase() : "No confirmed patterns in this window.",
+      metrics: p.m.map(([label, d]) => {
+        const bad = ADVERSE[label] === 0 ? false : (ADVERSE[label] > 0 ? d > 8 : d < -8);
+        const w = Math.min(Math.abs(d), 100);
+        return {
+          label, deltaLabel: (d > 0 ? "+" : "") + d + "%",
+          negW: d < 0 ? w : 0, posW: d > 0 ? w : 0,
+          color: bad ? "var(--accent)" : "var(--rule)",
+          textColor: bad ? "var(--ink)" : "var(--muted)",
+        };
+      }),
+      signals: p.signals.map(([name, severity, weeks, detail]) => ({ name, severity, weeks, detail, sevBg: SEV[severity][0], sevFg: SEV[severity][1] })),
+      noSignals: p.signals.length === 0,
+      attributions: p.attributions.map(([metric, share, direction, weeks]) => ({ metric, direction, weeks, pct: Math.round(share * 100), label: Math.round(share * 100) + "% of the index" })),
+      history: hist,
+      interventions: p.iv.map(([title, why], i) => {
+        const key = p.id + ":" + i;
+        return { title, why, trackFrom: 5, accepted: !!this.state.accepted[key], pending: !this.state.accepted[key] && !this.state.dismissed[key],
+          accept: () => this.setState((s) => ({ accepted: { ...s.accepted, [key]: true } })),
+          dismiss: () => this.setState((s) => ({ dismissed: { ...s.dismissed, [key]: true } })) };
+      }),
+      open: () => this.setState({ view: "person", personId: p.id }),
+    };
+  }
+
+  band(score) { return score >= 8 ? "Silent Exit" : score >= 6 ? "At Risk" : score >= 4 ? "Watch" : "Healthy"; }
+
+  runPipeline = () => {
+    const list = this.people();
+    if (!list.length) return;
+    clearInterval(this._t);
+    this.setState({ running: true, runDone: 0, runCurrent: list[0].display });
+    this._t = setInterval(() => {
+      this.setState((s) => {
+        const next = s.runDone + 1;
+        if (next >= list.length) {
+          clearInterval(this._t);
+          const stamp = "2026-08-22 05:1" + (next % 9);
+          return { running: false, runDone: next, runCurrent: null, events: [[stamp, "run.complete", list.length + " subjects evaluated · model qq-local-2.3", false], ...s.events] };
+        }
+        return { runDone: next, runCurrent: list[next].display };
+      });
+    }, 340);
+  };
+
+  simulate() {
+    const s = this.state.sim;
+    const base = { tasks: 9, response: 0.8, after: 1, hours: 43 };
+    const sig = [];
+    if (s.tasks <= base.tasks - 3) sig.push(["Sustained output decline", s.tasks <= base.tasks - 5 ? "high" : "medium", s.tasks <= base.tasks - 5 ? 3.5 : 2]);
+    if (s.response >= base.response * 2) sig.push(["Response latency drift", s.response >= base.response * 3.5 ? "high" : "medium", s.response >= base.response * 3.5 ? 3.5 : 2]);
+    if (s.after === 0 && base.after > 0) sig.push(["Withdrawal from optional work", "medium", 2]);
+    if (s.hours <= base.hours - 8) sig.push(["Reduced engaged hours", "low", 1]);
+    const total = sig.reduce((a, x) => a + x[2], 0);
+    const score = Math.max(1, Math.min(10, Math.round(total > 0 ? 1 + total : 1)));
+    return { score, cls: this.band(score), sig };
+  }
+
+  setSim = (key, num) => (e) => {
+    const v = num ? Number(e.target.value) : e.target.value;
+    this.setState((s) => ({ sim: { ...s.sim, [key]: v } }));
+  };
+
+  doIngest = () => {
+    const csv = this.state.ingestCsv.trim();
+    const lines = csv.split("\n").filter((l) => l.trim());
+    const header = (lines[0] || "").split(",").map((h) => h.trim());
+    const banned = ["sentiment_score", "sentiment", "wellbeing_score", "performance_rating", "health", "engagement_survey"];
+    const dropped = header.filter((h) => banned.includes(h.toLowerCase()));
+    const rows = Math.max(0, lines.length - 1);
+    const stamp = "2026-08-22 05:20";
+    this.setState((s) => ({
+      ingestResult: { rows, kept: header.length - dropped.length, dropped },
+      ingestCsv: "",
+      events: [[stamp, "ingest.raw", "week " + s.ingestWeek + " · " + rows + " rows · " + dropped.length + " columns dropped by allowlist", false], ...s.events],
+    }));
+  };
+
+  renderVals() {
+    const gov = this.props.governance ?? "front";
+    const density = this.props.density ?? "comfortable";
+    const st = this.state;
+    const list = this.people().map((p) => this.decorate(p));
+    const person = list.find((p) => p.id === st.personId) || list[0] || null;
+    const elevated = list.filter((p) => p.cls !== "Healthy").length;
+    const verdicts = 12 + st.extraVerdicts;
+    const harmful = 1 + st.extraHarm;
+    const empty = st.mode === "empty";
+
+    const navDefs = [["overview", "Overview"], ["cohort", "Cohort"], ["person", "Person detail"], ["diagnostic", "Diagnostic room"], ["ingest", "Ingest"], ["simulator", "Simulator"], ["history", "History"], ["audit", "Access trail"]];
+    const nav = navDefs.map(([key, label]) => ({
+      label, go: this.go(key),
+      bg: st.view === key ? "var(--ink)" : "transparent",
+      fg: st.view === key ? "var(--surface)" : "var(--ink)",
+      weight: st.view === key ? 600 : 400,
+      mark: st.view === key ? "var(--accent)" : "transparent",
+    }));
+    const modes = [["populated", "Populated"], ["empty", "First run (empty)"], ["degraded", "Degraded tier"]].map(([key, label]) => ({
+      label, go: () => this.setState({ mode: key, personId: null }),
+      bg: st.mode === key ? "var(--accent-bg)" : "transparent",
+      fg: st.mode === key ? "var(--accent)" : "var(--ink)",
+    }));
+
+    const sim = this.simulate();
+    const simFields = [
+      ["Week", "week", 1, 12, 1, "", 4], ["Tasks completed", "tasks", 0, 16, 1, "", 9],
+      ["Response time (hours)", "response", 0, 8, 0.1, "h", 0.8],
+      ["After-hours logins", "after", 0, 6, 1, "", 1], ["Weekly hours", "hours", 0, 60, 1, "h", 43],
+    ].map(([label, key, min, max, step, unit, baseline]) => ({ label, min, max, step, unit, baseline, value: st.sim[key], set: this.setSim(key, true) }));
+
+    return {
+      statusDot: st.mode === "degraded" ? "var(--watch)" : "var(--healthy)",
+      statusLabel: st.mode === "degraded" ? "Degraded · local fallback" : "All services operational",
+      apiUsed: st.mode === "degraded" ? 0 : 128 + st.runDone * 3,
+      apiQuota: 500,
+      apiPct: st.mode === "degraded" ? 0 : Math.min(100, Math.round(((128 + st.runDone * 3) / 500) * 100)),
+      apiNote: st.mode === "degraded" ? "Provider chain unreachable · 0 calls billed" : "Quota resets Monday 00:00 UTC",
+      nav, modes, running: st.running, runDone: st.runDone, runTotal: list.length || 8,
+      runCurrent: st.runCurrent, runPct: list.length ? Math.round((st.runDone / list.length) * 100) : 0,
+      runLabel: st.running ? "Run in progress…" : "Run the pipeline",
+      modelVersion: st.mode === "degraded" ? "qq-local-fallback" : "qq-local-2.3",
+      showConstraintBanner: gov === "front", showStance: gov !== "minimal",
+      degradedMode: st.mode === "degraded",
+      isOverview: st.view === "overview", isCohort: st.view === "cohort", isPerson: st.view === "person" && !!person,
+      isDiagnostic: st.view === "diagnostic", isIngest: st.view === "ingest", isSimulator: st.view === "simulator",
+      isHistory: st.view === "history", isAudit: st.view === "audit",
+      goCohort: this.go("cohort"), goIngest: this.go("ingest"), goAudit: this.go("audit"),
+      people: list, person, isEmpty: empty,
+      stats: [
+        { label: "People on record", value: empty ? "0" : String(list.length), note: empty ? "Nothing ingested yet" : "8 subjects · 2 anonymised", color: "var(--ink)" },
+        { label: "Currently raised above Healthy", value: empty ? "—" : String(elevated), note: "A count, never a list of who", color: "var(--ink)" },
+        { label: "Manager verdicts recorded", value: empty ? "0" : String(verdicts), note: empty ? "Unvalidated" : "Precision measurable at 10+", color: "var(--ink)" },
+        { label: "Reported as harmful", value: empty ? "0" : String(harmful), note: "Never netted off against accuracy", color: "var(--ink)" },
+      ],
+      unvalidated: empty,
+      overviewLinks: [
+        { title: "Cohort", body: "Everyone on record, alphabetically, with their own-baseline deviations.", go: this.go("cohort") },
+        { title: "Diagnostic room", body: "Is the system right, and what happened after managers acted?", go: this.go("diagnostic") },
+        { title: "Access trail", body: "Who looked at whose assessment. Append-only and hash-chained.", go: this.go("audit") },
+      ],
+      calibMessage: empty
+        ? "No manager has recorded a verdict yet, so nothing this system reports has been validated."
+        : "Twelve verdicts recorded. Precision on elevated assessments is measurable but the sample is small — read every figure on this page as provisional.",
+      reviewRequired: st.mode === "degraded",
+      calibStats: [
+        { label: "Manager verdicts recorded", value: empty ? "0" : String(verdicts), color: "var(--ink)" },
+        { label: "Confirmed when raised above Healthy", value: empty ? "Not yet measurable" : "75%", color: "var(--ink)" },
+        { label: "Reported as harmful", value: empty ? "0" : String(harmful), color: "var(--ink)" },
+        { label: "Active model", value: st.mode === "degraded" ? "fallback" : "qq-local-2.3", color: "var(--ink)" },
+      ],
+      outcomes: [
+        { intervention: "1:1 with no agenda", sample: "7", improved: "4", declined: "1", noChange: "2", noteColor: "var(--ink)", noteSize: "14px" },
+        { intervention: "workload review", sample: "5", improved: "3", declined: "0", noChange: "2", noteColor: "var(--ink)", noteSize: "14px" },
+        { intervention: "scope change", sample: "2 — below the reporting floor, withheld", improved: "—", declined: "—", noChange: "—", noteColor: "var(--muted)", noteSize: "12.5px" },
+        { intervention: "on-call rota change", sample: "1 — below the reporting floor, withheld", improved: "—", declined: "—", noChange: "—", noteColor: "var(--muted)", noteSize: "12.5px" },
+      ],
+      nameOptions: list.map((p) => p.display),
+      fbName: st.fbName, fbWeek: st.fbWeek, fbDone: st.fbDone,
+      setFbName: (e) => this.setState({ fbName: e.target.value, fbDone: false }),
+      setFbWeek: (e) => this.setState({ fbWeek: Number(e.target.value), fbDone: false }),
+      verdicts: [
+        ["accurate", "Accurate", "This matched what I was seeing."],
+        ["not_accurate", "Not accurate", "This did not match what I was seeing."],
+        ["harmful", "Harmful", "This should not have been surfaced, or it did damage."],
+      ].map(([value, label, hint]) => ({
+        label, hint, pick: () => this.setState({ fbVerdict: value, fbDone: false }),
+        bg: st.fbVerdict === value ? "var(--accent-bg)" : "transparent",
+        fg: "var(--ink)", dot: st.fbVerdict === value ? "var(--accent)" : "transparent",
+      })),
+      recordVerdict: () => this.setState((s) => ({ fbDone: true, extraVerdicts: s.extraVerdicts + 1, extraHarm: s.fbVerdict === "harmful" ? s.extraHarm + 1 : s.extraHarm })),
+      ingestWeek: st.ingestWeek, ingestCsv: st.ingestCsv, ingestEmpty: !st.ingestCsv.trim(),
+      setIngestWeek: (e) => this.setState({ ingestWeek: Number(e.target.value) }),
+      setIngestCsv: (e) => this.setState({ ingestCsv: e.target.value }),
+      fillSample: () => this.setState({ ingestCsv: SAMPLE_CSV }),
+      doIngest: this.doIngest,
+      ingestResult: !!st.ingestResult,
+      ingestStats: st.ingestResult ? [
+        { label: "Rows accepted", value: String(st.ingestResult.rows), color: "var(--ink)" },
+        { label: "Columns kept", value: String(st.ingestResult.kept), color: "var(--ink)" },
+        { label: "Columns dropped", value: String(st.ingestResult.dropped.length), color: "var(--ink)" },
+      ] : [],
+      hasDropped: !!(st.ingestResult && st.ingestResult.dropped.length),
+      droppedList: st.ingestResult ? st.ingestResult.dropped.join(", ") : "",
+      allowlist: [
+        ["employee_name", "identifier"], ["week_number", "permitted"], ["tasks_completed", "permitted"],
+        ["avg_response_time_hours", "permitted"], ["after_hours_logins", "permitted"], ["weekly_hours", "permitted"],
+        ["sentiment_score", "refused"], ["performance_rating", "refused"], ["health_*", "refused"],
+      ].map(([field, status]) => ({ field, status, color: status === "refused" ? "var(--ink)" : "var(--muted)" })),
+      simName: st.sim.name, setSimName: this.setSim("name", false), simFields,
+      simScore: sim.score, simClass: sim.cls, simPillBg: CLS[sim.cls][0], simPillFg: CLS[sim.cls][1],
+      simRationale: sim.sig.length
+        ? "The chain confirmed " + sim.sig.length + " pattern" + (sim.sig.length > 1 ? "s" : "") + " against the demo baseline. Score is the deterministic index: 1 + severity weights, clamped to 10."
+        : "Nothing at these numbers moves outside the demo baseline, so the index stays at its floor of 1.",
+      simSignals: sim.sig.map(([name, severity, weight]) => ({ name, severity, weight, sevBg: SEV[severity][0], sevFg: SEV[severity][1] })),
+      simNoSignals: sim.sig.length === 0,
+      simBriefing: sim.sig.length
+        ? st.sim.name + "'s week " + st.sim.week + " numbers sit outside their own recent range on " + sim.sig.length + " channel" + (sim.sig.length > 1 ? "s" : "") + ". Worth an open question about workload before anything else — this is a prompt, not a finding, and it says nothing about why."
+        : "Nothing to raise for " + st.sim.name + " this week.",
+      events: st.events.map(([timestamp, type, detail, failed]) => ({ timestamp, type, detail, color: failed ? "var(--accent)" : "var(--ink)" })),
+      noEvents: st.events.length === 0,
+      confirmingClear: st.confirmingClear, notConfirmingClear: !st.confirmingClear,
+      askClear: () => this.setState({ confirmingClear: true }),
+      cancelClear: () => this.setState({ confirmingClear: false }),
+      clearLog: () => this.setState({ events: [], confirmingClear: false }),
+      auditRows: [
+        ["2026-08-22 05:12", "m.rao@acme", "Ravi", "wellbeing_review", "9f3c…a71"],
+        ["2026-08-22 05:11", "m.rao@acme", "Karthik", "wellbeing_review", "4b18…0e2"],
+        ["2026-08-21 16:40", "s.iyer@acme", "CT-4471", "wellbeing_review", "77da…c05"],
+        ["2026-08-21 16:38", "s.iyer@acme", "—", "cohort_list", "1ac9…933"],
+        ["2026-08-21 09:14", "system", "all", "scheduled_run", "e502…8bb"],
+        ["2026-08-20 12:02", "j.okafor@acme", "Meena", "REFUSED · purpose not on allowlist", "0d47…f19"],
+        ["2026-08-19 08:55", "m.rao@acme", "Divya", "wellbeing_review", "b6e1…22c"],
+      ].map(([when, viewer, subject, purpose, hash]) => ({ when, viewer, subject, purpose, hash })),
+      retention: [
+        { kind: "Raw weekly rows", period: "90 days", note: "Swept nightly; the swept count is logged." },
+        { kind: "Derived assessments", period: "180 days", note: "Kept longer so trajectories remain readable." },
+        { kind: "Manager verdicts", period: "2 years", note: "Needed to measure whether the system is right." },
+        { kind: "Access trail", period: "7 years", note: "Append-only. Not deletable from this interface." },
+        { kind: "Simulator scratch", period: "Session", note: "Never persisted against a real person." },
+        { kind: "Refused requests", period: "2 years", note: "A refusal is itself an audit record." },
+      ],
+      densityPad: density === "compact" ? 10 : 18,
+    };
+  }
+}
+</script>
+</body>
+</html>

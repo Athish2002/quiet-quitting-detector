@@ -99,7 +99,22 @@ Each of these is enforced by a test that fails if the refusal is removed:
 
 ## Next session
 
-Nothing is half-finished; pick whichever is most valuable.
+**The frontend redesign track is now active — see `design/REDESIGN_PLAN.md`.**
+S1 (token layer + dual-theme palette + contrast test) has shipped. **S2 is the
+app shell**: 244px sidebar, eight real routes, three global banners. Read the
+plan's S2 entry for the file list; it names everything needed.
+
+Two things decided in S1 that S2 inherits:
+- The Modernist tokens are scoped to `.app-shell`, not `:root`, so the four old
+  pages are untouched. S2's shell root is what carries that class. S12 promotes
+  the block to `:root` and deletes the glassmorphism one.
+- **Archivo is not loaded.** The handoff's Google-Fonts `@import` cannot ship —
+  `src/security/middleware.py` sets `default-src 'self'` with no `font-src`, so
+  the stylesheet and the woff2 files are both blocked in production. Self-host
+  the woff2 files before claiming the typography matches the design.
+
+Everything below predates the redesign and is still open. Nothing is
+half-finished; pick whichever is most valuable.
 
 **Highest value for a reviewer:** gap 3 — the §5 synthetic-data work: row
 tagging, a UI banner, and an `ALLOW_SYNTHETIC_DATA` production guard. It is the
