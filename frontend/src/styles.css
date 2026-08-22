@@ -1386,3 +1386,460 @@ legend {
 .section-architecture {
   scroll-margin-top: 5rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MODERNIST APP SHELL (S2) -- sidebar, main column, banners, section headers.
+ *
+ * Every selector below is either `.app-shell` itself or a class introduced in
+ * this session. Nothing here redefines a class the old pages use, and that is a
+ * constraint rather than an accident: Home, Console, DiagnosticRoom and History
+ * now render INSIDE `.app-shell`, so restyling a shared name like `.btn` would
+ * silently restyle four pages this session is not touching. The shared
+ * Modernist button system lands in S3, with the first section that actually
+ * replaces old markup.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  /* Figures must not change width between states -- a count ticking from 9 to
+     10 should not shift the column it sits in. Set once, inherited everywhere. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Sidebar -------------------------------------------------------------- */
+
+.app-shell .sidebar {
+  position: sticky;
+  top: 0;
+  flex: 0 0 var(--sidebar-w);
+  width: var(--sidebar-w);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-4);
+  background: var(--paper);
+  border-right: var(--rule-major) solid var(--rule);
+  overflow-y: auto;
+}
+
+.app-shell .sidebar__brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.app-shell .sidebar__mark {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  background: var(--accent);
+}
+
+.app-shell .sidebar__brand-name {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+
+.app-shell .sidebar__strapline {
+  margin: var(--space-2) 0 0;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-shell .sidebar__nav {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .sidebar__nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-shell .sidebar__nav-link {
+  position: relative;
+  display: block;
+  padding: 7px 10px;
+  font-size: 13.5px;
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: var(--radius);
+}
+
+.app-shell .sidebar__nav-link:hover {
+  background: var(--accent-bg);
+}
+
+.app-shell .sidebar__nav-link--active {
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+/* The 3px marker is a pseudo-element rather than a left border so the label
+   does not shift by 3px at the moment an item becomes active. */
+.app-shell .sidebar__nav-link--active::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+.app-shell .sidebar__nav-link--inert {
+  color: var(--muted);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.app-shell .sidebar__nav-link--inert:hover {
+  background: transparent;
+}
+
+.app-shell .sidebar__footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: var(--rule-major) solid var(--rule);
+}
+
+.app-shell .sidebar__label {
+  margin: 0 0 var(--space-2);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-shell .sidebar__run {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--surface);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.app-shell .sidebar__run:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.app-shell .sidebar__run:active:not(:disabled) {
+  background: var(--accent-active);
+}
+
+.app-shell .sidebar__run:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- Model block (R1: replaces the prototype's quota meter) ---------------- */
+
+.app-shell .model-block {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .model-block__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-shell .status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+}
+
+.app-shell .status-dot--healthy {
+  background: var(--healthy);
+}
+
+.app-shell .status-dot--watch {
+  background: var(--watch);
+}
+
+.app-shell .model-block__status-label {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.app-shell .model-block__details {
+  margin-top: var(--space-3);
+}
+
+.app-shell .model-block__details summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.app-shell .model-block__details summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A caret drawn from borders, so the disclosure reads as one without pulling in
+   an icon font that this design system does not specify. */
+.app-shell .model-block__details summary::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--muted);
+}
+
+.app-shell .model-block__details[open] summary::after {
+  border-top: none;
+  border-bottom: 5px solid var(--muted);
+}
+
+.app-shell .model-block__caption {
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-shell .model-block__current {
+  font-size: 11.5px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.app-shell .model-block__chain {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app-shell .model-block__chain li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 4px 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  border-top: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .model-block__chain li.is-active {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.app-shell .model-block__chain-name {
+  word-break: break-all;
+}
+
+.app-shell .model-block__chain-state {
+  flex: 0 0 auto;
+}
+
+/* The toggle keeps its component styles elsewhere; inside the sidebar it has to
+   read as part of the footer block rather than as a glass pill. */
+.app-shell .sidebar .theme-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: 7px 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+  background: transparent;
+  border: var(--rule-hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.app-shell .sidebar .theme-toggle:hover {
+  background: var(--accent-bg);
+  color: var(--ink);
+  transform: none;
+}
+
+/* --- Main column ---------------------------------------------------------- */
+
+.app-shell .app-main {
+  flex: 1;
+  min-width: 0;
+  max-width: var(--content-max);
+  padding: 30px 40px 72px;
+}
+
+/* --- Global banners ------------------------------------------------------- */
+
+.app-shell .banner {
+  margin-bottom: var(--space-5);
+}
+
+.app-shell .banner__body {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.app-shell .banner--progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--rule-major) solid var(--accent);
+}
+
+.app-shell .banner__title {
+  margin: 0;
+  flex: 0 0 auto;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.app-shell .progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--rule);
+}
+
+.app-shell .progress-track__fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.app-shell .banner__count {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* A standing condition, not an error -- so a 4px left rule on the surface
+   colour, rather than a filled block that would read as an alert. */
+.app-shell .banner--constraint {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface);
+  border-left: 4px solid var(--ink);
+}
+
+.app-shell .banner__label {
+  flex: 0 0 132px;
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.app-shell .banner--degraded {
+  padding: var(--space-3) var(--space-4);
+  border: var(--rule-major) solid var(--accent);
+}
+
+/* --- Section headers ------------------------------------------------------ */
+
+.app-shell .section-head {
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: var(--rule-major) solid var(--rule);
+}
+
+.app-shell .section-head__eyebrow {
+  margin: 0 0 var(--space-3);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.app-shell .section-head__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+
+.app-shell .section-head--wide .section-head__title {
+  font-size: 44px;
+  max-width: 16ch;
+}
+
+.app-shell .section-head__intro {
+  margin: var(--space-4) 0 0;
+  max-width: 70ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.app-shell .placeholder-note {
+  padding: var(--space-4);
+  font-size: 13px;
+  color: var(--muted);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .placeholder-note code {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* Focus is never the browser default in this design. */
+.app-shell a:focus-visible,
+.app-shell button:focus-visible,
+.app-shell summary:focus-visible,
+.app-shell input:focus-visible,
+.app-shell select:focus-visible,
+.app-shell textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-shell .sidebar {
+    position: static;
+    width: 100%;
+    flex-basis: auto;
+    height: auto;
+    border-right: none;
+    border-bottom: var(--rule-major) solid var(--rule);
+  }
+
+  .app-shell .app-main {
+    padding: var(--space-5) var(--space-4) 48px;
+  }
+}

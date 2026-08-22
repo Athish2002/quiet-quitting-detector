@@ -100,18 +100,30 @@ Each of these is enforced by a test that fails if the refusal is removed:
 ## Next session
 
 **The frontend redesign track is now active — see `design/REDESIGN_PLAN.md`.**
-S1 (token layer + dual-theme palette + contrast test) has shipped. **S2 is the
-app shell**: 244px sidebar, eight real routes, three global banners. Read the
-plan's S2 entry for the file list; it names everything needed.
+S1 (tokens) and S2 (app shell) have shipped. **S3 is Overview** — the stat
+strip, the "It does / It does not" block, the link cards, and the empty state.
+R2 decided it also gets a band-distribution block *and* a latest-run panel
+beside the hero, to fill the right-hand space.
 
-Two things decided in S1 that S2 inherits:
-- The Modernist tokens are scoped to `.app-shell`, not `:root`, so the four old
-  pages are untouched. S2's shell root is what carries that class. S12 promotes
-  the block to `:root` and deletes the glassmorphism one.
+What S2 left in place for S3:
+- `.app-shell` carries the Modernist tokens. The four old pages now render
+  **inside** it, so they inherit `--ink` and `--muted` from the new palette and
+  everything else from the old one. That mix is expected and disappears as
+  S3–S9 replace each page.
+- **`.btn` was deliberately not restyled.** Old pages use it, and redefining it
+  in S2 would have restyled four pages this session was not touching. S3 owns
+  introducing the shared Modernist button system, along with the first section
+  that actually replaces old markup.
+- `SectionHeader` is the eyebrow/h1/intro/rule pattern every section opens
+  with. Use it rather than a fresh header.
+- Routes changed: `/console` is now `/cohort`. Old links in `Home.tsx` were
+  repointed; anything else referring to `/console` is stale.
+
+Still true from S1:
 - **Archivo is not loaded.** The handoff's Google-Fonts `@import` cannot ship —
   `src/security/middleware.py` sets `default-src 'self'` with no `font-src`, so
   the stylesheet and the woff2 files are both blocked in production. Self-host
-  the woff2 files before claiming the typography matches the design.
+  the woff2 files before claiming the typography matches the design (R7).
 
 Everything below predates the redesign and is still open. Nothing is
 half-finished; pick whichever is most valuable.

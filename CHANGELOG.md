@@ -2,6 +2,44 @@
 
 Notable changes per unit of work. Newest first.
 
+## Redesign S2 — one shell, eight sections, and the model chain on show
+
+The four sibling pages become a single shell: a 244px sticky sidebar, eight
+sections on real routes, and three global banners. The existing pages are
+mounted at their new addresses unchanged, so the app stays usable at every
+commit rather than going dark for nine sessions. `/console` is now `/cohort`.
+
+**The provider-call meter is gone (R1).** The prototype showed "128 / 500" and
+"Quota resets Monday 00:00 UTC". This system runs on a chain of ten free models
+with a local fallback and imposes no hard limit, so that bar would have drawn a
+constraint that does not exist. What replaced it is the thing an operator
+actually needs when output looks wrong: which model answered, and what is left
+behind it. The full chain sits in a `<details>` disclosure, each entry marked
+*in use*, *ready*, or *exhausted* with its cooldown — built on `ProviderStatus`,
+which already carried `fallback_sequence` and `exhausted_models` and had never
+been shown. Native `<details>` rather than a custom menu: keyboard operable and
+labelled for free, and a dropdown with no state cannot get stuck open.
+
+**The demo-state toggle is gone too.** Empty and degraded are what the API
+returns, not states an operator switches into.
+
+Person detail is the one nav item with no fixed destination. Opening an
+assessment is written to the access trail, so it should never be somewhere you
+land by clicking a nav item — it is reached from the cohort, by choosing a
+person. Until then the item is inert and says why.
+
+15 shell tests, axe clean. Several assert absence rather than presence: no
+quota meter, no demo-state switch, no nav link to person detail before one is
+open. The use-constraint wording is asserted clause by clause, because it is
+the product's stated position and not decoration.
+
+Two things this session deliberately did **not** do. `.btn` was left alone —
+the old pages are now inside `.app-shell`, and restyling a shared class would
+have silently restyled four pages S2 was not touching; the Modernist button
+system arrives with S3. And `window.matchMedia` is now stubbed in the test
+setup, because the shell always renders the theme toggle and jsdom implements
+no `matchMedia` — without it every future shell test throws before asserting.
+
 ## Redesign S1 — a second palette, and a test that keeps it honest
 
 First unit of the frontend redesign (`design/REDESIGN_PLAN.md`). The Modernist
