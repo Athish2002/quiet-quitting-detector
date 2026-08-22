@@ -17,22 +17,33 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorNote } from "../components/ErrorNote";
+import { SectionHeader } from "../components/SectionHeader";
 import type { EmployeeSummary, HistoryEvent } from "../api/types";
 
 export function History() {
   return (
-    <main className="page" aria-labelledby="history-heading">
-      <h1 id="history-heading">History</h1>
-      <p className="page__intro">
-        What has happened in this system, and how each person's assessment has
-        moved over time.
-      </p>
+    <div className="history-page">
+      <SectionHeader
+        eyebrow="HISTORY"
+        title="Weekly trajectories and operational logs."
+        intro="What has happened in this system, and how each person's assessment has moved over time."
+      />
       <TrajectoriesPanel />
       <EventLogPanel />
-    </main>
+    </div>
   );
+}
+
+function getBandClass(classification: string): string {
+  const c = classification.toLowerCase();
+  if (c.includes("healthy")) return "healthy";
+  if (c.includes("watch")) return "watch";
+  if (c.includes("at risk") || c.includes("risk")) return "at-risk";
+  if (c.includes("exit")) return "exit";
+  return "healthy";
 }
 
 function TrajectoriesPanel() {
@@ -42,38 +53,67 @@ function TrajectoriesPanel() {
   });
 
   return (
-    <section aria-labelledby="trajectories-heading" className="panel">
-      <h2 id="trajectories-heading">Week by week</h2>
-      <p>
-        Each row is one person compared against <em>their own</em> earlier weeks.
-        Rows are never compared to each other.
+    <section aria-labelledby="trajectories-heading" className="history-section">
+      <h2 id="trajectories-heading" className="history-section__title">
+        Week by week
+      </h2>
+      <p className="history-section__subtitle">
+        Each row is one person compared against <em>their own earlier weeks</em>. Rows are{" "}
+        <em>never compared to each other</em>.
       </p>
 
       {isPending ? <p role="status">Loading trajectories…</p> : null}
       {error ? <ErrorNote error={error} /> : null}
       {data && data.length === 0 ? <p>No evaluations on record yet.</p> : null}
 
-      {data?.map((employee) => (
-        <article key={employee.name} className="trajectory">
-          <h3>{employee.name}</h3>
-          <ol className="sparkline" aria-label={`${employee.name}'s weekly assessments`}>
-            {employee.history.map((week) => (
-              <li key={week.week}>
-                {/* The visual bar is decorative; the text below it is the
-                    accessible content, so nothing depends on seeing a shape. */}
-                <span
-                  className={`bar bar--${week.classification.toLowerCase().replace(/\s+/g, "-")}`}
-                  style={{ height: `${week.score * 8}px` }}
-                  aria-hidden="true"
-                />
-                <span className="sparkline__label">
-                  W{week.week}: {week.classification}
+      <div className="trajectories-list">
+        {data?.map((employee) => {
+          const currentBand = getBandClass(employee.classification);
+          return (
+            <article key={employee.name} className="trajectory-row">
+              <div className="trajectory-row__person">
+                <h3 className="trajectory-row__name">{employee.name}</h3>
+                <span className="trajectory-row__meta">Latest Week {employee.latest_week}</span>
+              </div>
+
+              <ol
+                className="sparkline"
+                aria-label={`${employee.name}'s weekly assessments`}
+              >
+                {employee.history.map((week) => {
+                  const bandClass = getBandClass(week.classification);
+                  return (
+                    <li key={week.week} className="sparkline__step">
+                      <div className="sparkline__bar-wrap">
+                        <span
+                          className={`bar bar--${bandClass}`}
+                          style={{ height: `${Math.max(week.score * 4.6, 6)}px` }}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <span className="sparkline__label">
+                        W{week.week}: {week.classification}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <div className="trajectory-row__status">
+                <span className={`chip chip--${currentBand}`}>
+                  {employee.classification}
                 </span>
-              </li>
-            ))}
-          </ol>
-        </article>
-      ))}
+                <Link
+                  to={`/person/${employee.name}`}
+                  className="btn btn--secondary btn--sm"
+                >
+                  Open &rarr;
+                </Link>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -96,19 +136,21 @@ function EventLogPanel() {
   });
 
   return (
-    <section aria-labelledby="events-heading" className="panel">
-      <h2 id="events-heading">Operational event log</h2>
-      <p className="hint">
-        Ingests, runs and resets. This is housekeeping — it is <strong>not</strong>{" "}
-        the access audit trail, which records who viewed whose assessment, is
-        hash-chained, and cannot be cleared from anywhere in this interface.
+    <section aria-labelledby="events-heading" className="history-section">
+      <h2 id="events-heading" className="history-section__title">
+        Operational event log
+      </h2>
+      <p className="history-section__subtitle">
+        Ingests, runs and resets. This is housekeeping — it is <strong>not</strong> the
+        access audit trail, which records who viewed whose assessment, is hash-chained, and
+        cannot be cleared from anywhere in this interface.
       </p>
 
       {isPending ? <p role="status">Loading events…</p> : null}
       {error ? <ErrorNote error={error} /> : null}
 
       {data && data.length > 0 ? (
-        <table>
+        <table className="modern-table">
           <caption>Newest first.</caption>
           <thead>
             <tr>
@@ -120,11 +162,8 @@ function EventLogPanel() {
           <tbody>
             {data.slice(0, 50).map((event, index) => (
               <tr key={index} className={event.success === false ? "row--failed" : ""}>
-                <td>{event.timestamp || "—"}</td>
+                <td className="cell--mono">{event.timestamp || "—"}</td>
                 <td>
-                  {/* `action`, not `event_type`. The hand-written type invented
-                      the latter and this column rendered an em-dash on every
-                      row until the generated types disagreed with it. */}
                   {event.action || "—"}
                   {event.source ? ` / ${event.source}` : ""}
                 </td>
@@ -137,7 +176,7 @@ function EventLogPanel() {
 
       {data && data.length === 0 ? <p>No events recorded.</p> : null}
 
-      <div className="actions">
+      <div className="history-actions">
         {confirming ? (
           <span className="confirm">
             <span id="clear-warning">Clear the operational log?</span>
@@ -159,7 +198,11 @@ function EventLogPanel() {
             </button>
           </span>
         ) : (
-          <button type="button" onClick={() => setConfirming(true)}>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => setConfirming(true)}
+          >
             Clear event log
           </button>
         )}

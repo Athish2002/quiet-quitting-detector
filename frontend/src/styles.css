@@ -1803,15 +1803,17 @@ legend {
 }
 
 .app-shell .placeholder-note {
-  padding: var(--space-4);
-  font-size: 13px;
+  margin-top: var(--space-4);
+  font-size: 13.5px;
   color: var(--muted);
-  border: var(--rule-hairline) solid var(--rule);
+  line-height: 1.5;
 }
 
 .app-shell .placeholder-note code {
   font-size: 12px;
   color: var(--ink);
+  background: var(--accent-bg);
+  padding: 2px 6px;
 }
 
 /* Focus is never the browser default in this design. */
@@ -2330,4 +2332,202 @@ legend {
   white-space: nowrap;
   border: 0;
 }
+
+/* --- Modernist History Section -------------------------------------------- */
+
+.app-shell .history-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell .history-section {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-5);
+  border-bottom: var(--rule-major) solid var(--rule);
+}
+
+.app-shell .history-section:last-child {
+  border-bottom: none;
+}
+
+.app-shell .history-section__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.app-shell .history-section__subtitle {
+  margin: 0 0 var(--space-4);
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 70ch;
+  line-height: 1.5;
+}
+
+.app-shell .trajectories-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.app-shell .trajectory-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 180px;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: var(--rule-hairline) solid var(--rule);
+}
+
+.app-shell .trajectory-row__person {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-shell .trajectory-row__name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.app-shell .trajectory-row__meta {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.app-shell .sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 64px;
+}
+
+.app-shell .sparkline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 54px;
+}
+
+.app-shell .sparkline__bar-wrap {
+  height: 46px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+
+.app-shell .bar {
+  display: block;
+  width: 22px;
+  border-radius: var(--radius);
+}
+
+.app-shell .bar--healthy {
+  background: var(--healthy);
+}
+
+.app-shell .bar--watch {
+  background: var(--watch);
+}
+
+.app-shell .bar--at-risk {
+  background: var(--at-risk);
+}
+
+.app-shell .bar--exit {
+  background: var(--exit);
+}
+
+.app-shell .sparkline__label {
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.app-shell .trajectory-row__status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* Modernist Table */
+.app-shell .modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--rule-hairline) solid var(--rule);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.app-shell .modern-table caption {
+  padding: var(--space-2) 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+
+.app-shell .modern-table th {
+  padding: 8px 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--paper);
+  border-bottom: var(--rule-hairline) solid var(--rule);
+  text-align: left;
+}
+
+.app-shell .modern-table td {
+  padding: 8px 12px;
+  border-bottom: var(--rule-hairline) solid var(--rule);
+  color: var(--ink);
+}
+
+.app-shell .modern-table tbody tr:hover {
+  background: var(--accent-bg);
+}
+
+.app-shell .cell--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.app-shell .cell--muted {
+  color: var(--muted);
+}
+
+.app-shell .history-actions {
+  margin-top: var(--space-4);
+}
+
+.app-shell .btn--sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 860px) {
+  .app-shell .trajectory-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .app-shell .trajectory-row__status {
+    justify-content: flex-start;
+  }
+}
+
 

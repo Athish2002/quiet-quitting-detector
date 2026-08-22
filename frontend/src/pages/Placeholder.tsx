@@ -22,8 +22,7 @@ export function Placeholder({
     <section aria-labelledby="section-title">
       <SectionHeader eyebrow={eyebrow} title={title} intro={intro} />
       <p className="placeholder-note">
-        This section is scaffolding. Its content is built in {session} — see{" "}
-        <code>design/REDESIGN_PLAN.md</code>.
+        This section is scheduled for {session} — see <code>design/REDESIGN_PLAN.md</code>.
       </p>
     </section>
   );
