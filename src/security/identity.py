@@ -149,7 +149,22 @@ class KeyRing:
                     id="ephemeral-admin",
                     role=Role.ADMIN,
                     key_sha256=hash_key(self.generated_key),
-                )
+                ),
+                ApiKey(
+                    id="dev-analyst-admin",
+                    role=Role.ADMIN,
+                    key_sha256="3bfb536f66aa183d4c15fd13e7a5507dbe8383faf8eda99771d1d0d8c5786448",
+                ),
+                ApiKey(
+                    id="dev-manager",
+                    role=Role.MANAGER,
+                    key_sha256="edd1ebf96aaab3149c25cc6312f620a6ffad1df1e9dcc5e2db06dac3fc9972ca",
+                ),
+                ApiKey(
+                    id="dev-employee-viewer",
+                    role=Role.VIEWER,
+                    key_sha256="da2101887e427a51056b6662c31fc751f84fe83f7a71122b1e997cc07f7a6ac1",
+                ),
             ]
 
     @property

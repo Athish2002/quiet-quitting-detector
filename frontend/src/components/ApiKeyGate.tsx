@@ -92,39 +92,19 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem 1.5rem",
-        background: "var(--paper)",
-      }}
-    >
-      <main
-        className="gate"
-        style={{
-          width: "100%",
-          maxWidth: "600px",
-          margin: "0 auto",
-          padding: "2.5rem 2.25rem",
-          background: "var(--surface)",
-          border: "1px solid var(--rule)",
-          boxShadow: "0 16px 48px rgba(0, 0, 0, 0.12)",
-        }}
-      >
+    <div className="gate-wrapper">
+      <main className="gate gate-card-animated">
         <div className="gate__brand" style={{ textAlign: "center", marginBottom: "1.75rem" }}>
           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "12px", cursor: "pointer" }}>
-            <BrandSymbol size={56} interactive={true} />
+            <BrandSymbol size={58} interactive={true} animate={true} />
           </div>
           <h1 className="gate__title" style={{ margin: "0 0 6px", fontSize: "26px", fontFamily: "var(--font-heading)", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Quiet-Quitting Detector
           </h1>
-        <p className="gate__strapline" style={{ margin: 0, fontSize: "12px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>
-          Wellbeing Prompt · Not a Verdict
-        </p>
-      </div>
+          <p className="gate__strapline" style={{ margin: 0, fontSize: "12px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>
+            Wellbeing Prompt · Not a Verdict
+          </p>
+        </div>
 
       {rejected ? (
         <div role="alert" className="callout callout--alert" style={{ borderLeft: "4px solid var(--exit)", background: "var(--accent-bg)", padding: "12px 14px", marginBottom: "1.5rem", fontSize: "13.5px", color: "var(--exit)", lineHeight: "1.5" }}>
@@ -181,15 +161,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 aria-describedby="api-key-help"
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  fontSize: "14px",
-                  border: "1px solid var(--rule)",
-                  background: "var(--paper)",
-                  color: "var(--ink)",
-                  boxSizing: "border-box",
-                }}
+                className="gate__input-field"
                 required
               />
             </div>
@@ -209,17 +181,6 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                   <label
                     key={r}
                     className={`gate__role-card ${isSelected ? "gate__role-card--selected" : ""}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "10px 12px",
-                      border: "1px solid",
-                      borderColor: isSelected ? "var(--accent)" : "var(--rule)",
-                      background: isSelected ? "var(--accent-bg)" : "var(--surface)",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
                       <input
@@ -230,30 +191,18 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                         onChange={() => handleRoleChange(r)}
                         style={{ marginTop: "3px", accentColor: "var(--accent)", cursor: "pointer" }}
                       />
-                      <span className="gate__role-icon" style={{ fontSize: "18px", lineHeight: "1.2" }}>
+                      <span className="gate__role-icon">
                         {ROLE_LABELS[r].icon}
                       </span>
-                      <span className="gate__role-info" style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>{ROLE_LABELS[r].label}</strong>
-                        <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.3" }}>
+                      <span className="gate__role-info">
+                        <strong>{ROLE_LABELS[r].label}</strong>
+                        <span className="gate__role-desc">
                           {ROLE_LABELS[r].description}
                         </span>
                       </span>
                     </div>
 
-                    <span
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: "11.5px",
-                        fontWeight: 700,
-                        border: "1px solid",
-                        borderColor: isSelected ? "var(--accent)" : "var(--rule)",
-                        background: isSelected ? "var(--accent)" : "var(--paper)",
-                        color: isSelected ? "var(--surface)" : "var(--muted)",
-                        whiteSpace: "nowrap",
-                        marginLeft: "8px",
-                      }}
-                    >
+                    <span className="gate__role-badge">
                       {isSelected ? "Active ✓" : "Select"}
                     </span>
                   </label>
@@ -264,20 +213,8 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
 
           <button
             type="submit"
-            className="btn btn--primary"
+            className="btn btn--primary gate__submit-btn"
             disabled={!draft.trim()}
-            style={{
-              padding: "14px 24px",
-              fontSize: "15px",
-              fontWeight: 700,
-              letterSpacing: "0.02em",
-              background: draft.trim() ? "var(--ink)" : "var(--rule)",
-              color: draft.trim() ? "var(--paper)" : "var(--muted)",
-              border: "1px solid var(--rule)",
-              cursor: draft.trim() ? "pointer" : "not-allowed",
-              boxShadow: draft.trim() ? "0 4px 16px rgba(0,0,0,0.15)" : "none",
-              transition: "all 0.2s ease",
-            }}
           >
             Sign in as {ROLE_LABELS[selectedRole].label} &rarr;
           </button>
