@@ -123,28 +123,55 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                   <label
                     key={r}
                     className={`gate__role-card ${isSelected ? "gate__role-card--selected" : ""}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      padding: "12px 14px",
+                      border: isSelected ? "1px solid var(--accent)" : "1px solid var(--rule)",
+                      background: isSelected ? "var(--accent-bg)" : "var(--surface)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
                       <input
                         type="radio"
                         name="role"
                         value={r}
                         checked={isSelected}
                         onChange={() => setSelectedRole(r)}
-                        style={{ marginTop: "3px", accentColor: "var(--accent)", cursor: "pointer" }}
+                        style={{ accentColor: "var(--accent)", cursor: "pointer", flexShrink: 0 }}
                       />
-                      <span className="gate__role-icon">
+                      <span className="gate__role-icon" style={{ fontSize: "20px", flexShrink: 0 }}>
                         {ROLE_LABELS[r].icon}
                       </span>
-                      <span className="gate__role-info">
-                        <strong style={{ fontSize: "14px", color: "var(--ink)" }}>{ROLE_LABELS[r].label}</strong>
-                        <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.4" }}>
+                      <span className="gate__role-info" style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                        <strong style={{ fontSize: "14px", color: "var(--ink)", fontWeight: 700 }}>{ROLE_LABELS[r].label}</strong>
+                        <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.35" }}>
                           {ROLE_LABELS[r].description}
                         </span>
                       </span>
                     </div>
 
-                    <span className="gate__role-badge">
+                    <span
+                      className="gate__role-badge"
+                      style={{
+                        flexShrink: 0,
+                        minWidth: "75px",
+                        textAlign: "center",
+                        padding: "5px 10px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        border: isSelected ? "1px solid var(--accent)" : "1px solid var(--rule)",
+                        background: isSelected ? "var(--accent)" : "var(--paper)",
+                        color: isSelected ? "var(--surface)" : "var(--muted)",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
                       {isSelected ? "Active ✓" : "Select"}
                     </span>
                   </label>
@@ -157,19 +184,23 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
             type="submit"
             className="btn btn--primary gate__submit-btn"
             style={{
-              background: "#2563eb",
-              color: "#ffffff",
-              fontWeight: 700,
-              fontSize: "15px",
+              width: "100%",
               padding: "14px 20px",
-              borderRadius: "8px",
-              border: "1px solid #1d4ed8",
+              fontSize: "14px",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              borderRadius: "4px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "8px",
-              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+              background: "var(--ink)",
+              color: "var(--paper)",
+              border: "1px solid var(--ink)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             <span>Sign in as {ROLE_LABELS[selectedRole].label}</span>

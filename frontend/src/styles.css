@@ -3783,30 +3783,30 @@ input[type="range"]::-webkit-slider-thumb:hover {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 14px 24px;
-  font-size: 15px;
+  padding: 14px 20px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  border-radius: 8px;
-  background: #2563eb !important;
-  color: #ffffff !important;
-  border: 1px solid #1d4ed8 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+  border: 1px solid var(--ink) !important;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .gate__submit-btn:hover:not(:disabled) {
-  background: #1d4ed8 !important;
-  color: #ffffff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.45);
-  border-color: #1e40af !important;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--surface) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
 
 .gate__submit-btn:active:not(:disabled) {
   transform: translateY(0);
-  background: #1e40af !important;
 }
 
 .gate__input-field {
