@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: quiet-quitting-detector
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: GOOGLE_CLOUD_LOCATION
+        value: global
+      - key: IDENTITY_SALT
+        generateValue: true
