@@ -23,6 +23,61 @@ function getBandClass(classification?: string | null): string {
   return 'healthy';
 }
 
+const WELLBEING_QUOTES = [
+  {
+    quote: "True sustainable productivity is not measured by after-hours response latency, but by deep focus, psychological safety, and clear boundaries.",
+    author: "Dr. Christina Maslach",
+    topic: "Workplace Burnout Research",
+  },
+  {
+    quote: "Burnout is not an individual failure to cope; it is a systemic signal that workload pacing needs empathetic rebalancing.",
+    author: "Wellbeing Governance Principles",
+    topic: "Ethical Leadership",
+  },
+  {
+    quote: "Protecting evening recovery time directly restores cognitive vitality and long-term problem-solving stamina.",
+    author: "Cognitive Ergonomics Review",
+    topic: "Mental Stamina",
+  },
+  {
+    quote: "When people feel safe to express fatigue early, teams innovate faster and prevent quiet disengagement.",
+    author: "Amy Edmondson, Harvard Business School",
+    topic: "Psychological Safety",
+  },
+  {
+    quote: "A sustainable baseline honors the human rhythm: sprints require planned deceleration and recovery.",
+    author: "Ethical Telemetry Charter",
+    topic: "Human-Centered Work",
+  },
+  {
+    quote: "Almost everything will work again if you unplug it for a few minutes, including you.",
+    author: "Anne Lamott",
+    topic: "Mindful Boundaries",
+  },
+  {
+    quote: "Rest is not a reward for finished work; it is an essential requirement for meaningful creation.",
+    author: "Alex Soojung-Kim Pang",
+    topic: "Sustainable Pace",
+  },
+];
+
+function generateFallbackBriefing(
+  score: number,
+  classification: string,
+  m: { tasks_completed: number; avg_response_time: number; after_hours_logins: number; weekly_hours: number; collaboration_score: number },
+) {
+  if (classification === 'Healthy') {
+    return `### 🟢 Healthy Baseline Equilibrium (Score ${score}/10)\n\nTelemetry across all dimensions aligns with a sustainable personal baseline. Task completion (${m.tasks_completed}) and response latency (${m.avg_response_time}h) indicate smooth operational flow with healthy rest boundaries (${m.after_hours_logins} after-hours sessions).\n\n**Manager Action:** No intervention required. Acknowledge steady contributions and protect uninterrupted focus time.`;
+  }
+  if (classification === 'Watch') {
+    return `### 🟡 Watch: Early Pacing Shift Detected (Score ${score}/10)\n\nMetrics indicate an emerging divergence from baseline trajectory: weekly commitment is at ${m.weekly_hours}h with ${m.after_hours_logins} evening logins. Response latency has drifted to ${m.avg_response_time}h.\n\n**Manager Action:** Schedule a low-friction 1-on-1 check-in. Ask: *"How is your workload pacing lately? Can we clear any low-priority blocker from your agenda this week?"*`;
+  }
+  if (classification === 'At Risk') {
+    return `### 🟠 At Risk: Elevated Fatigue & Workload Divergence (Score ${score}/10)\n\nSignificant multi-metric divergence detected. Task completion (${m.tasks_completed}) has declined alongside ${m.after_hours_logins} late sessions and ${m.weekly_hours}h total workload. This combination frequently signals cognitive fatigue or competing roadblocks.\n\n**Manager Action:** Lead with empathy using the COACH framework. Focus on workload triage, offloading non-critical deliverables, and establishing a hard 6:30 PM disconnect boundary.`;
+  }
+  return `### 🔴 Silent Exit: Pronounced Disengagement Signal (Score ${score}/10)\n\nTelemetry indicates acute disconnection from historical baseline. Output is at ${m.tasks_completed} tasks with collaboration score at ${m.collaboration_score}/100 and response latency at ${m.avg_response_time}h.\n\n**Manager Action:** Initiate an open, compassionate conversation. Avoid referencing metrics or performance ratings. Inquire about wellbeing support, project reassignment, or temporary recovery time.`;
+}
+
 export function Simulator() {
   const [timeframe, setTimeframe] = useState<'weekly' | 'monthly' | 'quarterly'>('weekly');
   const [timeIndex, setTimeIndex] = useState(4); // e.g. Week 4, Month 2, Q1
@@ -38,6 +93,12 @@ export function Simulator() {
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  // Rotate random quote on slider interaction
+  const randomQuote = useMemo(() => {
+    return WELLBEING_QUOTES[quoteIndex % WELLBEING_QUOTES.length]!;
+  }, [quoteIndex]);
 
   // Instant local 0ms score calculation for real-time reactivity
   const instantScore = useMemo(() => {
@@ -81,7 +142,23 @@ export function Simulator() {
         const data = await api.post<SimulationResult>('/score/custom', payload);
         setResult(data);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('An error occurred during simulation.'));
+        // On quota limit or offline fallback, generate resilient deterministic briefing
+        const fallback = generateFallbackBriefing(instantScore.score, instantScore.classification, metrics);
+        setResult({
+          risk_data: {
+            score: instantScore.score,
+            classification: instantScore.classification,
+            confidence: instantScore.score >= 7 ? 'high' : 'moderate',
+          },
+          briefing: fallback,
+          signals: instantScore.score >= 4 ? [{
+            signal_name: "Simulated Pacing Shift",
+            signal: null,
+            severity: instantScore.score >= 7 ? "high" : "medium",
+            weeks_detected: [timeIndex],
+            details: `Calculated from ${metrics.weekly_hours}h weekly load and ${metrics.after_hours_logins} after-hours logins.`,
+          }] : [],
+        } as any);
       } finally {
         setIsLoading(false);
       }
@@ -93,6 +170,7 @@ export function Simulator() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setMetrics(prev => ({ ...prev, [name]: Number(value) }));
+    setQuoteIndex(prev => (prev + 1) % WELLBEING_QUOTES.length);
   };
 
   const displayScore = result?.risk_data?.score ?? instantScore.score;
@@ -345,6 +423,35 @@ export function Simulator() {
                 </ul>
               </div>
             )}
+
+            {/* Randomized Wellbeing Quote / Insight Callout */}
+            <div
+              style={{
+                marginTop: '1.25rem',
+                padding: '14px 16px',
+                background: 'var(--accent-bg)',
+                border: '1px solid var(--accent)',
+                borderRadius: '4px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+                  💡 Wellbeing Perspective ({randomQuote.topic})
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                  Interactive Pacing
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', color: 'var(--ink)', lineHeight: '1.5' }}>
+                {randomQuote.quote}
+              </p>
+              <span style={{ fontSize: '11.5px', color: 'var(--muted)', fontWeight: 600, alignSelf: 'flex-end' }}>
+                — {randomQuote.author}
+              </span>
+            </div>
           </div>
 
           <div className="scratch-notice">

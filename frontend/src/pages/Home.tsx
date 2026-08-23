@@ -166,7 +166,7 @@ export function Home() {
       </div>
 
       {/* Quick Workflow Navigation Suite */}
-      <nav aria-label="Quick application workflows" style={{ margin: "1.25rem 0 0" }}>
+      <nav aria-label="Quick application workflows" style={{ margin: "1.5rem 0" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
           {[
             {
@@ -194,19 +194,23 @@ export function Home() {
               key={item.to}
               to={item.to}
               style={{
-                display: "block",
-                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                padding: "16px 18px",
                 background: "var(--surface)",
                 border: "1px solid var(--rule)",
+                borderRadius: "4px",
                 textDecoration: "none",
                 color: "var(--ink)",
-                transition: "border-color 0.15s ease",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                transition: "all 0.15s ease",
               }}
             >
-              <strong style={{ display: "block", fontSize: "13.5px", marginBottom: "4px" }}>
-                {item.title} →
+              <strong style={{ fontSize: "14px", color: "var(--ink)", fontWeight: 700 }}>
+                {item.title} &rarr;
               </strong>
-              <span style={{ fontSize: "12px", color: "var(--muted)", lineHeight: 1.4, display: "block" }}>
+              <span style={{ fontSize: "12px", color: "var(--muted)", lineHeight: 1.45 }}>
                 {item.desc}
               </span>
             </Link>
@@ -428,14 +432,27 @@ export function Home() {
       ) : null}
 
       {/* 4. What this is, and what it is not */}
-      <section aria-labelledby="stance-heading" className="stance-section">
+      <section
+        aria-labelledby="stance-heading"
+        className="stance-section"
+        style={{
+          margin: "2.5rem 0",
+          padding: "1.75rem 2rem",
+          background: "var(--surface)",
+          border: "1px solid var(--rule)",
+          borderRadius: "4px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
+        }}
+      >
         <h2 id="stance-heading" className="sr-only">
           Ethical Safeguards &amp; Governance
         </h2>
-        <div className="stance-grid">
+        <div className="stance-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem", marginBottom: "1.5rem" }}>
           <div className="stance-col">
-            <p className="stance-col__label">It does</p>
-            <ul className="stance-list">
+            <p className="stance-col__label" style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--healthy)", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>✓</span> IT DOES
+            </p>
+            <ul className="stance-list" style={{ margin: 0, paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13.5px", color: "var(--ink)", lineHeight: "1.5" }}>
               <li>
                 Compare each person to their <strong>own</strong> earlier weeks.
               </li>
@@ -448,8 +465,10 @@ export function Home() {
             </ul>
           </div>
           <div className="stance-col">
-            <p className="stance-col__label">It does not</p>
-            <ul className="stance-list">
+            <p className="stance-col__label" style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--at-risk)", marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>✕</span> IT DOES NOT
+            </p>
+            <ul className="stance-list" style={{ margin: 0, paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13.5px", color: "var(--ink)", lineHeight: "1.5" }}>
               <li>Rank people, or compare one person to another.</li>
               <li>Recommend disciplinary action, ever.</li>
               <li>
@@ -460,9 +479,9 @@ export function Home() {
             </ul>
           </div>
         </div>
-        <p className="stance-closing">
+        <p className="stance-closing" style={{ margin: 0, paddingTop: "1.25rem", borderTop: "1px solid var(--rule)", fontSize: "12.5px", color: "var(--muted)", lineHeight: "1.6", fontStyle: "italic" }}>
           This is a prompt for a conversation, not a verdict about a person. If it is ever used to
-          justify a decision about someone's employment, it is being used for something it was
+          justify a decision about someone&apos;s employment, it is being used for something it was
           explicitly built not to do.
         </p>
       </section>

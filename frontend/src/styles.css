@@ -379,7 +379,7 @@ nav a {
   color: var(--muted);
   text-decoration: none;
   padding: 0.45rem 0.95rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-weight: 500;
   font-size: 0.92rem;
   border: 1px solid transparent;

@@ -110,7 +110,7 @@ export function WelcomeState({ role }: WelcomeStateProps) {
         ))}
       </ol>
 
-      <div className="welcome-state__action">
+      <div className="welcome-state__action" style={{ marginTop: "1.5rem", marginBottom: "2.5rem" }}>
         <Link to="/ingest" className="btn btn--primary">
           Get started &rarr;
         </Link>
