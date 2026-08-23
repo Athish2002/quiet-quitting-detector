@@ -23,32 +23,28 @@ describe("ApiKeyGate", () => {
     clearRole();
   });
 
-  it("shows login form and 3 role selection cards when unauthenticated", () => {
+  it("shows login portal with 3 persona selection options when unauthenticated", () => {
     renderGate();
 
     expect(screen.getByText("Quiet-Quitting Detector")).toBeInTheDocument();
-    expect(screen.getByLabelText(/API key/i)).toBeInTheDocument();
     expect(screen.getByText("Wellbeing Analyst")).toBeInTheDocument();
     expect(screen.getByText("Manager")).toBeInTheDocument();
     expect(screen.getByText("Employee")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sign in as/i })).toBeInTheDocument();
     expect(screen.queryByTestId("protected-content")).toBeNull();
   });
 
-  it("signs in when API key is provided and role is chosen", () => {
+  it("signs in when role is chosen and submitted", () => {
     renderGate();
-
-    const input = screen.getByLabelText(/API key/i);
-    fireEvent.change(input, { target: { value: "test-secret-key" } });
 
     const managerRadio = screen.getByLabelText(/Manager/i);
     fireEvent.click(managerRadio);
 
-    fireEvent.click(screen.getByRole("button", { name: /Sign in/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Sign in as Manager/i }));
 
     expect(screen.getByTestId("protected-content")).toBeInTheDocument();
     expect(screen.getByText(/Manager/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sign out/i)).toBeInTheDocument();
+    expect(screen.getByText(/Switch Role/i)).toBeInTheDocument();
   });
 
   it("shows content immediately if key and role exist", () => {

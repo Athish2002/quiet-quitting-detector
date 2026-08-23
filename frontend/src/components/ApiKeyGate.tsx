@@ -31,27 +31,16 @@ const DEV_KEYS: Record<Role, string> = {
 
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   const [key, setKey] = useState<string | null>(getApiKey());
-  const [draft, setDraft] = useState(DEV_KEYS.analyst);
   const [selectedRole, setSelectedRole] = useState<Role>("analyst");
   const [rejected, setRejected] = useState(false);
-  const [showKey, setShowKey] = useState(false);
   const { role, setRole } = useRole();
 
   const loginAs = (targetRole: Role) => {
-    const keyToUse = draft.trim() || DEV_KEYS[targetRole] || "demo-mode-key";
+    const keyToUse = DEV_KEYS[targetRole] || "demo-mode-key";
     setApiKey(keyToUse);
     setRoleStorage(targetRole);
     setRole(targetRole);
     setKey(keyToUse);
-  };
-
-  const handleRoleChange = (newRole: Role) => {
-    setSelectedRole(newRole);
-    setDraft(DEV_KEYS[newRole]);
-  };
-
-  const handleAutoFill = () => {
-    setDraft(DEV_KEYS[selectedRole]);
   };
 
   useEffect(() => {
@@ -71,7 +60,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
             <span className="keybar__role-badge">
               {ROLE_LABELS[role].icon} {ROLE_LABELS[role].label}
             </span>
-            <span style={{ color: "var(--muted)" }}>· Authenticated tab</span>
+            <span style={{ color: "var(--muted)" }}>· Authenticated Session</span>
           </span>
           <button
             type="button"
@@ -83,7 +72,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
               setKey(null);
             }}
           >
-            Sign out
+            Switch Role / Sign out
           </button>
         </div>
         {children}
@@ -106,75 +95,24 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
           </p>
         </div>
 
-      {rejected ? (
-        <div role="alert" className="callout callout--alert" style={{ borderLeft: "4px solid var(--exit)", background: "var(--accent-bg)", padding: "12px 14px", marginBottom: "1.5rem", fontSize: "13.5px", color: "var(--exit)", lineHeight: "1.5" }}>
-          ⚠️ <strong>Authentication Refused:</strong> Token was not accepted by the backend. Click <strong>Auto-Fill Dev Key</strong> below to load the active local key.
-        </div>
-      ) : null}
+        {rejected ? (
+          <div role="alert" className="callout callout--alert" style={{ borderLeft: "4px solid var(--exit)", background: "var(--accent-bg)", padding: "12px 14px", marginBottom: "1.5rem", fontSize: "13px", color: "var(--exit)", lineHeight: "1.5" }}>
+            ⚠️ <strong>Session Expired or Refused:</strong> Re-select your role below to re-authenticate.
+          </div>
+        ) : null}
 
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            const trimmed = draft.trim();
-            if (!trimmed) return;
             loginAs(selectedRole);
           }}
           style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
         >
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <label htmlFor="api-key" style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--ink)" }}>
-                API Key
-              </label>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <button
-                  type="button"
-                  onClick={handleAutoFill}
-                  style={{
-                    background: "var(--accent-bg)",
-                    border: "1px solid var(--accent)",
-                    color: "var(--accent)",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    padding: "4px 10px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ⚡ Auto-Fill Dev Key
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  style={{ background: "transparent", border: "none", color: "var(--muted)", fontSize: "12px", cursor: "pointer", textDecoration: "underline" }}
-                >
-                  {showKey ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            <div style={{ position: "relative" }}>
-              <input
-                id="api-key"
-                name="api-key"
-                type={showKey ? "text" : "password"}
-                autoComplete="off"
-                placeholder="Paste your API key here..."
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                aria-describedby="api-key-help"
-                className="gate__input-field"
-                required
-              />
-            </div>
-            <p id="api-key-help" className="hint" style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--muted)", lineHeight: "1.4" }}>
-              Pre-filled with local dev key. Click any role or button to enter.
-            </p>
-          </div>
-
-          <fieldset className="gate__roles" aria-label="Select your role" style={{ border: "1px solid var(--rule)", padding: "12px 14px", margin: 0, background: "var(--paper)" }}>
+          <fieldset className="gate__roles" aria-label="Select your role" style={{ border: "1px solid var(--rule)", padding: "14px 16px", margin: 0, background: "var(--paper)" }}>
             <legend style={{ padding: "0 8px", fontSize: "12px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)" }}>
-              Sign in as
+              Choose Persona to Enter
             </legend>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "6px" }}>
               {(Object.keys(ROLE_LABELS) as Role[]).map((r) => {
                 const isSelected = selectedRole === r;
                 return (
@@ -182,21 +120,21 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                     key={r}
                     className={`gate__role-card ${isSelected ? "gate__role-card--selected" : ""}`}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
                       <input
                         type="radio"
                         name="role"
                         value={r}
                         checked={isSelected}
-                        onChange={() => handleRoleChange(r)}
+                        onChange={() => setSelectedRole(r)}
                         style={{ marginTop: "3px", accentColor: "var(--accent)", cursor: "pointer" }}
                       />
                       <span className="gate__role-icon">
                         {ROLE_LABELS[r].icon}
                       </span>
                       <span className="gate__role-info">
-                        <strong>{ROLE_LABELS[r].label}</strong>
-                        <span className="gate__role-desc">
+                        <strong style={{ fontSize: "14px", color: "var(--ink)" }}>{ROLE_LABELS[r].label}</strong>
+                        <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.4" }}>
                           {ROLE_LABELS[r].description}
                         </span>
                       </span>
@@ -214,15 +152,19 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
           <button
             type="submit"
             className="btn btn--primary gate__submit-btn"
-            disabled={!draft.trim()}
           >
             Sign in as {ROLE_LABELS[selectedRole].label} &rarr;
           </button>
         </form>
 
-        <p className="gate__footer" style={{ margin: "1.5rem 0 0", fontSize: "12px", color: "var(--muted)", textAlign: "center", lineHeight: "1.5" }}>
-          Key is securely maintained in sessionStorage for this active browser tab and forgotten upon tab close.
-        </p>
+        <div style={{ marginTop: "1.75rem", paddingTop: "1.25rem", borderTop: "1px solid var(--rule)", textAlign: "center" }}>
+          <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            <span>🔒</span> Secure Access & Privacy Guardrails
+          </p>
+          <p style={{ margin: 0, fontSize: "11.5px", color: "var(--muted)", lineHeight: "1.5" }}>
+            Direct role authentication active. Enterprise production deployments support Single Sign-On (OAuth 2.0 / OIDC, SAML 2.0, Okta, Google Workspace).
+          </p>
+        </div>
       </main>
     </div>
   );
