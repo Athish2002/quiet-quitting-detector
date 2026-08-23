@@ -3380,5 +3380,179 @@ legend {
   white-space: nowrap;
 }
 
+/* ==========================================================================
+   Unique Signature Brand Emblem: The Equilibrium Orbit & Waveform Pulse
+   ========================================================================== */
+
+.brand-symbol-wrapper {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+
+.brand-symbol--interactive:hover {
+  transform: scale(1.06);
+}
+
+.brand-symbol__glow {
+  transform-origin: 50px 50px;
+  animation: qqd-glow-pulse 4s ease-in-out infinite alternate;
+}
+
+.brand-symbol--animated .brand-symbol__orbit-outer {
+  transform-origin: 50px 50px;
+  animation: qqd-orbit-clockwise 24s linear infinite;
+}
+
+.brand-symbol--animated .brand-symbol__orbit-inner {
+  transform-origin: 50px 50px;
+  animation: qqd-orbit-counter 16s linear infinite;
+}
+
+.brand-symbol--animated .brand-symbol__wave {
+  animation: qqd-wave-pulse 3.6s ease-in-out infinite alternate;
+}
+
+.brand-symbol--animated .brand-symbol__nucleus {
+  transform-origin: 50px 50px;
+  animation: qqd-nucleus-breathe 2.8s ease-in-out infinite alternate;
+}
+
+.brand-symbol--animated .brand-symbol__satellites {
+  transform-origin: 50px 50px;
+  animation: qqd-satellites-revolve 14s linear infinite;
+}
+
+.brand-symbol--interactive:hover .brand-symbol__orbit-inner {
+  animation-duration: 6s;
+}
+
+.brand-symbol--interactive:hover .brand-symbol__orbit-outer {
+  animation-duration: 10s;
+}
+
+.brand-symbol--interactive:hover .brand-symbol__satellites {
+  animation-duration: 5s;
+}
+
+@keyframes qqd-orbit-clockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes qqd-orbit-counter {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes qqd-wave-pulse {
+  0% {
+    stroke-width: 2.2px;
+    opacity: 0.75;
+  }
+  50% {
+    stroke-width: 3.2px;
+    opacity: 1;
+  }
+  100% {
+    stroke-width: 2.2px;
+    opacity: 0.75;
+  }
+}
+
+@keyframes qqd-nucleus-breathe {
+  0% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes qqd-glow-pulse {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes qqd-satellites-revolve {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   Jaw-Dropping UI Transitions & Theme Animations
+   ========================================================================== */
+
+.overview-page,
+.cohort-page,
+.person-page,
+.diagnostic-page,
+.simulator-page,
+.history-page,
+.ingest-page,
+.access-trail-page {
+  animation: modernist-page-reveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modernist-page-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth Interactive Card Hover & Depth */
+.link-card,
+.stat-cell,
+.overview-side__card,
+.diagnostic-card,
+.gate__role-card,
+.person-metric-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.link-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Range Sliders Glowing Thumb Animation */
+input[type="range"]::-webkit-slider-thumb {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* Theme Toggle Button Radial Motion */
+.theme-toggle:hover .theme-toggle__icon {
+  transform: rotate(18deg) scale(1.1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 
 

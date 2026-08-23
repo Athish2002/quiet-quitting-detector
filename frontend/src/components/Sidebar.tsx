@@ -19,6 +19,7 @@ import { api } from "../api/client";
 import type { ProviderStatus, RunProgress } from "../api/types";
 import { ThemeToggle } from "./ThemeToggle";
 import { useRole, ROLE_LABELS } from "../contexts/RoleContext";
+import { BrandSymbol } from "./BrandSymbol";
 
 /** Person detail is reached from the cohort, so it sits third but has no fixed href. */
 const NAV_BEFORE_PERSON = [
@@ -88,8 +89,8 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar__brand">
-        <span className="sidebar__mark" aria-hidden="true" />
+      <div className="sidebar__brand" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <BrandSymbol size={32} />
         <span className="sidebar__brand-name">
           Quiet-Quitting
           <br />

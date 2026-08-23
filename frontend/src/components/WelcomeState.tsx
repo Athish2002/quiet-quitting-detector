@@ -11,6 +11,7 @@
 // - employee: Explains their trajectory will appear and guarantees privacy (only own data visible).
 
 import { Link } from "react-router-dom";
+import { BrandSymbol } from "./BrandSymbol";
 
 export type Role = "analyst" | "manager" | "employee";
 
@@ -46,6 +47,9 @@ export function WelcomeState({ role }: WelcomeStateProps) {
   if (role === "manager") {
     return (
       <div className="welcome-state" role="region" aria-label="Welcome state">
+        <div style={{ display: "inline-flex", marginBottom: "16px" }}>
+          <BrandSymbol size={42} />
+        </div>
         <h2 className="welcome-state__heading">No briefings available yet</h2>
         <p className="welcome-state__text">
           Your wellbeing team will run the analysis. Once ready, you&apos;ll see
@@ -62,6 +66,9 @@ export function WelcomeState({ role }: WelcomeStateProps) {
   if (role === "employee") {
     return (
       <div className="welcome-state" role="region" aria-label="Welcome state">
+        <div style={{ display: "inline-flex", marginBottom: "16px" }}>
+          <BrandSymbol size={42} />
+        </div>
         <h2 className="welcome-state__heading">Your wellbeing dashboard</h2>
         <p className="welcome-state__text">
           No self-assessment data is available yet. Once your team&apos;s
@@ -78,6 +85,9 @@ export function WelcomeState({ role }: WelcomeStateProps) {
   // Default: analyst
   return (
     <div className="welcome-state" role="region" aria-label="Welcome state">
+      <div style={{ display: "inline-flex", marginBottom: "16px" }}>
+        <BrandSymbol size={46} />
+      </div>
       <h2 className="welcome-state__heading">
         Welcome to the Quiet-Quitting Detector
       </h2>

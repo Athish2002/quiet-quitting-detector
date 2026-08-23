@@ -21,6 +21,7 @@ import {
   clearRole,
   useRole,
 } from "../contexts/RoleContext";
+import { BrandSymbol } from "./BrandSymbol";
 
 const DEV_KEYS: Record<Role, string> = {
   analyst: "qqd-dev-key-admin-local-32bytes",
@@ -109,8 +110,8 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
         }}
       >
         <div className="gate__brand" style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "48px", height: "48px", background: "var(--accent-bg)", color: "var(--accent)", fontSize: "24px", marginBottom: "12px" }}>
-            ⚖️
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
+            <BrandSymbol size={54} />
           </div>
           <h1 className="gate__title" style={{ margin: "0 0 6px", fontSize: "26px", fontFamily: "var(--font-heading)", color: "var(--ink)", letterSpacing: "-0.02em" }}>
             Quiet-Quitting Detector
