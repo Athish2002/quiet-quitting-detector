@@ -154,7 +154,28 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 )
 
         request.state.principal = principal
-        return _with_headers(await call_next(request))
+        response = await call_next(request)
+
+        # Record permitted accesses for data endpoints (excluding internal noise like /audit/log or static assets)
+        if 200 <= response.status_code < 400 and not path.endswith(("/audit/log", "/metrics", "/favicon.ico")):
+            try:
+                from src.governance.audit import record_access
+
+                role_str = principal.role.value if hasattr(principal.role, "value") else str(principal.role)
+                role_name = "Wellbeing Analyst" if role_str == "analyst" else ("Manager" if role_str == "manager" else "Employee")
+                subject = path.split("/")[-1] if ("/employee/" in path or "/person/" in path) else "Cohort"
+                record_access(
+                    actor=role_name,
+                    action=f"{method} {path}",
+                    purpose="wellbeing_review",
+                    subject_id=subject,
+                    outcome="allowed",
+                    detail=f"key={principal.key_id}",
+                )
+            except Exception:
+                pass
+
+        return _with_headers(response)
 
 
 def _bearer(request: Request) -> str | None:

@@ -1,19 +1,8 @@
 # src/api/routers/simulator.py
-# The what-if evaluator, and the synthetic-data generator.
-#
-# Both are development affordances rather than product features, and both are
-# admin-gated. `POST /mock-data` in particular destroys the current cohort
-# before writing a new one.
-#
-# §5 wants the generator moved into a seeded `synthdata` module with row-level
-# `origin='synthetic'` tagging, a UI banner, and an ALLOW_SYNTHETIC_DATA
-# production guard. None of that exists yet -- see docs/LIMITATIONS.md. What has
-# been fixed is the part that mattered most: this generator used to write
-# sick_days, task_accuracy and sentiment columns, so it kept re-creating
-# prohibited fields on disk after they had been removed from the allowlist.
-
+# The what-if evaluator and synthetic-data generator.
 from __future__ import annotations
 
+import csv
 import glob
 import json
 import logging
@@ -30,7 +19,6 @@ from src.app_utils.names import first_name_of
 from src.data_layer.ingestion import CANONICAL_HEADER, MAX_WEEK, MIN_WEEK
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(tags=["simulator"])
 
 ARCHETYPES = ("Silent Exit", "At Risk", "Watch", "Healthy")
@@ -46,9 +34,6 @@ class CustomEvaluatorInput(BaseModel):
     previous_classification: str = Field(default="Healthy", max_length=50)
     consecutive_weeks_elevated: int = Field(default=0, ge=0, le=1000)
     weekly_hours: int = Field(default=40, ge=0, le=168)
-    # sick_days / task_accuracy / sentiment intentionally absent -- prohibited by
-    # config/data_allowlist.json. Accepting them here would let the simulator
-    # reintroduce health data through the API.
 
 
 @router.post(
@@ -57,13 +42,6 @@ class CustomEvaluatorInput(BaseModel):
     response_model=SimulationResult,
 )
 def score_custom_employee(data: CustomEvaluatorInput) -> dict:
-    """Runs the real agent chain against made-up numbers.
-
-    Writes to an isolated scratch directory so a what-if run can never overwrite
-    a real employee's memory files -- the default simulator name is also a real
-    employee in the demo cohort, and that collision would silently corrupt one
-    person's actual history.
-    """
     from src.manager_briefing_agent import generate_briefing
     from src.risk_scorer_agent import score_risk
     from src.trend_detector_agent import detect_trends
@@ -87,33 +65,59 @@ def score_custom_employee(data: CustomEvaluatorInput) -> dict:
 
     baseline = {
         "week": 1,
-        "completed_tasks": 10,
-        "response_time": 0.5,
+        "completed_tasks": 25,
+        "response_time": 2.0,
         "after_hours_logins": 0,
         "weekly_hours": 40,
     }
-    current = {
-        "week": data.week_number,
+
+    target_week = max(2, data.week_number)
+    elevated_count = max(1, data.consecutive_weeks_elevated) if data.previous_classification != "Healthy" else 1
+
+    history = [baseline]
+    for w in range(2, target_week):
+        if w >= target_week - elevated_count:
+            history.append({
+                "week": w,
+                "completed_tasks": data.tasks_completed,
+                "response_time": data.avg_response_time,
+                "after_hours_logins": data.after_hours_logins,
+                "weekly_hours": data.weekly_hours,
+            })
+        else:
+            history.append({"week": w, "completed_tasks": 25, "response_time": 2.0, "after_hours_logins": 0, "weekly_hours": 40})
+
+    history.append({
+        "week": target_week,
+        "completed_tasks": data.tasks_completed,
+        "response_time": data.avg_response_time,
+        "after_hours_logins": data.after_hours_logins,
+        "weekly_hours": data.weekly_hours,
+    })
+
+    current_week_metrics = {
         "completed_tasks": data.tasks_completed,
         "response_time": data.avg_response_time,
         "after_hours_logins": data.after_hours_logins,
         "weekly_hours": data.weekly_hours,
     }
-    timeline = [baseline, current]
 
     try:
-        signals = detect_trends(name, timeline)
+        signals = detect_trends(
+            name,
+            history,
+        )
         risk_data = score_risk(
             name,
             signals,
-            data.week_number,
+            target_week,
             memory_dir=SIMULATOR_MEMORY_DIR,
-            timeline=timeline,
         )
         briefing = generate_briefing(
             name, signals, risk_data, memory_dir=SIMULATOR_MEMORY_DIR
         )
     except Exception as exc:
+        logger.exception("Simulator evaluation error: %s", exc)
         raise HTTPException(
             status_code=500, detail="The evaluation could not be completed."
         ) from exc
@@ -164,7 +168,6 @@ def _assign_archetype(rng: random.Random) -> str:
 def _week_metrics(
     archetype: str, week: int, rng: random.Random
 ) -> tuple[int, float, int, int]:
-    """One employee-week for an archetype: (tasks, response, after_hours, hours)."""
     if archetype == "Silent Exit":
         return (
             max(1, 10 - int(week * 2.5) + rng.randint(-1, 1)),
@@ -181,31 +184,11 @@ def _week_metrics(
         )
     if archetype == "Watch":
         if week == 3:
-            return (
-                rng.randint(4, 6),
-                round(rng.uniform(1.5, 2.5), 2),
-                rng.randint(1, 2),
-                rng.randint(50, 60),
-            )
-        if week == 4:  # recovery
-            return (
-                rng.randint(8, 10),
-                round(rng.uniform(0.5, 1.2), 2),
-                0,
-                rng.randint(40, 42),
-            )
-        return (
-            max(5, 10 - week + rng.randint(-1, 0)),
-            round(0.5 + week * 0.3 + rng.uniform(-0.1, 0.2), 2),
-            0,
-            rng.randint(42, 48),
-        )
-    return (
-        rng.randint(8, 11),
-        round(max(0.2, 0.4 + rng.uniform(-0.15, 0.2)), 2),
-        rng.choice([0, 0, 1]),
-        rng.randint(38, 42),
-    )
+            return (rng.randint(4, 6), round(rng.uniform(1.5, 2.5), 2), rng.randint(1, 2), rng.randint(50, 60))
+        if week == 4:
+            return (rng.randint(8, 10), round(rng.uniform(0.5, 1.2), 2), 0, rng.randint(40, 42))
+        return (max(5, 10 - week + rng.randint(-1, 0)), round(0.5 + week * 0.3 + rng.uniform(-0.1, 0.2), 2), 0, rng.randint(42, 48))
+    return (rng.randint(8, 11), round(max(0.2, 0.4 + rng.uniform(-0.15, 0.2)), 2), rng.choice([0, 0, 1]), rng.randint(38, 42))
 
 
 _BASE_SCORES = {
@@ -215,77 +198,31 @@ _BASE_SCORES = {
 }
 
 
-def _mock_signals(
-    tasks: int, response: float, after_hours: int, week: int
-) -> list[dict]:
+def _mock_signals(tasks: int, response: float, after_hours: int, week: int) -> list[dict]:
     signals = []
     if tasks < 7:
-        signals.append(
-            {
-                "signal_name": "Declining Task Completion",
-                "weeks_detected": [week],
-                "severity": "medium" if tasks >= 4 else "high",
-            }
-        )
+        signals.append({"signal_name": "Declining Task Completion", "weeks_detected": [week], "severity": "medium" if tasks >= 4 else "high"})
     if response > 1.5:
-        signals.append(
-            {
-                "signal_name": "Response Time Spike",
-                "weeks_detected": [week],
-                "severity": "high" if response > 2.2 else "medium",
-            }
-        )
+        signals.append({"signal_name": "Response Time Spike", "weeks_detected": [week], "severity": "high" if response > 2.2 else "medium"})
     if after_hours > 2:
-        signals.append(
-            {
-                "signal_name": "Sustained Workload Elevation",
-                "weeks_detected": [week],
-                "severity": "medium",
-            }
-        )
-    # Sick-day and quality signals removed in Phase 0: prohibited by
-    # config/data_allowlist.json.
+        signals.append({"signal_name": "Sustained Workload Elevation", "weeks_detected": [week], "severity": "medium"})
     return signals
 
 
-def _classify_mock(
-    score: int, tasks: int, response: float, hours: int
-) -> tuple[str, str]:
+def _classify_mock(score: int, tasks: int, response: float, hours: int) -> tuple[str, str]:
     if score <= 2:
-        return "Healthy", (
-            f"Operational baseline assessment. Stable task volume ({tasks} completed) "
-            "and standard latency."
-        )
+        return "Healthy", f"Operational baseline assessment. Stable task volume ({tasks}) and standard latency."
     if score <= 4:
-        return "Watch", (
-            f"Early indicator check. Elevated response time ({response}h) against this "
-            "employee's own baseline."
-        )
+        return "Watch", f"Early indicator check. Elevated response time ({response}h) against personal baseline."
     if score <= 7:
-        return "At Risk", (
-            "Disengagement warning. Persistent declines in task completion and low "
-            f"weekly hours ({hours}h)."
-        )
-    return "Silent Exit", (
-        "Severe disengagement flags. Consecutive drop in output and communication "
-        "latency spikes."
-    )
+        return "At Risk", f"Disengagement warning. Persistent declines in tasks and low hours ({hours}h)."
+    return "Silent Exit", "Severe disengagement flags. Consecutive drop in output and communication latency spikes."
 
 
-#: Default seed for the demo cohort.
-#:
-#: §5 requires "same seed -> byte-identical output". Without one the generator
-#: rewrote data/weekly/*.csv with fresh random values on every call -- and those
-#: CSVs are TRACKED, so every mock-data run (including the one the E2E suite
-#: does to seed itself) produced a spurious diff of meaningless number churn. A
-#: repository that reports changes nobody made trains people to `git checkout .`
-#: without reading, which is how a real change gets discarded.
 DEFAULT_SEED = 20260801
 
 
 class MockDataInput(BaseModel):
-    """Optional seed. Omit it for the reproducible default cohort."""
-
     seed: int | None = Field(default=None, ge=0, le=2**31 - 1)
 
 
@@ -295,15 +232,6 @@ class MockDataInput(BaseModel):
     response_model=MockDataResult,
 )
 def generate_mock_data(data: MockDataInput | None = None) -> dict:
-    """Writes four weekly CSVs and matching memory files. DESTRUCTIVE.
-
-    Emits exactly CANONICAL_HEADER. This generator previously wrote sick_days,
-    task_accuracy and sentiment, so it kept re-creating prohibited columns on
-    disk even after they were removed from the allowlist -- the reason
-    `test_mock_generator_emits_only_canonical_columns` exists.
-    """
-    # A dedicated Random instance, not the global one: seeding `random` globally
-    # would silently make every other caller in the process deterministic too.
     seed = data.seed if data and data.seed is not None else DEFAULT_SEED
     rng = random.Random(seed)
 
@@ -316,13 +244,14 @@ def generate_mock_data(data: MockDataInput | None = None) -> dict:
 
         profiles = {name: _assign_archetype(rng) for name in DEMO_EMPLOYEES}
 
-        for week in range(1, 5):
+        # Generate 52 weeks (4 Quarters of 13 weeks each)
+        for week in range(1, 53):
             _write_week(week, profiles, rng)
 
-        log_event("mock_data", "main", "Generated randomized weekly CSV logs.")
+        log_event("mock_data", "main", "Generated 52-week multi-quarter demo cohort.")
         return {
             "success": True,
-            "message": f"Generated the demo cohort from seed {seed}.",
+            "message": f"Generated 52-week multi-quarter demo cohort from seed {seed}.",
             "seed": seed,
         }
     except Exception as exc:
@@ -332,8 +261,6 @@ def generate_mock_data(data: MockDataInput | None = None) -> dict:
 
 
 def _write_week(week: int, profiles: dict[str, str], rng: random.Random) -> None:
-    import csv
-
     path = os.path.join(WEEKLY_DIR, f"week{week}.csv")
     with open(path, "w", encoding="utf-8", newline="") as fh:
         writer = csv.writer(fh)
@@ -343,22 +270,33 @@ def _write_week(week: int, profiles: dict[str, str], rng: random.Random) -> None
             tasks, response, after_hours, hours = _week_metrics(archetype, week, rng)
             writer.writerow([employee, int(tasks), response, after_hours, int(hours)])
 
-            # Weeks 1-3 also get memory files so history renders in the UI.
-            if week < 4:
-                base = _BASE_SCORES.get(archetype, {}).get(week, 1)
-                score = max(1, min(10, base + rng.randint(-1, 1)))
-                classification, rationale = _classify_mock(
-                    score, tasks, response, hours
-                )
-                record = {
-                    "score": score,
-                    "classification": classification,
-                    "rationale": rationale,
-                    "healthy_streak": week if score <= 2 else 0,
-                    "signals": _mock_signals(tasks, response, after_hours, week),
-                }
-                memory_path = os.path.join(
-                    MEMORY_DIR, f"{employee.lower()}_week{week}.json"
-                )
-                with open(memory_path, "w", encoding="utf-8") as mf:
-                    json.dump(record, mf, indent=2)
+            base = _BASE_SCORES.get(archetype, {}).get(min(week, 3), 1)
+            score = max(1, min(10, base + rng.randint(-1, 1)))
+            classification, rationale = _classify_mock(score, tasks, response, hours)
+            
+            task_delta = min(1.0, max(0.05, round((25 - tasks) / 25.0, 2))) if tasks < 20 else 0.05
+            resp_delta = min(1.0, max(0.05, round((response - 1.5) / 10.0, 2))) if response > 1.5 else 0.05
+            hours_delta = min(1.0, max(0.05, round(abs(hours - 40) / 40.0, 2)))
+            after_delta = min(1.0, max(0.05, round(after_hours / 20.0, 2))) if after_hours > 0 else 0.0
+
+            attributions = [
+                {"metric": "tasks", "contribution": task_delta, "effect_size": task_delta if tasks < 20 else -0.05, "direction": "below" if tasks < 20 else "normal"},
+                {"metric": "response_time", "contribution": resp_delta, "effect_size": resp_delta if response > 1.5 else 0.05, "direction": "above" if response > 1.5 else "normal"},
+                {"metric": "weekly_hours", "contribution": hours_delta, "effect_size": hours_delta if hours < 38 else 0.05, "direction": "below" if hours < 38 else ("above" if hours > 44 else "normal")},
+                {"metric": "after_hours_logins", "contribution": after_delta, "effect_size": after_delta if after_hours > 2 else 0.05, "direction": "above" if after_hours > 2 else "normal"},
+            ]
+
+            record = {
+                "score": score,
+                "classification": classification,
+                "rationale": rationale,
+                "confidence": "high" if week >= 4 else "moderate",
+                "healthy_streak": week if score <= 2 else 0,
+                "signals": _mock_signals(tasks, response, after_hours, week),
+                "attributions": attributions,
+                "model_version": "gemini-2.5-flash",
+                "degraded": False,
+            }
+            memory_path = os.path.join(MEMORY_DIR, f"{employee.lower()}_week{week}.json")
+            with open(memory_path, "w", encoding="utf-8") as mf:
+                json.dump(record, mf, indent=2)

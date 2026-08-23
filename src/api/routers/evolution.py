@@ -134,6 +134,25 @@ def submit_feedback(payload: FeedbackInput) -> dict:
     }
 
 
+INTERVENTION_ALIASES: dict[str, str] = {
+    "workload_review": "workload_adjustment",
+    "workload_adjustment": "workload_adjustment",
+    "role_clarity_discussion": "role_or_goal_clarification",
+    "role_clarity": "role_or_goal_clarification",
+    "role_or_goal_clarification": "role_or_goal_clarification",
+    "check_in": "check_in",
+    "1_on_1": "check_in",
+    "1-on-1": "check_in",
+    "blocker_removed": "blocker_removed",
+    "time_off_encouraged": "time_off_encouraged",
+    "connected_to_support": "connected_to_support",
+    "team_or_project_change": "team_or_project_change",
+    "no_action_taken": "no_action_taken",
+    "dismissed_no_action": "no_action_taken",
+    "dismiss": "no_action_taken",
+}
+
+
 @router.post(
     "/interventions",
     summary="Record what kind of action a manager took",
@@ -141,10 +160,20 @@ def submit_feedback(payload: FeedbackInput) -> dict:
 )
 def submit_intervention(payload: InterventionInput) -> dict:
     first_name = first_name_of(payload.employee_name).lower()
-    _stored_evaluation(first_name, payload.week)
+    try:
+        _stored_evaluation(first_name, payload.week)
+    except HTTPException:
+        logger.info(
+            "Recording intervention for %s week %d without pre-existing disk memory snapshot.",
+            first_name,
+            payload.week,
+        )
+
+    raw_val = payload.intervention.strip().lower()
+    canonical_val = INTERVENTION_ALIASES.get(raw_val, raw_val)
 
     try:
-        kind = InterventionType(payload.intervention)
+        kind = InterventionType(canonical_val)
     except ValueError as exc:
         raise HTTPException(
             status_code=422,

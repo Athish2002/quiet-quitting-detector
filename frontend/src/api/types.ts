@@ -63,6 +63,8 @@ export type BriefingView = ResponseOf<
   "/api/v1/employee/{name}/briefing",
   "get"
 >;
+export type IngestResult = ResponseOf<"/api/v1/ingest/raw", "post">;
+export type RunStarted = ResponseOf<"/api/v1/run", "post">;
 
 // --- the pieces those responses are made of ---------------------------------
 //

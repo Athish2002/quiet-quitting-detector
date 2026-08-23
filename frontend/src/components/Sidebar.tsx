@@ -18,19 +18,20 @@ import { NavLink, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import type { ProviderStatus, RunProgress } from "../api/types";
 import { ThemeToggle } from "./ThemeToggle";
+import { useRole, ROLE_LABELS } from "../contexts/RoleContext";
 
 /** Person detail is reached from the cohort, so it sits third but has no fixed href. */
 const NAV_BEFORE_PERSON = [
-  { to: "/", label: "Overview", end: true },
-  { to: "/cohort", label: "Cohort", end: false },
+  { to: "/", label: "Overview", end: true, section: "overview" },
+  { to: "/cohort", label: "Cohort", end: false, section: "cohort" },
 ] as const;
 
 const NAV_AFTER_PERSON = [
-  { to: "/diagnostic", label: "Diagnostic room", end: false },
-  { to: "/ingest", label: "Ingest", end: false },
-  { to: "/simulator", label: "Simulator", end: false },
-  { to: "/history", label: "History", end: false },
-  { to: "/audit", label: "Access trail", end: false },
+  { to: "/diagnostic", label: "Diagnostic room", end: false, section: "diagnostic" },
+  { to: "/ingest", label: "Ingest", end: false, section: "ingest" },
+  { to: "/simulator", label: "Simulator", end: false, section: "simulator" },
+  { to: "/history", label: "History", end: false, section: "history" },
+  { to: "/audit", label: "Access trail", end: false, section: "audit" },
 ] as const;
 
 function navClass({ isActive }: { isActive: boolean }): string {
@@ -41,6 +42,7 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const onPerson = pathname.startsWith("/person/");
   const queryClient = useQueryClient();
+  const { role, hasAccess } = useRole();
 
   // Polls only while a run is in flight. The prototype stepped through subjects
   // on a 340ms timer; this reads real progress, so the bar cannot claim to be
@@ -67,6 +69,23 @@ export function Sidebar() {
   const running = progress.data?.running === true;
   const degraded = providers.data?.local_only_mode === true;
 
+  const isEmployee = role === "employee";
+  const isManager = role === "manager";
+
+  const beforeItems = isEmployee
+    ? [{ to: "/", label: "My Wellbeing", end: true, section: "my-wellbeing" }]
+    : isManager
+    ? [
+        { to: "/", label: "Supportive Briefings", end: true, section: "briefings" },
+        { to: "/cohort", label: "Cohort", end: false, section: "cohort" },
+      ]
+    : NAV_BEFORE_PERSON.filter((item) => hasAccess(item.section));
+
+  const showPersonDetail = !isEmployee && hasAccess("person");
+  const afterItems = isEmployee
+    ? []
+    : NAV_AFTER_PERSON.filter((item) => hasAccess(item.section));
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -81,32 +100,34 @@ export function Sidebar() {
 
       <nav aria-label="Sections" className="sidebar__nav">
         <ul>
-          {NAV_BEFORE_PERSON.map((item) => (
+          {beforeItems.map((item) => (
             <li key={item.to}>
               <NavLink to={item.to} end={item.end} className={navClass}>
                 {item.label}
               </NavLink>
             </li>
           ))}
-          <li>
-            {onPerson ? (
-              <NavLink to={pathname} className={navClass}>
-                Person detail
-              </NavLink>
-            ) : (
-              // Not a link, because there is nothing to link to until someone is
-              // chosen -- and the choosing happens on the cohort, deliberately,
-              // so that opening an assessment is always an explicit act.
-              <span
-                className="sidebar__nav-link sidebar__nav-link--inert"
-                aria-disabled="true"
-                title="Open someone from the cohort first."
-              >
-                Person detail
-              </span>
-            )}
-          </li>
-          {NAV_AFTER_PERSON.map((item) => (
+          {showPersonDetail && (
+            <li>
+              {onPerson ? (
+                <NavLink to={pathname} className={navClass}>
+                  Person detail
+                </NavLink>
+              ) : (
+                // Not a link, because there is nothing to link to until someone is
+                // chosen -- and the choosing happens on the cohort, deliberately,
+                // so that opening an assessment is always an explicit act.
+                <span
+                  className="sidebar__nav-link sidebar__nav-link--inert"
+                  aria-disabled="true"
+                  title="Open someone from the cohort first."
+                >
+                  Person detail
+                </span>
+              )}
+            </li>
+          )}
+          {afterItems.map((item) => (
             <li key={item.to}>
               <NavLink to={item.to} end={item.end} className={navClass}>
                 {item.label}
@@ -117,21 +138,32 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar__footer">
-        <p className="sidebar__label">Pipeline</p>
-        {/* Deliberately not the shared `.btn` class. The old pages are now
-            inside `.app-shell`, and restyling `.btn` here would silently
-            restyle their buttons too. The Modernist button system arrives in
-            S3, with the first section that actually replaces old markup. */}
-        <button
-          type="button"
-          className="sidebar__run"
-          onClick={() => run.mutate()}
-          disabled={running || run.isPending}
-        >
-          {running || run.isPending ? "Run in progress…" : "Run the pipeline"}
-        </button>
+        {!isEmployee && (
+          <>
+            <p className="sidebar__label">Pipeline</p>
+            {/* Deliberately not the shared `.btn` class. The old pages are now
+                inside `.app-shell`, and restyling `.btn` here would silently
+                restyle their buttons too. The Modernist button system arrives in
+                S3, with the first section that actually replaces old markup. */}
+            <button
+              type="button"
+              className="sidebar__run"
+              onClick={() => run.mutate()}
+              disabled={running || run.isPending}
+            >
+              {running || run.isPending ? "Run in progress…" : "Run the pipeline"}
+            </button>
+          </>
+        )}
 
         <ModelBlock status={providers.data} degraded={degraded} />
+
+        {role && (
+          <div className="sidebar__role-badge">
+            <span>{ROLE_LABELS[role].icon}</span>
+            <span>{ROLE_LABELS[role].label}</span>
+          </div>
+        )}
 
         <ThemeToggle />
       </div>

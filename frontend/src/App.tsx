@@ -1,16 +1,17 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ApiKeyGate } from "./components/ApiKeyGate";
+import { RoleProvider, useRole } from "./contexts/RoleContext";
 import { Cohort } from "./pages/Cohort";
 import { DiagnosticRoom } from "./pages/DiagnosticRoom";
 import { History } from "./pages/History";
 import { Home } from "./pages/Home";
-import { Placeholder } from "./pages/Placeholder";
-
-// S2 of the redesign: the four sibling pages become one shell with eight
-// sections on real routes (design/REDESIGN_PLAN.md).
-//
-// S4 of the redesign: Cohort section replaces legacy Console at /cohort.
+import { PersonDetail } from "./pages/PersonDetail";
+import { Ingest } from "./pages/Ingest";
+import { Simulator } from "./pages/Simulator";
+import { AccessTrail } from "./pages/AccessTrail";
+import { ManagerBriefings } from "./pages/ManagerBriefings";
+import { EmployeePortal } from "./pages/EmployeePortal";
 
 function NotFound() {
   return (
@@ -23,64 +24,108 @@ function NotFound() {
   );
 }
 
+function HomeRoute() {
+  const { role } = useRole();
+  if (role === "employee") {
+    return <EmployeePortal />;
+  }
+  if (role === "manager") {
+    return <ManagerBriefings />;
+  }
+  return <Home />;
+}
+
+function ProtectedRoute({
+  section,
+  children,
+}: {
+  section: string;
+  children: React.ReactNode;
+}) {
+  const { hasAccess } = useRole();
+  if (!hasAccess(section)) {
+    return (
+      <section aria-labelledby="restricted-heading" className="page">
+        <h1 id="restricted-heading">Access restricted</h1>
+        <p>
+          Your current role does not have permission to view this section.{" "}
+          <a href="/">Back to overview</a>.
+        </p>
+      </section>
+    );
+  }
+  return <>{children}</>;
+}
+
 export function App() {
   return (
     <Router>
-      <ApiKeyGate>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/cohort" element={<Cohort />} />
-            <Route
-              path="/person/:name"
-              element={
-                <Placeholder
-                  eyebrow="Person detail"
-                  title="One person, against their own earlier weeks."
-                  intro="The score with its confidence, what drove it, the patterns that held for two weeks or more, and the conversation this suggests."
-                  session="S5"
-                />
-              }
-            />
-            <Route path="/diagnostic" element={<DiagnosticRoom />} />
-            <Route
-              path="/ingest"
-              element={
-                <Placeholder
-                  eyebrow="Ingest"
-                  title="Bring a week of telemetry in."
-                  intro="Every route in drops anything the allowlist does not name, before it is persisted. The receipt tells you exactly what was kept and what was refused."
-                  session="S7"
-                />
-              }
-            />
-            <Route
-              path="/simulator"
-              element={
-                <Placeholder
-                  eyebrow="Simulator"
-                  title="Try a shape of week and see what it scores."
-                  intro="Nothing here is stored. It exists so you can see what the model reacts to before you trust it with someone real."
-                  session="S8"
-                />
-              }
-            />
-            <Route path="/history" element={<History />} />
-            <Route
-              path="/audit"
-              element={
-                <Placeholder
-                  eyebrow="Access trail & retention"
-                  title="Who looked at whose assessment."
-                  intro="Append-only and hash-chained. Refused requests are recorded too — a refusal is itself an audit record. Nothing on this page can edit or delete a row."
-                  session="S11"
-                />
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </ApiKeyGate>
+      <RoleProvider>
+        <ApiKeyGate>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route path="/" element={<HomeRoute />} />
+              <Route
+                path="/cohort"
+                element={
+                  <ProtectedRoute section="cohort">
+                    <Cohort />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/person/:name"
+                element={
+                  <ProtectedRoute section="person">
+                    <PersonDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/diagnostic"
+                element={
+                  <ProtectedRoute section="diagnostic">
+                    <DiagnosticRoom />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ingest"
+                element={
+                  <ProtectedRoute section="ingest">
+                    <Ingest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/simulator"
+                element={
+                  <ProtectedRoute section="simulator">
+                    <Simulator />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <ProtectedRoute section="history">
+                    <History />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/audit"
+                element={
+                  <ProtectedRoute section="audit">
+                    <AccessTrail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </ApiKeyGate>
+      </RoleProvider>
     </Router>
   );
 }

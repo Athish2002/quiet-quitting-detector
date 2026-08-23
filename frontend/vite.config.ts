@@ -7,6 +7,7 @@ import { defineConfig } from "vite";
 // CSP sets `connect-src 'self'`, and a frontend calling a different origin in
 // development would work locally and fail the moment it was served for real.
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || "./",
   plugins: [react()],
   server: {
     port: 5173,

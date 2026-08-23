@@ -50,6 +50,8 @@ class ApiCounters(ResponseModel):
 
 class AppSettings(ResponseModel):
     local_only_mode: bool = False
+    model_mode: str = "auto"
+    selected_model: str = "gemini-2.5-flash"
 
 
 class ExhaustedModel(ResponseModel):
@@ -65,6 +67,8 @@ class ProviderStatus(ResponseModel):
     exhausted_models: list[ExhaustedModel] = Field(default_factory=list)
     #: True when every provider call is being skipped by choice.
     local_only_mode: bool = False
+    model_mode: str = "auto"
+    selected_model: str = "gemini-2.5-flash"
 
 
 class EventLogEntry(ResponseModel):

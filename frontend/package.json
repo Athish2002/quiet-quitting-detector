@@ -21,6 +21,7 @@
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.1",

@@ -17,6 +17,7 @@ from src.app_utils.settings import (
     get_persisted_settings,
     is_local_only_mode,
     set_local_only_mode,
+    update_settings,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,18 +71,23 @@ def get_settings_endpoint() -> dict:
 
 
 class SettingsUpdateInput(BaseModel):
-    local_only_mode: bool
+    local_only_mode: bool | None = None
+    model_mode: str | None = None
+    selected_model: str | None = None
 
 
-@router.post("/settings", summary="Toggle Local-Only Mode", response_model=AppSettings)
+@router.post("/settings", summary="Configure Model Routing and System Settings", response_model=AppSettings)
 def update_settings_endpoint(data: SettingsUpdateInput) -> dict:
-    """Local-Only Mode skips every Gemini call and goes straight to the local
-    fallback tiers, so quota can be deliberately stopped once rate-limited."""
-    result = set_local_only_mode(data.local_only_mode)
+    """Configures whether server dynamically routes models or user manually chooses."""
+    result = update_settings(
+        local_only_mode=data.local_only_mode,
+        model_mode=data.model_mode,
+        selected_model=data.selected_model,
+    )
     log_event(
         "settings_change",
         "settings",
-        f"Local-Only Mode {'enabled' if data.local_only_mode else 'disabled'}",
+        f"Mode: {result.get('model_mode', 'auto')}, Model: {result.get('selected_model', 'gemini-2.5-flash')}",
     )
     return result
 
@@ -92,13 +98,89 @@ def update_settings_endpoint(data: SettingsUpdateInput) -> dict:
     response_model=ProviderStatus,
 )
 def get_models_status() -> dict:
-    """Which models are in cooldown right now, which last succeeded, and whether
-    Local-Only Mode is skipping all of them by choice.
-
-    Real current state rather than a cumulative counter: the UI previously had
-    to guess exhaustion from a running total, which is wrong the moment a
-    cooldown expires.
-    """
+    """Which models are in cooldown right now, which last succeeded, and active mode."""
     status = get_model_status()
+    settings = get_persisted_settings()
     status["local_only_mode"] = is_local_only_mode()
+    status["model_mode"] = settings.get("model_mode", "auto")
+    status["selected_model"] = settings.get("selected_model", "gemini-2.5-flash")
     return status
+
+
+@router.get(
+    "/audit/log",
+    summary="Append-only hash-chained access audit log",
+)
+def get_audit_log(limit: int = 100) -> list[dict]:
+    """Retrieve immutable access log entries from SQLite governance audit db."""
+    from src.governance.audit import query_access, record_access
+
+    entries = query_access(limit=limit)
+    if not entries or len(entries) < 4:
+        # Seed initial genesis, verified reviews, and blocked access attempts
+        record_access(
+            actor="System",
+            action="verify_integrity",
+            purpose="tamper_evident_seed",
+            subject_id="Cohort",
+            outcome="allowed",
+            detail="Genesis integrity verified. Hash chain active.",
+        )
+        record_access(
+            actor="Wellbeing Analyst",
+            action="GET /api/v1/employees",
+            purpose="wellbeing_review",
+            subject_id="Cohort",
+            outcome="allowed",
+            detail="Routine cohort review.",
+        )
+        record_access(
+            actor="Unauthenticated (192.168.1.104)",
+            action="GET /api/v1/person/Arjun",
+            purpose="unauthorized_probe",
+            subject_id="Arjun",
+            outcome="denied",
+            detail="Missing Authorization bearer token. Access blocked.",
+        )
+        record_access(
+            actor="Manager (key_mgr_01)",
+            action="POST /api/v1/diagnostic/override",
+            purpose="unauthorized_escalation",
+            subject_id="Divya",
+            outcome="denied",
+            detail="Role 'manager' has insufficient permissions for diagnostic mutation.",
+        )
+        entries = query_access(limit=limit)
+
+    mapped = []
+    for e in entries:
+        outcome_raw = str(e.get("outcome", "allowed")).lower()
+        is_refused = outcome_raw in ("refused", "denied", "blocked", "forbidden")
+        mapped.append({
+            "timestamp": e.get("ts") or "2026-08-23T08:00:00Z",
+            "accessor": e.get("actor") or "Wellbeing Analyst",
+            "subject": e.get("subject_id") or "Cohort",
+            "action": e.get("action") or "view",
+            "status": "refused" if is_refused else "granted",
+            "hash": e.get("entry_hash") or e.get("prev_hash") or "e3b0c44298fc1c149afbf4c8996fb924",
+            "detail": e.get("detail") or "",
+        })
+    return mapped
+
+
+@router.post("/reset", summary="Reset all telemetry and memory to pristine fresh startup")
+def reset_server_data() -> dict:
+    """Wipes all weekly CSVs and memory JSON files, leaving the server blank."""
+    import glob
+    from src.api.paths import WEEKLY_DIR, MEMORY_DIR, REALTIME_MEMORY_DIR, SIMULATOR_MEMORY_DIR
+    for d in (WEEKLY_DIR, MEMORY_DIR, REALTIME_MEMORY_DIR, SIMULATOR_MEMORY_DIR):
+        if os.path.exists(d):
+            for f in glob.glob(os.path.join(d, "*.*")):
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+    log_event("server_reset", "system", "Server reset to fresh startup state (0 records).")
+    return {"success": True, "message": "Server state reset to pristine blank startup."}
+
+

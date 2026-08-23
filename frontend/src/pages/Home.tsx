@@ -6,16 +6,33 @@
 // the tool's core premise before any detail is shown: telemetry is read against
 // a person's own history, never against a cohort ranking.
 //
-// Replaces the old glassmorphism Home page in S3 of the Modernist redesign.
+// Features:
+// - Full cohort summary & 4-band distribution
+// - Realtime Model Status & Model Selector (Gemini 2.5 Flash, Pro, Local Engine)
+// - Calibration metrics & Ethical safeguards
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorNote } from "../components/ErrorNote";
 import { SectionHeader } from "../components/SectionHeader";
+import { WelcomeState } from "../components/WelcomeState";
+import { useRole } from "../contexts/RoleContext";
 import type { CalibrationView, EmployeeSummary } from "../api/types";
 
+interface ProviderStatusResponse {
+  fallback_sequence?: string[];
+  last_successful_model?: string | null;
+  exhausted_models?: Array<{ model: string; cooldown_remaining_seconds: number }>;
+  local_only_mode?: boolean;
+}
+
 export function Home() {
+  const { role } = useRole();
+  const queryClient = useQueryClient();
+  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
+
   const employees = useQuery({
     queryKey: ["employees"],
     queryFn: () => api.get<EmployeeSummary[]>("/employees"),
@@ -23,6 +40,31 @@ export function Home() {
   const calibration = useQuery({
     queryKey: ["calibration"],
     queryFn: () => api.get<CalibrationView>("/calibration"),
+  });
+  const modelStatus = useQuery<ProviderStatusResponse>({
+    queryKey: ["model-status"],
+    queryFn: () => api.get<ProviderStatusResponse>("/models/status"),
+    refetchInterval: 4000,
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: (params: {
+      model_mode?: "auto" | "manual";
+      selected_model?: string;
+      local_only_mode?: boolean;
+    }) => api.post("/settings", params),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["model-status"] });
+    },
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: () => api.post("/reset"),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["employees"] });
+      void queryClient.invalidateQueries({ queryKey: ["calibration"] });
+      void queryClient.invalidateQueries({ queryKey: ["history"] });
+    },
   });
 
   const error = employees.error ?? calibration.error;
@@ -46,6 +88,13 @@ export function Home() {
   const totalPeople = employees.data !== undefined ? data.length : null;
   const totalVerdicts = cal ? cal.total : null;
   const harmfulVerdicts = cal ? cal.harmful : null;
+
+  const modelMode = ((modelStatus.data as unknown as Record<string, unknown>)?.model_mode as string) ?? "auto";
+  const activeSelectedModel =
+    ((modelStatus.data as unknown as Record<string, unknown>)?.selected_model as string) ?? selectedModel;
+  const isLocalMode = modelStatus.data?.local_only_mode ?? false;
+  const exhaustedList = modelStatus.data?.exhausted_models ?? [];
+  const activeModelName = modelStatus.data?.last_successful_model ?? activeSelectedModel;
 
   return (
     <div className="overview-page">
@@ -116,6 +165,211 @@ export function Home() {
         </aside>
       </div>
 
+      {/* Quick Workflow Navigation Suite */}
+      <nav aria-label="Quick application workflows" style={{ margin: "1.25rem 0 0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+          {[
+            {
+              to: "/cohort",
+              title: "👥 Team Roster",
+              desc: "Alphabetical member telemetry with quarterly filters & deviation metrics.",
+            },
+            {
+              to: "/simulator",
+              title: "🧪 Metric Simulator",
+              desc: "Test behavioral archetypes in scratch mode with 0ms latency.",
+            },
+            {
+              to: "/history",
+              title: "📈 Trajectory Matrix",
+              desc: "Longitudinal 52-week view across individual trends.",
+            },
+            {
+              to: "/ingest",
+              title: "📥 Data Ingestion",
+              desc: "Upload telemetry via CSV, DB connection, or webhooks.",
+            },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              style={{
+                display: "block",
+                padding: "14px 16px",
+                background: "var(--surface)",
+                border: "1px solid var(--rule)",
+                textDecoration: "none",
+                color: "var(--ink)",
+                transition: "border-color 0.15s ease",
+              }}
+            >
+              <strong style={{ display: "block", fontSize: "13.5px", marginBottom: "4px" }}>
+                {item.title} →
+              </strong>
+              <span style={{ fontSize: "12px", color: "var(--muted)", lineHeight: 1.4, display: "block" }}>
+                {item.desc}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* Model & Engine Control Pill: 2 Options (Choose Model vs Let Server Decide) */}
+      <section
+        style={{
+          margin: "1.25rem 0",
+          padding: "16px",
+          background: "var(--surface)",
+          border: "1px solid var(--rule)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "16px" }}>
+              {isLocalMode ? "🔵" : exhaustedList.length > 0 ? "🟡" : "🟢"}
+            </span>
+            <div>
+              <strong style={{ fontSize: "13.5px", color: "var(--ink)", display: "block" }}>
+                {modelMode === "auto"
+                  ? "Automatic Dynamic Routing (Server Decides)"
+                  : isLocalMode
+                    ? "Deterministic Heuristic Engine (Local Offline Mode)"
+                    : `Manual Override: Pinned to ${activeModelName === "gemini-2.5-pro" ? "Gemini 2.5 Pro" : activeModelName === "local-deterministic" ? "Deterministic Local" : "Gemini 2.5 Flash"}`}
+              </strong>
+              <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                {modelMode === "auto"
+                  ? "Server automatically balances latency, quota, and automatic fallback chains."
+                  : isLocalMode
+                    ? "Zero external API calls. Running rule-based baseline scoring."
+                    : "Explicit model selection active. Fallbacks trigger only on complete exhaustion."}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => resetMutation.mutate()}
+              disabled={resetMutation.isPending}
+              style={{
+                padding: "5px 12px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "1px solid var(--rule)",
+                background: "var(--paper)",
+                color: "var(--muted)",
+              }}
+            >
+              {resetMutation.isPending ? "Resetting..." : "🧹 Reset to Fresh Start"}
+            </button>
+          </div>
+        </div>
+
+        {/* 2 Options: Choose Model or Let Server Decide */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            paddingTop: "10px",
+            borderTop: "1px solid var(--rule)",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--muted)" }}>
+            Engine Strategy:
+          </span>
+
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => {
+                updateSettingsMutation.mutate({ model_mode: "auto", local_only_mode: false });
+              }}
+              style={{
+                padding: "5px 14px",
+                fontSize: "12.5px",
+                fontWeight: modelMode === "auto" ? 700 : 500,
+                border: "1px solid",
+                borderColor: modelMode === "auto" ? "var(--accent)" : "var(--rule)",
+                background: modelMode === "auto" ? "var(--accent-bg)" : "var(--paper)",
+                color: modelMode === "auto" ? "var(--ink)" : "var(--muted)",
+                cursor: "pointer",
+              }}
+            >
+              🤖 Let the server decide
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                updateSettingsMutation.mutate({ model_mode: "manual", selected_model: activeSelectedModel });
+              }}
+              style={{
+                padding: "5px 14px",
+                fontSize: "12.5px",
+                fontWeight: modelMode === "manual" ? 700 : 500,
+                border: "1px solid",
+                borderColor: modelMode === "manual" ? "var(--accent)" : "var(--rule)",
+                background: modelMode === "manual" ? "var(--accent-bg)" : "var(--paper)",
+                color: modelMode === "manual" ? "var(--ink)" : "var(--muted)",
+                cursor: "pointer",
+              }}
+            >
+              🎛️ Choose model
+            </button>
+          </div>
+
+          {/* If manual mode is selected, reveal the model options */}
+          {modelMode === "manual" && (
+            <div style={{ display: "flex", gap: "6px", alignItems: "center", marginLeft: "auto", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "11.5px", color: "var(--muted)", marginRight: "4px" }}>
+                Select Tier:
+              </span>
+              {[
+                { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+                { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+                { id: "local-deterministic", label: "Deterministic Local (Offline)" },
+              ].map((m) => {
+                const isSelected = isLocalMode
+                  ? m.id === "local-deterministic"
+                  : activeSelectedModel === m.id && m.id !== "local-deterministic";
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModel(m.id);
+                      updateSettingsMutation.mutate({
+                        model_mode: "manual",
+                        selected_model: m.id,
+                        local_only_mode: m.id === "local-deterministic",
+                      });
+                    }}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "12px",
+                      fontWeight: isSelected ? 700 : 500,
+                      border: "1px solid",
+                      borderColor: isSelected ? "var(--accent)" : "var(--rule)",
+                      background: isSelected ? "var(--accent-bg)" : "var(--paper)",
+                      color: isSelected ? "var(--ink)" : "var(--muted)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* 3. Stat strip: 4 equal columns with rules between & under */}
       <section aria-label="Summary statistics" className="stat-strip">
         <div className="stat-cell">
@@ -157,6 +411,10 @@ export function Home() {
             assessment as a question.
           </p>
         </div>
+      ) : null}
+
+      {!employees.isLoading && employees.data !== undefined && employees.data.length === 0 ? (
+        <WelcomeState role={role ?? "analyst"} />
       ) : null}
 
       {calibration.data?.review_required ? (

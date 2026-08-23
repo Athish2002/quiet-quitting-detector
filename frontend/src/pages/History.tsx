@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { ErrorNote } from "../components/ErrorNote";
 import { SectionHeader } from "../components/SectionHeader";
+import { formatShortDateTime } from "../utils/dateFormatter";
 import type { EmployeeSummary, HistoryEvent } from "../api/types";
 
 export function History() {
@@ -47,41 +48,112 @@ function getBandClass(classification: string): string {
 }
 
 function TrajectoriesPanel() {
+  const [filter, setFilter] = useState<"all" | "elevated" | "watch" | "healthy">("all");
+  const [search, setSearch] = useState("");
+
   const { data, isPending, error } = useQuery({
     queryKey: ["employees"],
     queryFn: () => api.get<EmployeeSummary[]>("/employees"),
   });
 
+  const filteredEmployees = (data || []).filter((emp) => {
+    const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+
+    const band = getBandClass(emp.classification);
+    if (filter === "elevated") return band === "at-risk" || band === "exit";
+    if (filter === "watch") return band === "watch";
+    if (filter === "healthy") return band === "healthy";
+    return true;
+  });
+
   return (
     <section aria-labelledby="trajectories-heading" className="history-section">
-      <h2 id="trajectories-heading" className="history-section__title">
-        Week by week
-      </h2>
-      <p className="history-section__subtitle">
-        Each row is one person compared against <em>their own earlier weeks</em>. Rows are{" "}
-        <em>never compared to each other</em>.
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+        <div>
+          <h2 id="trajectories-heading" className="history-section__title">
+            Week by week
+          </h2>
+          <p className="history-section__subtitle">
+            Each row is one person compared against <em>their own earlier weeks</em>. Rows are{" "}
+            <em>never compared to each other</em>.
+          </p>
+        </div>
+
+        {/* Filter controls */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          <input
+            type="search"
+            placeholder="Search employee..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Filter employees by name"
+            style={{
+              padding: "4px 8px",
+              fontSize: "12px",
+              background: "var(--paper)",
+              border: "1px solid var(--rule)",
+              color: "var(--ink)",
+              borderRadius: 0,
+            }}
+          />
+
+          <div style={{ display: "flex", gap: "4px" }}>
+            {(
+              [
+                { id: "all", label: "All Cohort" },
+                { id: "elevated", label: "🚨 At Risk / Exit" },
+                { id: "watch", label: "⚠️ Watch" },
+                { id: "healthy", label: "🟢 Healthy" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilter(tab.id)}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: "11.5px",
+                  fontWeight: filter === tab.id ? 700 : 500,
+                  background: filter === tab.id ? "var(--accent)" : "var(--surface)",
+                  color: filter === tab.id ? "#FFFFFF" : "var(--ink)",
+                  border: "1px solid var(--rule)",
+                  cursor: "pointer",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {isPending ? <p role="status">Loading trajectories…</p> : null}
       {error ? <ErrorNote error={error} /> : null}
       {data && data.length === 0 ? <p>No evaluations on record yet.</p> : null}
 
       <div className="trajectories-list">
-        {data?.map((employee) => {
+        {filteredEmployees.map((employee) => {
           const currentBand = getBandClass(employee.classification);
+          const history = employee.history || [];
+          const quarter = Math.ceil(employee.latest_week / 13);
+
           return (
             <article key={employee.name} className="trajectory-row">
               <div className="trajectory-row__person">
                 <h3 className="trajectory-row__name">{employee.name}</h3>
-                <span className="trajectory-row__meta">Latest Week {employee.latest_week}</span>
+                <span className="trajectory-row__meta">
+                  Latest Week {employee.latest_week} &bull; Q{quarter}
+                </span>
               </div>
 
               <ol
                 className="sparkline"
                 aria-label={`${employee.name}'s weekly assessments`}
               >
-                {employee.history.map((week) => {
+                {history.map((week) => {
                   const bandClass = getBandClass(week.classification);
+                  const wQuarter = Math.ceil(week.week / 13);
                   return (
                     <li key={week.week} className="sparkline__step">
                       <div className="sparkline__bar-wrap">
@@ -89,6 +161,7 @@ function TrajectoriesPanel() {
                           className={`bar bar--${bandClass}`}
                           style={{ height: `${Math.max(week.score * 4.6, 6)}px` }}
                           aria-hidden="true"
+                          title={`Week ${week.week} (Q${wQuarter}): ${week.classification} (Score ${week.score})`}
                         />
                       </div>
                       <span className="sparkline__label">
@@ -162,7 +235,7 @@ function EventLogPanel() {
           <tbody>
             {data.slice(0, 50).map((event, index) => (
               <tr key={index} className={event.success === false ? "row--failed" : ""}>
-                <td className="cell--mono">{event.timestamp || "—"}</td>
+                <td className="cell--mono" title={event.timestamp ?? ""}>{formatShortDateTime(event.timestamp)}</td>
                 <td>
                   {event.action || "—"}
                   {event.source ? ` / ${event.source}` : ""}

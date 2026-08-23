@@ -6,6 +6,7 @@
 // and the four classification bands from the redesign palette; anything outside
 // it still sees the old values, which is what keeps the migration incremental.
 
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
@@ -30,6 +31,15 @@ export function AppShell() {
 }
 
 function GlobalBanners() {
+  const [showConstraint, setShowConstraint] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowConstraint(false);
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const progress = useQuery({
     queryKey: ["run-progress"],
     queryFn: () => api.get<RunProgress>("/run/progress"),
@@ -63,19 +73,35 @@ function GlobalBanners() {
         </div>
       ) : null}
 
-      {/* Not an alert and not dismissible: it is a standing condition of using
-          the tool, so it renders as a ruled aside rather than a filled block.
-          The wording is asserted by tests -- it is the product's stated
-          position, not decoration. */}
-      <aside className="banner banner--constraint" aria-label="Use constraint">
-        <p className="banner__label">Use constraint</p>
-        <p className="banner__body">
-          This system compares each person only to their own earlier weeks. It does not rank
-          people, does not recommend disciplinary action, and must never be used to justify a
-          decision about someone&rsquo;s employment. Every assessment you open is written to the
-          access trail.
-        </p>
-      </aside>
+      {showConstraint ? (
+        <aside className="banner banner--constraint" aria-label="Use constraint">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p className="banner__label">Use constraint</p>
+            <button
+              type="button"
+              className="banner__close-btn"
+              onClick={() => setShowConstraint(false)}
+              aria-label="Dismiss use constraint"
+              style={{
+                background: "transparent",
+                border: "none",
+                fontSize: "12px",
+                cursor: "pointer",
+                color: "var(--muted)",
+                padding: "0 4px",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <p className="banner__body">
+            This system compares each person only to their own earlier weeks. It does not rank
+            people, does not recommend disciplinary action, and must never be used to justify a
+            decision about someone&rsquo;s employment. Every assessment you open is written to the
+            access trail.
+          </p>
+        </aside>
+      ) : null}
 
       {degraded ? (
         <div className="banner banner--degraded" role="status">

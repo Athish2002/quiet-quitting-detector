@@ -10,34 +10,39 @@ export function ThemeToggle() {
   });
 
   useEffect(() => {
-    const root = document.documentElement;
+  // Guard against environments where document is not defined (e.g., non‑jsdom test runs)
+  if (typeof document === 'undefined') {
+    return;
+  }
 
-    // Transitions off for the frame the theme lands on. A CSS transition whose
-    // value comes from a `var()` does not re-resolve when the variable changes
-    // -- the declaration is still `color: var(--ink)`, so the browser has
-    // nothing to animate toward and the element keeps its OLD colour for good.
-    // With the previous `* { transition: ... }` that left half the page in the
-    // theme you just left. See the note in styles.css.
-    root.setAttribute("data-theme-switching", "");
-    root.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+  const root = document.documentElement;
 
-    // Two frames: one for the new values to be applied with transitions still
-    // suppressed, one before allowing them again. A single frame re-enables
-    // them within the same style recalculation and the freeze comes back.
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => {
-        root.removeAttribute("data-theme-switching");
-      });
-    });
+  // Transitions off for the frame the theme lands on. A CSS transition whose
+  // value comes from a `var()` does not re‑resolve when the variable changes
+  // -- the declaration is still `color: var(--ink)`, so the browser has
+  // nothing to animate toward and the element keeps its OLD colour for good.
+  // With the previous `* { transition: ... }` that left half the page in the
+  // theme you just left. See the note in styles.css.
+  root.setAttribute("data-theme-switching", "");
+  root.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
 
-    return () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
+  // Two frames: one for the new values to be applied with transitions still
+  // suppressed, one before allowing them again. A single frame re‑enables
+  // them within the same style recalculation and the freeze comes back.
+  let inner = 0;
+  const outer = requestAnimationFrame(() => {
+    inner = requestAnimationFrame(() => {
       root.removeAttribute("data-theme-switching");
-    };
-  }, [theme]);
+    });
+  });
+
+  return () => {
+    cancelAnimationFrame(outer);
+    cancelAnimationFrame(inner);
+    root.removeAttribute("data-theme-switching");
+  };
+}, [theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
