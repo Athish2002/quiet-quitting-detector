@@ -1,4 +1,4 @@
-﻿// frontend/src/components/TelemetryPulseBar.tsx
+// frontend/src/components/TelemetryPulseBar.tsx
 //
 // Minimalist Telemetry Pulse Bar:
 // A sleek, modernist ambient status ribbon showing real-time baseline equilibrium
@@ -27,25 +27,39 @@ export function TelemetryPulseBar() {
 
         <div className="telemetry-pulse-bar__wave-container" aria-hidden="true">
           <svg
-            viewBox="0 0 400 20"
+            viewBox="0 0 320 20"
             className="telemetry-pulse-bar__wave-svg"
             preserveAspectRatio="none"
           >
-            <path
-              d="M 0 10 Q 50 2, 100 10 T 200 10 T 300 10 T 400 10"
-              fill="none"
-              stroke="var(--accent)"
-              strokeWidth="1.5"
-              className="telemetry-pulse-bar__wave-path"
-            />
+            <defs>
+              <linearGradient id="qqdPulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.2" />
+                <stop offset="50%" stopColor="var(--accent)" stopOpacity="1" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.2" />
+              </linearGradient>
+            </defs>
             <line
               x1="0"
               y1="10"
-              x2="400"
+              x2="320"
               y2="10"
               stroke="var(--rule)"
               strokeWidth="1"
-              strokeDasharray="3 3"
+              strokeDasharray="2 3"
+            />
+            <path
+              d="M 0 10 Q 40 2, 80 10 T 160 10 T 240 10 T 320 10"
+              fill="none"
+              stroke="url(#qqdPulseGrad)"
+              strokeWidth="2"
+              className="telemetry-pulse-bar__wave-path"
+            />
+            <circle
+              cx="0"
+              cy="10"
+              r="3.5"
+              fill="var(--accent)"
+              className="telemetry-pulse-bar__pulse-dot"
             />
           </svg>
         </div>

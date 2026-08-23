@@ -80,15 +80,15 @@ export function TelemetryConstellation() {
           const dx = ni.x - nj.x;
           const dy = ni.y - nj.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 125;
+          const maxDist = 135;
 
           if (dist < maxDist) {
-            const lineAlpha = (1 - dist / maxDist) * (dark ? 0.15 : 0.08);
+            const lineAlpha = (1 - dist / maxDist) * (dark ? 0.16 : 0.14);
             ctx.beginPath();
             ctx.moveTo(ni.x, ni.y);
             ctx.lineTo(nj.x, nj.y);
             ctx.strokeStyle = `rgba(${dotColor}, ${lineAlpha})`;
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = dark ? 0.8 : 1.0;
             ctx.stroke();
           }
         }
@@ -114,17 +114,17 @@ export function TelemetryConstellation() {
         node.radius = node.baseRadius + Math.sin(node.pulsePhase) * 0.6;
 
         // Draw outer glow ring for selected pulse nodes
-        if (i % 4 === 0) {
+        if (i % 3 === 0) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.radius * 2.8, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${accentColor}, ${dark ? 0.06 : 0.03})`;
+          ctx.fillStyle = `rgba(${accentColor}, ${dark ? 0.08 : 0.06})`;
           ctx.fill();
         }
 
         // Draw core particle
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${i % 3 === 0 ? accentColor : dotColor}, ${node.alpha})`;
+        ctx.fillStyle = `rgba(${i % 3 === 0 ? accentColor : dotColor}, ${dark ? node.alpha : Math.max(0.4, node.alpha)})`;
         ctx.fill();
       }
 

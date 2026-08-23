@@ -3657,7 +3657,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .telemetry-pulse-bar__wave-container {
   flex: 1;
   max-width: 380px;
-  height: 18px;
+  height: 20px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -3666,6 +3666,57 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .telemetry-pulse-bar__wave-svg {
   width: 100%;
   height: 100%;
+}
+
+.telemetry-pulse-bar__wave-path {
+  stroke-dasharray: 20 6;
+  animation: qqd-telemetry-flow 3s linear infinite;
+}
+
+@keyframes qqd-telemetry-flow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -52;
+  }
+}
+
+.telemetry-pulse-bar__pulse-dot {
+  animation: qqd-dot-sweep 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+@keyframes qqd-dot-sweep {
+  0% {
+    cx: 0px;
+    cy: 10px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    cx: 80px;
+    cy: 3px;
+  }
+  50% {
+    cx: 160px;
+    cy: 17px;
+    opacity: 1;
+  }
+  75% {
+    cx: 240px;
+    cy: 3px;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    cx: 320px;
+    cy: 10px;
+    opacity: 0;
+  }
 }
 
 .telemetry-pulse-bar__metric {
