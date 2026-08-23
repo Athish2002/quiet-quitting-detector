@@ -3554,5 +3554,98 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ==========================================================================
+   Telemetry Equilibrium Pulse Ribbon
+   ========================================================================== */
+
+.telemetry-pulse-bar {
+  display: block;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  padding: 6px 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 12px;
+}
+
+.telemetry-pulse-bar--active {
+  border-bottom-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.telemetry-pulse-bar__inner {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+  gap: 1rem;
+}
+
+.telemetry-pulse-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.telemetry-pulse-bar__beacon {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  display: inline-block;
+  box-shadow: 0 0 6px var(--ok);
+  animation: qqd-beacon-breathe 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes qqd-beacon-breathe {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 10px var(--ok);
+  }
+}
+
+.telemetry-pulse-bar__label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.telemetry-pulse-bar__badge {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+}
+
+.telemetry-pulse-bar__wave-container {
+  flex: 1;
+  max-width: 380px;
+  height: 18px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.telemetry-pulse-bar__wave-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.telemetry-pulse-bar__metric {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
 
 

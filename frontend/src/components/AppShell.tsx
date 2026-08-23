@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { ProviderStatus, RunProgress } from "../api/types";
 import { Sidebar } from "./Sidebar";
+import { TelemetryPulseBar } from "./TelemetryPulseBar";
 
 export function AppShell() {
   return (
@@ -23,6 +24,7 @@ export function AppShell() {
       </a>
       <Sidebar />
       <main className="app-main" id="main-content">
+        <TelemetryPulseBar />
         <GlobalBanners />
         <Outlet />
       </main>
