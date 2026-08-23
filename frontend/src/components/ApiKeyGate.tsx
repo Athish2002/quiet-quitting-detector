@@ -222,10 +222,10 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
 
         <div style={{ marginTop: "1.75rem", paddingTop: "1.25rem", borderTop: "1px solid var(--rule)", textAlign: "center" }}>
           <p style={{ margin: "0 0 6px", fontSize: "12px", fontWeight: 700, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            <span>🔒</span> Secure Access & Privacy Guardrails
+            <span>🔒</span> Privacy &amp; Ethical Guardrails Active
           </p>
           <p style={{ margin: 0, fontSize: "11.5px", color: "var(--muted)", lineHeight: "1.5" }}>
-            Direct role authentication active. Enterprise production deployments support Single Sign-On (OAuth 2.0 / OIDC, SAML 2.0, Okta, Google Workspace).
+            Direct persona authentication enabled. Evaluates self-referential divergence with zero keystroke or chat surveillance.
           </p>
         </div>
       </main>
