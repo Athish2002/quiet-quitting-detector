@@ -12,6 +12,7 @@ import {
   AUTH_FAILED_EVENT,
   clearApiKey,
   getApiKey,
+  isDemo,
   setApiKey,
 } from "../api/client";
 import {
@@ -36,6 +37,16 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   const [rejected, setRejected] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const { role, setRole } = useRole();
+
+  // In demo mode, auto-authenticate so the user lands directly in the app
+  useEffect(() => {
+    if (isDemo() && !key) {
+      setApiKey("demo-mode-key");
+      setRoleStorage("analyst");
+      setRole("analyst");
+      setKey("demo-mode-key");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRoleChange = (newRole: Role) => {
     setSelectedRole(newRole);

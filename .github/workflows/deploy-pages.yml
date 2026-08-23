@@ -50,6 +50,9 @@ jobs:
 
       - name: Build Web Application
         working-directory: frontend
+        env:
+          VITE_DEMO_MODE: "true"
+          VITE_BASE_PATH: "/quiet-quitting-detector/"
         run: npm run build
 
       - name: Setup Pages

@@ -1,4 +1,5 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Route, BrowserRouter, HashRouter, Routes } from "react-router-dom";
+import { isDemo } from "./api/client";
 import { AppShell } from "./components/AppShell";
 import { ApiKeyGate } from "./components/ApiKeyGate";
 import { RoleProvider, useRole } from "./contexts/RoleContext";
@@ -58,6 +59,7 @@ function ProtectedRoute({
 }
 
 export function App() {
+  const Router = isDemo() ? HashRouter : BrowserRouter;
   return (
     <Router>
       <RoleProvider>

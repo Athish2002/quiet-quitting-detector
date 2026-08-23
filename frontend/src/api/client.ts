@@ -13,8 +13,22 @@
 // one paste per session and removes a whole class of "I forgot I was logged in"
 // problem.
 
+import { demoResolve } from "./demoApi";
+
 const API_ROOT = "/api/v1";
 const STORAGE_KEY = "qqd.apiKey";
+
+/**
+ * True when the app is running as a static demo (GitHub Pages or explicit env).
+ * In demo mode, all API calls are resolved by the in-browser mock.
+ */
+export function isDemo(): boolean {
+  // Build-time flag set by CI
+  if (import.meta.env.VITE_DEMO_MODE === "true") return true;
+  // Runtime detection: running on github.io
+  if (typeof window !== "undefined" && window.location.hostname.endsWith("github.io")) return true;
+  return false;
+}
 
 export class ApiError extends Error {
   readonly status: number;
@@ -82,6 +96,13 @@ export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
+  // Demo mode: resolve from in-browser mock, no network call.
+  if (isDemo()) {
+    const method = init.method ?? "GET";
+    const body = init.body ? JSON.parse(init.body as string) : undefined;
+    return demoResolve(method, path, body) as T;
+  }
+
   const key = getApiKey();
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
