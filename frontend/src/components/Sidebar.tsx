@@ -45,18 +45,24 @@ export function Sidebar() {
   const queryClient = useQueryClient();
   const { role, hasAccess } = useRole();
 
+  const isEmployee = role === "employee";
+  const isManager = role === "manager";
+  const isAnalyst = role === "analyst";
+
   // Polls only while a run is in flight. The prototype stepped through subjects
   // on a 340ms timer; this reads real progress, so the bar cannot claim to be
   // further along than the backend is.
   const progress = useQuery({
     queryKey: ["run-progress"],
     queryFn: () => api.get<RunProgress>("/run/progress"),
+    enabled: isAnalyst,
     refetchInterval: (query) => (query.state.data?.running ? 800 : false),
   });
 
   const providers = useQuery({
     queryKey: ["provider-status"],
     queryFn: () => api.get<ProviderStatus>("/models/status"),
+    enabled: isAnalyst,
   });
 
   const run = useMutation({
@@ -69,9 +75,6 @@ export function Sidebar() {
 
   const running = progress.data?.running === true;
   const degraded = providers.data?.local_only_mode === true;
-
-  const isEmployee = role === "employee";
-  const isManager = role === "manager";
 
   const beforeItems = isEmployee
     ? [{ to: "/", label: "My Wellbeing", end: true, section: "my-wellbeing" }]

@@ -11,6 +11,7 @@ import { Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type { ProviderStatus, RunProgress } from "../api/types";
+import { useRole } from "../contexts/RoleContext";
 import { Sidebar } from "./Sidebar";
 import { TelemetryPulseBar } from "./TelemetryPulseBar";
 
@@ -34,6 +35,8 @@ export function AppShell() {
 
 function GlobalBanners() {
   const [showConstraint, setShowConstraint] = useState(true);
+  const { role } = useRole();
+  const isAnalyst = role === "analyst";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,11 +48,13 @@ function GlobalBanners() {
   const progress = useQuery({
     queryKey: ["run-progress"],
     queryFn: () => api.get<RunProgress>("/run/progress"),
+    enabled: isAnalyst,
     refetchInterval: (query) => (query.state.data?.running ? 800 : false),
   });
   const providers = useQuery({
     queryKey: ["provider-status"],
     queryFn: () => api.get<ProviderStatus>("/models/status"),
+    enabled: isAnalyst,
   });
 
   const run = progress.data;
