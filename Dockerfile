@@ -57,6 +57,8 @@ USER appuser
 
 ENV PATH="/code/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
+    PYTHONOPTIMIZE=1 \
+    MALLOC_TRIM_THRESHOLD_=65536 \
     PORT=8080
 
 ARG COMMIT_SHA=""
@@ -67,4 +69,4 @@ ENV AGENT_VERSION=${AGENT_VERSION}
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1 --limit-concurrency 50 --no-access-log"]

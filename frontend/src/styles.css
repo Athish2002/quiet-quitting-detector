@@ -207,25 +207,31 @@
  * computed colour. Permanently -- not for the duration of the transition.
  *
  * Measured: with transitions on, clicking the toggle flipped `data-theme` and
- * left `.theme-toggle` at rgb(15,23,42) and every table header at the light
- * tint, indefinitely. With transitions off, both resolved correctly. Because
- * the original rule was `* { transition: ... }`, that applied to every element
- * on the page, so a theme switch produced a half-light, half-dark UI.
- *
- * The fix is to turn transitions off for the instant the theme attribute
- * changes (ThemeToggle sets `data-theme-switching` for one frame), which lets
- * the new values apply directly. Hover and focus still ease, because those
- * swap in a different RULE rather than changing a variable underneath. */
-[data-theme-switching],
-[data-theme-switching] *,
-[data-theme-switching] *::before,
-[data-theme-switching] *::after {
-  transition: none !important;
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SMOOTH THEME TRANSITIONS (Dark <-> Light)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+html,
+body,
+.app-shell,
+.gate-wrapper,
+.gate,
+.gate__role-card,
+.sidebar,
+.sidebar__brand,
+.sidebar__user,
+.sidebar__nav-item,
+.card,
+.modern-table,
+.modern-table th,
+.modern-table td,
+.callout,
+.section-header,
+.stat-numeral,
+.metric-row,
+.theme-toggle {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Scoped to elements that actually carry a themed surface rather than applied
- * with `*`, and `transform` is included: it was missing, so hover lifts
- * snapped while their shadows eased over 300ms. */
 body,
 .header-glass,
 .panel,

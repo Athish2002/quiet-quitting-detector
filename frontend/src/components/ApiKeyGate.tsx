@@ -22,6 +22,7 @@ import {
   useRole,
 } from "../contexts/RoleContext";
 import { BrandSymbol } from "./BrandSymbol";
+import { ThemeToggle } from "./ThemeToggle";
 
 const DEV_KEYS: Record<Role, string> = {
   analyst: "qqd-dev-key-admin-local-32bytes",
@@ -82,6 +83,9 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="gate-wrapper">
+      <div style={{ position: "absolute", top: "1.5rem", right: "1.5rem", zIndex: 10 }}>
+        <ThemeToggle />
+      </div>
       <main className="gate gate-card-animated">
         <div className="gate__brand" style={{ textAlign: "center", marginBottom: "1.75rem" }}>
           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "12px", cursor: "pointer" }}>

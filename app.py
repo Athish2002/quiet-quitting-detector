@@ -203,6 +203,9 @@ else:
             "</body></html>"
         )
 
+# Reclaim temporary import memory immediately after assembly
+import gc
+gc.collect()
 
 if __name__ == "__main__":
     import uvicorn

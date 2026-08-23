@@ -7,6 +7,16 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Quiet-Quitting Detector</title>
     <script type="text/javascript">
+      // Prevent Flash of Light Theme (FOUC) on initial load:
+      (function() {
+        try {
+          var saved = localStorage.getItem("theme");
+          var prefDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var theme = (saved === "dark" || saved === "light") ? saved : (prefDark ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {}
+      })();
+
       // GitHub Pages SPA path restoration
       (function(l) {
         if (l.search[1] === '/' ) {
