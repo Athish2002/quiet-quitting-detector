@@ -1,73 +1,97 @@
 /* Glassmorphism Theme System – Quiet-Quitting Detector */
 
 :root {
-  /* Light Mode Variables */
-  --bg-gradient: radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.6) 0px, transparent 50%),
-                  radial-gradient(at 100% 0%, rgba(224, 231, 255, 0.5) 0px, transparent 50%),
-                  radial-gradient(at 50% 100%, rgba(236, 253, 245, 0.5) 0px, transparent 50%),
-                  #f8fafc;
-  --bg: #f8fafc;
-  /* Glassmorphism variables removed */
-  
+  /* Light Mode Master Palette (Modernist Swiss Standards) */
+  --paper: #f8fafc;
+  --surface: #ffffff;
   --ink: #0f172a;
   --muted: #475569;
+  --rule: #e2e8f0;
+  --accent: #0284c7;
+  --accent-bg: #f0f9ff;
+  --accent-hover: #0369a1;
+  --accent-active: #075985;
+
+  --healthy: #16a34a;
+  --healthy-bg: #f0fdf4;
+  --watch: #d97706;
+  --watch-bg: #fffbeb;
+  --at-risk: #ea580c;
+  --at-risk-bg: #fff7ed;
+  --exit: #dc2626;
+  --exit-bg: #fef2f2;
+
+  --bg-gradient: radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.05) 0px, transparent 50%),
+                  radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
+                  #f8fafc;
+  --bg: #f8fafc;
+  
   --line: rgba(203, 213, 225, 0.8);
   
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-glow: rgba(37, 99, 235, 0.25);
-  --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
-  /* Darker than --primary: this one lands on a pale tint as small bold text,
-     where #2563eb measured 4.33:1 -- just under AA. */
-  --brand-highlight: #1d4ed8;
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-glow: rgba(2, 132, 199, 0.25);
+  --primary-gradient: linear-gradient(135deg, #0284c7, #0369a1);
+  --brand-highlight: #0369a1;
 
   --alert: #dc2626;
-  --alert-bg: rgba(254, 242, 242, 0.9);
+  --alert-bg: #fef2f2;
   --alert-border: rgba(248, 113, 113, 0.5);
   
-  --caveat-bg: rgba(254, 252, 232, 0.9);
+  --caveat-bg: #fffbeb;
   --caveat-border: rgba(234, 179, 8, 0.5);
   --caveat-ink: #854d0e;
 
   --ok: #166534;
-  --ok-bg: rgba(240, 253, 244, 0.9);
+  --ok-bg: #f0fdf4;
   --ok-border: rgba(74, 222, 128, 0.5);
 
-  /* "At Risk" sits between caveat and alert and needs its own pair, not a
-     hardcoded orange: the literal that was here stayed pale in dark mode. */
   --warn: #c2410c;
-  --warn-bg: rgba(254, 215, 170, 0.55);
+  --warn-bg: #fff7ed;
   --warn-border: rgba(249, 115, 22, 0.5);
 
-  /* Tints layered OVER the glass. Every one of these used to be a white
-     rgba(255,255,255,0.06), which is invisible on a light surface -- table
-     headers, row hover and nav hover all did nothing in light mode. */
-  --hover-tint: rgba(15, 23, 42, 0.05);
-  --surface-raised: rgba(15, 23, 42, 0.04);
-  --accent-tint: rgba(37, 99, 235, 0.12);
-  --accent-tint-border: rgba(37, 99, 235, 0.25);
+  --hover-tint: rgba(15, 23, 42, 0.04);
+  --surface-raised: rgba(15, 23, 42, 0.03);
+  --accent-tint: rgba(2, 132, 199, 0.1);
+  --accent-tint-border: rgba(2, 132, 199, 0.25);
 
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  /* Dark Mode Variables with High Contrast & Smooth Tones */
+  /* Dark Mode Master Palette (Modernist Swiss Standards) */
+  --paper: #0b0f19;
+  --surface: #111827;
+  --ink: #f8fafc;
+  --muted: #94a3b8;
+  --rule: #1e293b;
+  --accent: #38bdf8;
+  --accent-bg: #0c4a6e;
+  --accent-hover: #7dd3fc;
+  --accent-active: #bae6fd;
+
+  --healthy: #4ade80;
+  --healthy-bg: #14532d;
+  --watch: #fbbf24;
+  --watch-bg: #78350f;
+  --at-risk: #fb923c;
+  --at-risk-bg: #7c2d12;
+  --exit: #f87171;
+  --exit-bg: #7f1d1d;
+
   --bg-gradient: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.3) 0px, transparent 50%),
                   radial-gradient(at 100% 0%, rgba(88, 28, 135, 0.2) 0px, transparent 50%),
                   radial-gradient(at 50% 100%, rgba(13, 148, 136, 0.15) 0px, transparent 50%),
                   #0b0f19;
   --bg: #0b0f19;
-  /* Dark glass variables removed */
   
-  --ink: #f8fafc;
-  --muted: #cbd5e1; /* High contrast text for dark mode */
   --line: rgba(71, 85, 105, 0.65);
 
-  --primary: #3b82f6;
-  --primary-hover: #60a5fa;
-  --primary-glow: rgba(59, 130, 246, 0.35);
-  --primary-gradient: linear-gradient(135deg, #3b82f6, #2563eb);
-  --brand-highlight: #60a5fa;
+  --primary: #38bdf8;
+  --primary-hover: #7dd3fc;
+  --primary-glow: rgba(56, 189, 248, 0.35);
+  --primary-gradient: linear-gradient(135deg, #38bdf8, #0284c7);
+  --brand-highlight: #7dd3fc;
 
   --alert: #f87171;
   --alert-bg: rgba(127, 29, 29, 0.55);
@@ -87,8 +111,8 @@
 
   --hover-tint: rgba(255, 255, 255, 0.07);
   --surface-raised: rgba(255, 255, 255, 0.05);
-  --accent-tint: rgba(96, 165, 250, 0.16);
-  --accent-tint-border: rgba(96, 165, 250, 0.32);
+  --accent-tint: rgba(56, 189, 248, 0.16);
+  --accent-tint-border: rgba(56, 189, 248, 0.32);
 
   color-scheme: dark;
 }

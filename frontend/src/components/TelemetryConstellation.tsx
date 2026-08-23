@@ -17,7 +17,12 @@ export function TelemetryConstellation() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    let ctx: CanvasRenderingContext2D | null = null;
+    try {
+      ctx = canvas.getContext ? canvas.getContext("2d") : null;
+    } catch {
+      return;
+    }
     if (!ctx) return;
 
     let animId: number;
