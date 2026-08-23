@@ -6,17 +6,23 @@ from __future__ import annotations
 import json
 import logging
 import os
+from glob import glob
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
 
+from src.api.paths import (
+    MEMORY_DIR,
+    REALTIME_MEMORY_DIR,
+    SIMULATOR_MEMORY_DIR,
+    WEEKLY_DIR,
+)
 from src.api.schemas import ApiCounters, AppSettings, ProviderStatus
 from src.app_utils.audit_log import log_event
 from src.app_utils.runner_helper import get_model_status, metrics_file
 from src.app_utils.settings import (
     get_persisted_settings,
     is_local_only_mode,
-    set_local_only_mode,
     update_settings,
 )
 
@@ -171,16 +177,12 @@ def get_audit_log(limit: int = 100) -> list[dict]:
 @router.post("/reset", summary="Reset all telemetry and memory to pristine fresh startup")
 def reset_server_data() -> dict:
     """Wipes all weekly CSVs and memory JSON files, leaving the server blank."""
-    import glob
-    from src.api.paths import WEEKLY_DIR, MEMORY_DIR, REALTIME_MEMORY_DIR, SIMULATOR_MEMORY_DIR
     for d in (WEEKLY_DIR, MEMORY_DIR, REALTIME_MEMORY_DIR, SIMULATOR_MEMORY_DIR):
         if os.path.exists(d):
-            for f in glob.glob(os.path.join(d, "*.*")):
+            for f in glob(os.path.join(d, "*.*")):
                 try:
                     os.remove(f)
                 except Exception:
                     pass
     log_event("server_reset", "system", "Server reset to fresh startup state (0 records).")
     return {"success": True, "message": "Server state reset to pristine blank startup."}
-
-

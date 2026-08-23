@@ -95,13 +95,6 @@ def score_custom_employee(data: CustomEvaluatorInput) -> dict:
         "weekly_hours": data.weekly_hours,
     })
 
-    current_week_metrics = {
-        "completed_tasks": data.tasks_completed,
-        "response_time": data.avg_response_time,
-        "after_hours_logins": data.after_hours_logins,
-        "weekly_hours": data.weekly_hours,
-    }
-
     try:
         signals = detect_trends(
             name,
@@ -273,7 +266,7 @@ def _write_week(week: int, profiles: dict[str, str], rng: random.Random) -> None
             base = _BASE_SCORES.get(archetype, {}).get(min(week, 3), 1)
             score = max(1, min(10, base + rng.randint(-1, 1)))
             classification, rationale = _classify_mock(score, tasks, response, hours)
-            
+
             task_delta = min(1.0, max(0.05, round((25 - tasks) / 25.0, 2))) if tasks < 20 else 0.05
             resp_delta = min(1.0, max(0.05, round((response - 1.5) / 10.0, 2))) if response > 1.5 else 0.05
             hours_delta = min(1.0, max(0.05, round(abs(hours - 40) / 40.0, 2)))
