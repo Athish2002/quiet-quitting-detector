@@ -5,7 +5,6 @@ import type { EmployeeSummary, BriefingView, Attribution, EmployeeWeek } from '.
 export function generateEmployee(): EmployeeSummary {
   const name = `${faker.person.firstName()} ${faker.person.lastName()}`;
   const score = faker.number.int({ min: 1, max: 10 });
-  const classifications = ['Healthy', 'Watch', 'At Risk', 'Silent Exit'] as const;
   const classification: "Healthy" | "Watch" | "At Risk" | "Silent Exit" =
     score >= 9 ? 'Silent Exit' : score >= 7 ? 'At Risk' : score >= 4 ? 'Watch' : 'Healthy';
   const confidenceLevels = ['high', 'moderate', 'low'] as const;
