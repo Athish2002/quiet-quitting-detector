@@ -3576,7 +3576,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .telemetry-pulse-bar__inner {
   display: flex;
   align-items: center;
-  justifyContent: space-between;
+  justify-content: space-between;
   gap: 1rem;
 }
 

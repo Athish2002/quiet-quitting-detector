@@ -12,7 +12,6 @@ import {
   AUTH_FAILED_EVENT,
   clearApiKey,
   getApiKey,
-  isDemo,
   setApiKey,
 } from "../api/client";
 import {
