@@ -356,11 +356,16 @@ export function EmployeePortal() {
 
         {/* Right Column: Personal Trajectory & Wellbeing Guide */}
         <section className="portal-card" aria-labelledby="trajectory-card-title" style={{ background: "var(--surface)", border: "1px solid var(--rule)", padding: "1.5rem" }}>
-          <h2 id="trajectory-card-title" style={{ margin: "0 0 4px", fontSize: "18px", fontFamily: "var(--font-heading)", color: "var(--ink)" }}>
-            Personal Trajectory & Rest Guidance
-          </h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+            <h2 id="trajectory-card-title" style={{ margin: 0, fontSize: "18px", fontFamily: "var(--font-heading)", color: "var(--ink)" }}>
+              Personal Trajectory & Rest Guidance
+            </h2>
+            <span style={{ fontSize: "11px", padding: "2px 8px", background: "var(--healthy-bg)", color: "var(--healthy)", border: "1px solid var(--healthy)", fontWeight: 600 }}>
+              100% Private to You
+            </span>
+          </div>
           <p style={{ margin: "0 0 1.25rem", fontSize: "13px", color: "var(--muted)" }}>
-            Self-baseline history tracked over trailing weeks.
+            Evaluated solely against your rolling personal baseline.
           </p>
 
           {myData?.history && myData.history.length > 0 ? (
@@ -386,28 +391,40 @@ export function EmployeePortal() {
             </p>
           )}
 
-          <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "0 0 8px" }}>
-            Mindful Working Tips
-          </h3>
-          <ul style={{ margin: 0, paddingLeft: "1.2rem", fontSize: "13px", lineHeight: "1.6", color: "var(--ink)", marginBottom: "1.25rem" }}>
-            <li>Protect a daily 2-hour uninterrupted focus block with notifications silenced.</li>
-            <li>Take a 5-minute movement break every 90 minutes of focused screen time.</li>
-            <li>Log off work channels after evening hours to allow your cognitive load to reset.</li>
-          </ul>
+          {/* Dynamic Boundary & Self-Advocacy Card */}
+          <div style={{ background: "var(--paper)", borderLeft: "3px solid var(--accent)", padding: "12px 14px", marginBottom: "1.25rem" }}>
+            <h3 style={{ margin: "0 0 6px", fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--accent)", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>🌱</span> Proactive Workload Pacing Recommendation
+            </h3>
+            <p style={{ margin: 0, fontSize: "13px", lineHeight: "1.55", color: "var(--ink)" }}>
+              {afterHoursLogins > 2 || weeklyHours > 45
+                ? "Your after-hours sessions have climbed above your typical rhythm. We recommend setting a hard evening disconnect at 6:30 PM and discussing task descope with your lead."
+                : avgResponseTime > 5
+                ? "Communication latency is elevated. Protect your uninterrupted focus blocks and remind your team of your 24-hour async response window."
+                : "Your workload rhythm is balanced. Keep protecting your recovery boundaries and focus blocks."}
+            </p>
+          </div>
 
           <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "0 0 8px" }}>
-            Self-Care Checklist
+            Personal Wellbeing Boundaries
           </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--ink)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", color: "var(--ink)", marginBottom: "1.25rem" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input type="checkbox" defaultChecked /> Adequate hydration throughout the day
+              <input type="checkbox" defaultChecked /> Daily 2-hour uninterrupted focus block
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input type="checkbox" /> Took at least 30 mins away from screen for lunch
+              <input type="checkbox" defaultChecked /> Pencils-down evening disconnect (no work chat after 6:30 PM)
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-              <input type="checkbox" /> Shut down work notifications for evening rest
+              <input type="checkbox" /> 30-minute screen-free midday reset
             </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <input type="checkbox" /> 5-minute movement break every 90 minutes
+            </label>
+          </div>
+
+          <div style={{ padding: "10px 12px", background: "var(--paper)", border: "1px solid var(--rule)", fontSize: "12px", color: "var(--muted)", lineHeight: "1.5" }}>
+            🛡️ <strong>Zero-Surveillance Guarantee:</strong> Your individual reflection notes are never shared with managers or HR. Only non-punitive, supportive conversation prompts are provided.
           </div>
         </section>
       </div>

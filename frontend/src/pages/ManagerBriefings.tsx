@@ -21,6 +21,7 @@ import type { EmployeeSummary } from "../api/types";
 
 export function ManagerBriefings() {
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const employees = useQuery({
     queryKey: ["employees"],
@@ -98,63 +99,132 @@ export function ManagerBriefings() {
 
           {/* Right Column: Supportive 1-on-1 Guidance Card */}
           <main className="briefing-card" style={{ background: "var(--surface)", border: "1px solid var(--rule)", padding: "1.5rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--rule)", paddingBottom: "1rem", marginBottom: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--rule)", paddingBottom: "1rem", marginBottom: "1.25rem", flexWrap: "wrap", gap: "10px" }}>
               <div>
-                <h2 style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: "20px", color: "var(--ink)" }}>
-                  1-on-1 Check-in Guide: {activeEmployee.name}
-                </h2>
-                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--muted)" }}>
-                  Personalized to {activeEmployee.name}&rsquo;s recent trajectory and baseline deviations.
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                  <h2 style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: "20px", color: "var(--ink)" }}>
+                    1-on-1 Check-in Guide: {activeEmployee.name}
+                  </h2>
+                  <span style={{ fontSize: "11px", padding: "2px 8px", background: "var(--healthy-bg)", color: "var(--healthy)", border: "1px solid var(--healthy)", fontWeight: 600 }}>
+                    Psychological Safety Guardrails Active
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--muted)" }}>
+                  COACH Framework · Personalized to {activeEmployee.name}&rsquo;s baseline trajectory.
                 </p>
               </div>
-              <Link to={`/person/${encodeURIComponent(activeEmployee.name)}`} className="btn btn--secondary" style={{ fontSize: "12px", padding: "4px 8px" }}>
-                View full profile &rarr;
-              </Link>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = [
+                      `# 1-on-1 Supportive Wellbeing Check-In: ${activeEmployee.name}`,
+                      `Framework: COACH (Connect • Observe • Ask • Collaborate • Help)`,
+                      `Evaluation Mode: Non-punitive personal baseline assessment\n`,
+                      `## 🔍 Context Summary`,
+                      `${personalized.contextSummary}\n`,
+                      `## 💬 Suggested Empathetic Starters`,
+                      ...personalized.conversationStarters.map((s) => `- ${s}`),
+                      `\n## ⚠️ Anti-Patterns to Avoid`,
+                      ...personalized.thingsToAvoid.map((a) => `- [AVOID] ${a}`),
+                      `\n## 🤝 Actionable Support Steps`,
+                      ...personalized.recommendedSupportSteps.map((st) => `- ${st.title}: ${st.desc}`),
+                    ].join("\n");
+
+                    void navigator.clipboard.writeText(text);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2500);
+                  }}
+                  className="btn btn--secondary"
+                  style={{
+                    fontSize: "12px",
+                    padding: "6px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    background: copied ? "var(--healthy-bg)" : "var(--paper)",
+                    borderColor: copied ? "var(--healthy)" : "var(--rule)",
+                    color: copied ? "var(--healthy)" : "var(--ink)",
+                    fontWeight: 600,
+                  }}
+                  title="Copy formatted 1-on-1 meeting guide for your agenda"
+                >
+                  <span>{copied ? "✓ Copied Guide!" : "📋 Copy Meeting Plan"}</span>
+                </button>
+                <Link to={`/person/${encodeURIComponent(activeEmployee.name)}`} className="btn btn--secondary" style={{ fontSize: "12px", padding: "6px 10px" }}>
+                  Full Profile &rarr;
+                </Link>
+              </div>
+            </div>
+
+            {/* COACH Workflow Bar */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "1.5rem", textAlign: "center", fontSize: "11px" }}>
+              <div style={{ padding: "6px", background: "var(--paper)", border: "1px solid var(--rule)" }}>
+                <strong style={{ display: "block", color: "var(--accent)" }}>1. Connect</strong>
+                <span style={{ color: "var(--muted)" }}>Check-in first</span>
+              </div>
+              <div style={{ padding: "6px", background: "var(--paper)", border: "1px solid var(--rule)" }}>
+                <strong style={{ display: "block", color: "var(--accent)" }}>2. Observe</strong>
+                <span style={{ color: "var(--muted)" }}>Share context</span>
+              </div>
+              <div style={{ padding: "6px", background: "var(--paper)", border: "1px solid var(--rule)" }}>
+                <strong style={{ display: "block", color: "var(--accent)" }}>3. Ask</strong>
+                <span style={{ color: "var(--muted)" }}>Open dialogue</span>
+              </div>
+              <div style={{ padding: "6px", background: "var(--paper)", border: "1px solid var(--rule)" }}>
+                <strong style={{ display: "block", color: "var(--accent)" }}>4. Collaborate</strong>
+                <span style={{ color: "var(--muted)" }}>Unblock scope</span>
+              </div>
+              <div style={{ padding: "6px", background: "var(--paper)", border: "1px solid var(--rule)" }}>
+                <strong style={{ display: "block", color: "var(--accent)" }}>5. Help</strong>
+                <span style={{ color: "var(--muted)" }}>Protect rest</span>
+              </div>
             </div>
 
             {/* Wellbeing Observation */}
             <section style={{ marginBottom: "1.5rem" }}>
               <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "0 0 6px" }}>
-                Tailored Behavioral Context
+                Observed Behavioral Context
               </h3>
               <div style={{ background: "var(--paper)", borderLeft: "3px solid var(--accent)", padding: "12px 14px", fontSize: "14px", lineHeight: "1.6", color: "var(--ink)" }}>
                 {personalized.contextSummary}
               </div>
             </section>
 
-            {/* Recommended 1-on-1 Conversation Starters */}
-            <section style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--healthy)", margin: "0 0 8px" }}>
-                Suggested Conversation Starters
-              </h3>
-              <p style={{ margin: "0 0 10px", fontSize: "12.5px", color: "var(--muted)" }}>
-                Personalized conversation prompts tailored to {activeEmployee.name}&rsquo;s specific rhythm:
-              </p>
-              <ul style={{ margin: 0, paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13.5px", lineHeight: "1.6", color: "var(--ink)" }}>
-                {personalized.conversationStarters.map((starter, idx) => (
-                  <li key={idx}>
-                    <em>{starter}</em>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {/* DO vs DONT Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
+              {/* Recommended 1-on-1 Conversation Starters */}
+              <section style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderTop: "3px solid var(--healthy)", padding: "12px 14px" }}>
+                <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--healthy)", margin: "0 0 8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>✓</span> Empathetic Conversation Starters (DO)
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: "1.1rem", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", lineHeight: "1.55", color: "var(--ink)" }}>
+                  {personalized.conversationStarters.map((starter, idx) => (
+                    <li key={idx}>
+                      <em>{starter}</em>
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-            {/* Things to Avoid */}
-            <section style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--exit)", margin: "0 0 8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span>⚠️</span> Demotivating Traps to Avoid with {activeEmployee.name}
-              </h3>
-              <ul style={{ margin: 0, paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--ink)" }}>
-                {personalized.thingsToAvoid.map((avoid, idx) => (
-                  <li key={idx}>{avoid}</li>
-                ))}
-              </ul>
-            </section>
+              {/* Things to Avoid */}
+              <section style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderTop: "3px solid var(--exit)", padding: "12px 14px" }}>
+                <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--exit)", margin: "0 0 8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>⚠️</span> Demotivating Traps (DON&rsquo;T)
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: "1.1rem", display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", lineHeight: "1.5", color: "var(--ink)" }}>
+                  {personalized.thingsToAvoid.map((avoid, idx) => (
+                    <li key={idx}>{avoid}</li>
+                  ))}
+                </ul>
+              </section>
+            </div>
 
             {/* Recommended Actions */}
             <section>
               <h3 style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "0 0 8px" }}>
-                Constructive Wellbeing Interventions
+                Concrete Support & Rebalancing Actions
               </h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
                 {personalized.recommendedSupportSteps.map((step, idx) => (

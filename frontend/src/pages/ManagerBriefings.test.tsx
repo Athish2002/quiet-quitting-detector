@@ -73,8 +73,9 @@ describe("ManagerBriefings", () => {
       expect(screen.getByText("1-on-1 Check-in Guide: Ade")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Suggested Conversation Starters")).toBeInTheDocument();
-    expect(screen.getByText("Constructive Wellbeing Interventions")).toBeInTheDocument();
+    expect(screen.getByText(/Empathetic Conversation Starters/i)).toBeInTheDocument();
+    expect(screen.getByText(/Concrete Support & Rebalancing Actions/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Copy Meeting Plan/i })).toBeInTheDocument();
 
     // Switch to Priya
     const priyaBtn = screen.getByRole("button", { name: /Priya/i });
