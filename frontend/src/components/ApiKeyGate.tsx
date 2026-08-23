@@ -156,8 +156,24 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
           <button
             type="submit"
             className="btn btn--primary gate__submit-btn"
+            style={{
+              background: "#2563eb",
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: "15px",
+              padding: "14px 20px",
+              borderRadius: "8px",
+              border: "1px solid #1d4ed8",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
+            }}
           >
-            Sign in as {ROLE_LABELS[selectedRole].label} &rarr;
+            <span>Sign in as {ROLE_LABELS[selectedRole].label}</span>
+            <span aria-hidden="true">&rarr;</span>
           </button>
         </form>
 
