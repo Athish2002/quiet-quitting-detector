@@ -23,6 +23,7 @@ import {
 } from "../contexts/RoleContext";
 import { BrandSymbol } from "./BrandSymbol";
 import { ThemeToggle } from "./ThemeToggle";
+import { TelemetryConstellation } from "./TelemetryConstellation";
 
 const DEV_KEYS: Record<Role, string> = {
   analyst: "qqd-dev-key-admin-local-32bytes",
@@ -58,23 +59,31 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
       <>
         <div className="keybar">
           <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span className="keybar__role-badge">
-              {ROLE_LABELS[role].icon} {ROLE_LABELS[role].label}
-            </span>
-            <span style={{ color: "var(--muted)" }}>· Authenticated Session</span>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "var(--healthy)",
+                display: "inline-block",
+              }}
+            />
+            Role: <strong>{ROLE_LABELS[role]?.label || role}</strong>
           </span>
-          <button
-            type="button"
-            className="btn btn--glass"
-            style={{ padding: "4px 10px", fontSize: "12px", background: "transparent", border: "1px solid var(--rule)", cursor: "pointer", color: "var(--ink)" }}
-            onClick={() => {
-              clearApiKey();
-              clearRole();
-              setKey(null);
-            }}
-          >
-            Switch Role / Sign out
-          </button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => {
+                clearApiKey();
+                clearRole();
+                setKey(null);
+              }}
+              className="btn btn--quiet"
+              style={{ fontSize: "12px", padding: "4px 8px" }}
+            >
+              Switch Role
+            </button>
+          </div>
         </div>
         {children}
       </>
@@ -83,6 +92,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="gate-wrapper">
+      <TelemetryConstellation />
       <div style={{ position: "absolute", top: "1.5rem", right: "1.5rem", zIndex: 10 }}>
         <ThemeToggle />
       </div>
@@ -124,44 +134,43 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                     key={r}
                     className={`gate__role-card ${isSelected ? "gate__role-card--selected" : ""}`}
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "24px 28px 1fr 84px",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "16px",
+                      gap: "12px",
                       padding: "12px 14px",
                       border: isSelected ? "1px solid var(--accent)" : "1px solid var(--rule)",
                       background: isSelected ? "var(--accent-bg)" : "var(--surface)",
                       cursor: "pointer",
+                      borderRadius: "4px",
                       transition: "all 0.15s ease",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                      <input
-                        type="radio"
-                        name="role"
-                        value={r}
-                        checked={isSelected}
-                        onChange={() => setSelectedRole(r)}
-                        style={{ accentColor: "var(--accent)", cursor: "pointer", flexShrink: 0 }}
-                      />
-                      <span className="gate__role-icon" style={{ fontSize: "20px", flexShrink: 0 }}>
-                        {ROLE_LABELS[r].icon}
+                    <input
+                      type="radio"
+                      name="role"
+                      value={r}
+                      checked={isSelected}
+                      onChange={() => setSelectedRole(r)}
+                      style={{ accentColor: "var(--accent)", cursor: "pointer", margin: 0 }}
+                    />
+                    <span className="gate__role-icon" style={{ fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {ROLE_LABELS[r].icon}
+                    </span>
+                    <span className="gate__role-info" style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                      <strong style={{ fontSize: "14px", color: "var(--ink)", fontWeight: 700 }}>{ROLE_LABELS[r].label}</strong>
+                      <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.35" }}>
+                        {ROLE_LABELS[r].description}
                       </span>
-                      <span className="gate__role-info" style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
-                        <strong style={{ fontSize: "14px", color: "var(--ink)", fontWeight: 700 }}>{ROLE_LABELS[r].label}</strong>
-                        <span className="gate__role-desc" style={{ fontSize: "12px", color: "var(--muted)", lineHeight: "1.35" }}>
-                          {ROLE_LABELS[r].description}
-                        </span>
-                      </span>
-                    </div>
+                    </span>
 
                     <span
                       className="gate__role-badge"
                       style={{
-                        flexShrink: 0,
-                        minWidth: "75px",
+                        justifySelf: "end",
+                        width: "84px",
                         textAlign: "center",
-                        padding: "5px 10px",
+                        padding: "5px 0",
                         fontSize: "11px",
                         fontWeight: 700,
                         letterSpacing: "0.05em",
@@ -169,6 +178,9 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
                         border: isSelected ? "1px solid var(--accent)" : "1px solid var(--rule)",
                         background: isSelected ? "var(--accent)" : "var(--paper)",
                         color: isSelected ? "var(--surface)" : "var(--muted)",
+                        borderRadius: "3px",
+                        boxSizing: "border-box",
+                        display: "inline-block",
                         transition: "all 0.15s ease",
                       }}
                     >
@@ -196,15 +208,15 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
               alignItems: "center",
               justifyContent: "center",
               gap: "8px",
-              background: "var(--ink)",
-              color: "var(--paper)",
-              border: "1px solid var(--ink)",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+              background: "#0284c7",
+              color: "#ffffff",
+              border: "1px solid #0369a1",
+              boxShadow: "0 4px 14px rgba(2, 132, 199, 0.35)",
               transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
-            <span>Sign in as {ROLE_LABELS[selectedRole].label}</span>
-            <span aria-hidden="true">&rarr;</span>
+            <span style={{ color: "#ffffff", fontWeight: 700 }}>Sign in as {ROLE_LABELS[selectedRole].label}</span>
+            <span style={{ color: "#ffffff", fontWeight: 700 }} aria-hidden="true">&rarr;</span>
           </button>
         </form>
 

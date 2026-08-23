@@ -3789,23 +3789,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: 4px;
-  background: var(--ink) !important;
-  color: var(--paper) !important;
-  border: 1px solid var(--ink) !important;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0369a1 !important;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .gate__submit-btn:hover:not(:disabled) {
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
-  color: var(--surface) !important;
+  background: #0369a1 !important;
+  border-color: #075985 !important;
+  color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
 }
 
 .gate__submit-btn:active:not(:disabled) {
+  background: #075985 !important;
   transform: translateY(0);
 }
 
